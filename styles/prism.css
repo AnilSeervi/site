@@ -1,0 +1,159 @@
+.rehype-code-title {
+  @apply w-fit px-4 py-2 text-xs text-gray-800 border-b border-emerald-400 bg-gray-200 rounded-t-lg dark:text-gray-200  dark:bg-neutral-900;
+  font-family: var(--font-iosevka);
+}
+
+.rehype-code-title+pre {
+  @apply mt-0 rounded-t-none;
+}
+
+.highlight-line {
+  @apply block px-4 -mx-4 border-l-4 border-emerald-400 bg-gray-800;
+  width: calc(100% + 2rem + 1.4rem);
+}
+
+.token.comment {
+  color: #767c9db0;
+}
+
+.token.prolog {
+  color: #4a5f78;
+}
+
+.token.doctype {
+  color: #91b4d5;
+}
+
+.token.cdata {
+  color: #4a5f78;
+}
+
+.token.punctuation {
+  color: #e4f0fbd1;
+}
+
+.token.namespace {
+  color: #57718e;
+}
+
+.token.property {
+  color: #add7ff;
+}
+
+.token.tag,
+.token.boolean,
+.token.number,
+.token.selector,
+.token.string,
+.token.token.entity,
+.token.url,
+.token.variable,
+.token.attr-value,
+.token.regex,
+.token.module,
+.token.control-flow {
+  color: #5de4c7;
+}
+
+.token.constant {
+  color: #e4f0fb;
+}
+
+.token.symbol {
+  color: #57718e;
+}
+
+.token.deleted {
+  color: #57718e;
+}
+
+.token.attr-name {
+  color: #91b4d5;
+}
+
+.token.char {
+  color: #57718e;
+}
+
+.token.builtin {
+  color: #57718e;
+}
+
+.token.inserted {
+  color: #57718e;
+}
+
+.token.operator {
+  color: #91b4d5;
+}
+
+.token.atrule {
+  color: #a6accd;
+}
+
+.token.function {
+  color: #add7ff;
+}
+
+.token.class-name {
+  color: #e4f0fbd1;
+}
+
+.token.keyword {
+  color: #91b4d5;
+}
+
+.token.important {
+  color: #57718e;
+}
+
+.token.important {
+  font-weight: bold;
+}
+
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+
+.token.property-access {
+  color: #e4f0fbd1;
+}
+
+.token.imports {
+  color: #add7ff;
+}
+
+.token.console {
+  color: #e4f0fb;
+}
+
+.code-line.line-number {
+  padding-left: 2rem;
+}
+
+.code-line.line-number.highlight-line {
+  padding-left: 3.12em;
+}
+
+.code-line.line-number::before {
+  content: attr(line);
+  width: 1rem;
+  display: inline-block;
+  text-align: right;
+  color: #424242;
+  position: absolute;
+  left: -0.2em;
+}
+
+.code-line.highlight-line.line-number::before {
+  color: #5de4c7;
+}

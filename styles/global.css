@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url(./theme-toggle.css);
+
+::selection {
+  @apply bg-emerald-400 text-gray-800;
+}
+
+html {
+  min-width: 360px;
+  scroll-behavior: smooth;
+  word-break:  break-word;
+}
+
+#__next {
+  @apply bg-gray-50 dark:bg-gray-900;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+pre, code{
+font-family: var(--font-iosevka);
+}
+
+.font-mono {
+  font-family: var(--font-iosevka);
+}
+
+/* https://seek-oss.github.io/capsize/ */
+.capsize::before {
+  content: '';
+  margin-bottom: -0.098em;
+  display: table;
+}
+
+.capsize::after {
+  content: '';
+  margin-top: -0.219em;
+  display: table;
+}
+
+.skip-nav {
+  @apply absolute px-4 py-3 transition-transform duration-200 transform -translate-y-12 -left-1/4 focus:top-4 focus:translate-y-3 -top-8;
+}
+
+#skip {
+  scroll-margin-top: 1.125rem;
+}
+
+@supports not (backdrop-filter: none) {
+  .sticky-nav {
+    backdrop-filter: none;
+    @apply bg-opacity-100;
+  }
+}
+
+.prose .anchor {
+  @apply absolute invisible no-underline;
+  
+  margin-left: -1em;
+  padding-right: 0.5em;
+  width: 80%;
+  max-width: 700px;
+  cursor: pointer;
+}
+
+.anchor:hover {
+  @apply visible;
+}
+
+.prose a {
+  @apply transition-all;
+}
+
+.prose .anchor:after {
+  @apply text-gray-300 dark:text-gray-700;
+  content: '#';
+}
+
+.prose *:hover>.anchor {
+  @apply visible;
+}
+
+.prose pre {
+  @apply bg-neutral-900
+}
+
+.prose :where(code):not(:where(pre code)) {
+  @apply font-normal text-gray-800 dark:text-gray-200 px-1 py-0.5 border border-gray-200 dark:border-gray-800 rounded-lg bg-black/5 dark:bg-white/5;
+}
+
+.prose :where(code):not(:where(pre code))::after,.prose :where(code):not(:where(pre code))::before{
+  content: initial
+}
+
+.prose pre code {
+  @apply text-gray-200 p-0;
+  border: initial;
+}
+
+.prose img {
+  /* Don't apply styles to next/image */
+  @apply m-0;
+}
+
+.prose> :first-child {
+  /* Override removing top margin, causing layout shift */
+  margin-top: 1.25em !important;
+  margin-bottom: 1.25em !important;
+}
+
+/* .token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  @apply text-gray-700 dark:text-gray-300;
+}
+
+.token.punctuation {
+  @apply text-purple-400;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  @apply text-green-500;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  @apply text-green-400;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  @apply text-yellow-500;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  @apply text-purple-400;
+}
+
+.token.function,
+.token.class-name {
+  @apply text-blue-400;
+}
+
+.token.parameter{
+  @apply text-rose-400
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  @apply text-yellow-500;
+} */
+
+code[class*='language-'],
+pre[class*='language-'] {
+  /* @apply text-gray-800 dark:text-gray-50; */
+  position: relative;
+}
+
+pre::-webkit-scrollbar {
+  display: none;
+}
+
+pre {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+
+
+/* Remove Safari input shadow on mobile */
+input[type='text'],
+input[type='email'] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.metric-card>a {
+  @apply no-underline;
+}
+
+.step>h3 {
+  @apply my-0;
+}
+
+.prose .tweet a {
+  text-decoration: inherit;
+  font-weight: inherit;
+}
+
+table {
+  display: block;
+  max-width: fit-content;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.prose .callout>p {
+  margin: 0 !important;
+}
+
+@import url("./prism.css")
