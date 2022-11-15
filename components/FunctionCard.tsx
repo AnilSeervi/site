@@ -4,8 +4,7 @@ import { urlForImage } from 'lib/sanity';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
 import LoadingDots from './LoadingDots';
 import InlineMetric from './InlineMetric';
-import { usePageViews } from 'hooks/usePageViews';
-import { usePostLikes } from 'hooks/usePostLikes';
+import { usePageStats } from 'hooks/usePageStats';
 
 export default function FunctionCard({
   title,
@@ -45,17 +44,18 @@ export default function FunctionCard({
 }
 
 const Metrics = ({ slug }: { slug: string }) => {
-  const { views, isLoading: viewsIsLoading } = usePageViews(slug);
-  const { likes, isLoading: likesIsLoading } = usePostLikes(slug);
+  const { stats, isLoading } = usePageStats(slug);
+  const likes = stats?.likes || '0';
+  const views = stats?.views || '1';
 
   return (
     <>
       <span>
-        {viewsIsLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
+        {isLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
       </span>
       <span>&middot;</span>
       <span>
-        {likesIsLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
+        {isLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
       </span>
     </>
   );

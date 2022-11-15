@@ -1,25 +1,16 @@
 import useSWR from 'swr';
-
 import fetcher from 'lib/fetcher';
-import { Likes, Views } from 'lib/types';
+import { Stats } from 'lib/types';
 import MetricCard from 'components/metrics/Card';
 import { websiteURL } from 'lib/constants';
 
 export default function AnalyticsCard() {
-  const { data: viewData, error: viewError } = useSWR<Views>(
-    '/api/views',
-    fetcher
-  );
-  const { data: likesData, error: likesError } = useSWR<Likes>(
-    '/api/likes',
-    fetcher
-  );
+  const { data: stats, error } = useSWR<Stats>('/api/stats', fetcher);
 
-  const isViewsLoading = (!viewData && !viewError) || !!viewError;
-  const isLikesLoading = (!likesError && !likesData) || !!likesError;
+  const isLoading = (!error && !stats) || !!error;
 
-  const views = viewData?.total ?? '0';
-  const likes = likesData?.total ?? '0';
+  const views = stats?.views ?? '0';
+  const likes = stats?.likes ?? '0';
 
   return (
     <>
@@ -27,14 +18,13 @@ export default function AnalyticsCard() {
         header="All-Time Views"
         link={websiteURL}
         metric={views}
-        isLoading={isViewsLoading}
+        isLoading={isLoading}
       />
-
       <MetricCard
         header="Blog & Snippet Likes"
         link={websiteURL}
         metric={likes}
-        isLoading={isLikesLoading}
+        isLoading={isLoading}
       />
     </>
   );

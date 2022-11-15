@@ -16,7 +16,7 @@ type FooterLinkType = {
 const FooterLink = ({ href, text, isExternal }: FooterLinkType) =>
   isExternal ? (
     <a
-      className="flex items-center text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+      className="flex items-center text-gray-500 transition-colors hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
       target="_blank"
       rel="noopener noreferrer"
       href={href}
@@ -27,7 +27,7 @@ const FooterLink = ({ href, text, isExternal }: FooterLinkType) =>
   ) : (
     <Link
       href={href}
-      className="text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+      className="text-gray-500 transition-colors hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
     >
       {text}
     </Link>

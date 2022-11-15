@@ -72,6 +72,11 @@ export type Likes = {
   total: string;
 };
 
+export type Stats = {
+  views: string;
+  likes: string;
+};
+
 export type Subscribers = {
   count: number;
 };
