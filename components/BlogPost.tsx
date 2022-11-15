@@ -2,9 +2,8 @@ import Link from 'next/link';
 import InlineMetric from './InlineMetric';
 import LoadingDots from './LoadingDots';
 import React from 'react';
-import { usePageViews } from 'hooks/usePageViews';
-import { usePostLikes } from 'hooks/usePostLikes';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
+import { usePageStats } from 'hooks/usePageStats';
 
 export default function BlogPost({
   slug,
@@ -43,18 +42,19 @@ export default function BlogPost({
 }
 
 const Metrics = ({ slug }: { slug: string }) => {
-  const { views, isLoading: viewsIsLoading } = usePageViews(slug);
-  const { likes, isLoading: likesIsLoading } = usePostLikes(slug);
+  const { stats, isLoading } = usePageStats(slug);
+  const likes = stats?.likes || '0';
+  const views = stats?.views || '1';
 
   return (
     <>
       <span>&middot;</span>
       <span>
-        {viewsIsLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
+        {isLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
       </span>
       <span>&middot;</span>
       <span>
-        {likesIsLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
+        {isLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
       </span>
     </>
   );

@@ -1,10 +1,8 @@
 import Link from 'next/link';
 import clsx from 'clsx';
-
-import { usePageViews } from 'hooks/usePageViews';
-import { usePostLikes } from 'hooks/usePostLikes';
 import LoadingDots from './LoadingDots';
 import InlineMetric from './InlineMetric';
+import { usePageStats } from 'hooks/usePageStats';
 
 export default function BlogPostCard({ title, slug, gradient }) {
   const blogSlug = `/blog/${slug}`;
@@ -32,8 +30,9 @@ export default function BlogPostCard({ title, slug, gradient }) {
 }
 
 const Metrics = ({ slug }) => {
-  const { views, isLoading: viewsIsLoading } = usePageViews(slug);
-  const { likes, isLoading: likesIsLoading } = usePostLikes(slug);
+  const { stats, isLoading } = usePageStats(slug);
+  const likes = stats?.likes || '0';
+  const views = stats?.views || '1';
   return (
     <>
       <div className="flex items-center gap-2">
@@ -44,7 +43,7 @@ const Metrics = ({ slug }) => {
           ></path>
         </svg>
         <span className="capsize flex text-sm">
-          {viewsIsLoading ? <LoadingDots /> : <InlineMetric stat={views} />}
+          {isLoading ? <LoadingDots /> : <InlineMetric stat={views} />}
         </span>
       </div>
       <span>&middot;</span>
@@ -56,7 +55,7 @@ const Metrics = ({ slug }) => {
           ></path>
         </svg>
         <span className="capsize flex text-sm">
-          {likesIsLoading ? <LoadingDots /> : <InlineMetric stat={likes} />}
+          {isLoading ? <LoadingDots /> : <InlineMetric stat={likes} />}
         </span>
       </div>
     </>
