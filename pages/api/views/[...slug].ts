@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from 'lib/prisma';
+import { z } from 'zod';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
-    const slug = req.query.slug.toString();
+    const slug = z.string().array().parse(req.query.slug).join('/');
 
     if (req.method === 'POST') {
       const post = await prisma.page.upsert({
@@ -37,7 +38,7 @@ export default async function handler(
     }
     res.setHeader('Allow', ['GET', 'POST']);
     return res.status(405).send('Method Not Allowed');
-  } catch (e) {
+  } catch (e: any) {
     return res.status(500).json({ message: e.message });
   }
 }

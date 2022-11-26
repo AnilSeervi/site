@@ -81,6 +81,14 @@ export type Subscribers = {
   count: number;
 };
 
+export type Guestbook = {
+  id: string;
+  email: string;
+  body: string;
+  created_by: string;
+  updated_at: string;
+};
+
 export type Song = {
   songUrl: string;
   artist: string;

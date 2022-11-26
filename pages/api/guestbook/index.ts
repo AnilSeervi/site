@@ -34,7 +34,7 @@ export default async function handler(
     const newEntry = await prisma.guestbook.create({
       data: {
         email,
-        body: (req.body.body || '').slice(0, 500),
+        body: req.body.body || '',
         created_by: name
       }
     });
