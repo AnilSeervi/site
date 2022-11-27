@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { useTheme } from 'next-themes';
 import NextLink from 'next/link';
 import clsx from 'clsx';
-
 import Footer from 'components/Footer';
 import MobileMenu from 'components/MobileMenu';
 import { usePageViews } from 'hooks/usePageViews';
@@ -38,13 +37,16 @@ function NavItem({
 
 export default function Container(props: {
   children: React.ReactNode;
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
   image?: string;
   url?: string;
   type?: string;
   date?: string;
   tags?: string[];
+  preTitle?: string;
+  _createdAt?: string;
+  _updatedAt?: string;
 }) {
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -55,12 +57,21 @@ export default function Container(props: {
   const { increment: incrementView } = usePageViews(slug, false);
 
   const meta = {
-    title: 'Anil Seervi – Developer, Designer, Open Sourcerer',
-    description: `Front-end developer, Open Source enthusiast.`,
-    image: `${websiteURL}/static/images/lee-banner.png`,
     type: 'website',
     ...customMeta
   };
+
+  const searchParams = new URLSearchParams([
+    ['title', meta.title],
+    ['description', meta.description],
+    ['image', meta.image ?? ''],
+    ['url', process.env.NEXT_PUBLIC_VERCEL_URL?.replace('https://', '') + slug],
+    ['preTitle', meta.preTitle ?? '']
+  ]);
+
+  const ogURL = `https://${
+    process.env.NEXT_PUBLIC_VERCEL_URL
+  }/api/og?${searchParams.toString()}`;
 
   useEffect(() => {
     incrementView();
@@ -73,20 +84,23 @@ export default function Container(props: {
         <title>{meta.title}</title>
         <meta name="robots" content="follow, index" />
         <meta content={meta.description} name="description" />
-        <meta property="og:url" content={`${websiteURL}${router.asPath}`} />
-        <link rel="canonical" href={`${websiteURL}${router.asPath}`} />
+        <meta property="og:url" content={`${websiteURL}${slug}`} />
+        <link rel="canonical" href={`${websiteURL}${slug}`} />
         <meta property="og:type" content={meta.type} />
         <meta property="og:site_name" content="Anil Seervi" />
         <meta property="og:description" content={meta.description} />
         <meta property="og:title" content={meta.title} />
-        <meta property="og:image" content={meta.image} />
+        <meta property="og:image" content={ogURL} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@linaseervi" />
         <meta name="twitter:title" content={meta.title} />
         <meta name="twitter:description" content={meta.description} />
-        <meta name="twitter:image" content={meta.image} />
+        <meta name="twitter:image" content={ogURL} />
         {meta.date && (
           <meta property="article:published_time" content={meta.date} />
+        )}
+        {meta._updatedAt && (
+          <meta property="article:modified_time" content={meta._updatedAt} />
         )}
       </Head>
       <svg

@@ -10,6 +10,9 @@ export type Post = {
   coverImage: string;
   readingTime: string;
   tweets: any[];
+  coverURL: string;
+  _createdAt: string;
+  _updatedAt: string;
 };
 
 export type Anime = {
@@ -40,6 +43,8 @@ export type AnimeStats = {
 
 export type Snippet = {
   _id: string;
+  _createdAt: string;
+  _updatedAt: string;
   slug: string;
   content: MDXRemoteSerializeResult;
   title: string;

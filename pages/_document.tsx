@@ -3,7 +3,7 @@ import { Html, Head, Main, NextScript } from 'next/document';
 export default function Document(props) {
   return (
     <Html lang="en">
-      <Head>
+      <Head prefix="og: http://ogp.me/ns#">
         {/* <link
           rel="preload"
           href="/fonts/ibm-plex-sans-var.woff2"

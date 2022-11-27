@@ -1,7 +1,14 @@
-import createImageUrlBuilder from '@sanity/image-url';
-import { sanityConfig } from './sanity-config';
+import { sanityProjectId } from './constants';
 
-export const imageBuilder = createImageUrlBuilder(sanityConfig);
+export const urlForImage = (source) => {
+  const imageArr = source.asset._ref.split('-');
+  const imageId = [imageArr[1], imageArr[2]].join('-');
+  const imageExtension = imageArr[imageArr.length - 1];
+  return `https://cdn.sanity.io/images/${sanityProjectId}/production/${imageId}.${imageExtension}`;
+};
 
-export const urlForImage = (source) =>
-  imageBuilder.image(source).auto('format').fit('max');
+export const sanityImageId = (source) => {
+  const imageArr = source.asset._ref.split('-');
+  const imageId = [imageArr[1], imageArr[2]].join('-');
+  return imageId;
+};
