@@ -4,7 +4,15 @@ import LoadingDots from './LoadingDots';
 import InlineMetric from './InlineMetric';
 import { usePageStats } from 'hooks/usePageStats';
 
-export default function BlogPostCard({ title, slug, gradient }) {
+export default function BlogPostCard({
+  title,
+  slug,
+  gradient
+}: {
+  title: string;
+  slug: string;
+  gradient: string;
+}) {
   const blogSlug = `/blog/${slug}`;
   return (
     <Link
@@ -29,7 +37,7 @@ export default function BlogPostCard({ title, slug, gradient }) {
   );
 }
 
-const Metrics = ({ slug }) => {
+const Metrics = ({ slug }: { slug: string }) => {
   const { stats, isLoading } = usePageStats(slug);
   const likes = stats?.likes || '0';
   const views = stats?.views || '1';

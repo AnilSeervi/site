@@ -1,8 +1,9 @@
 import clsx from 'clsx';
+import { Anime } from 'lib/types';
 import Image from 'next/image';
 import { useState } from 'react';
 
-export default function AnimeCard({ anime }) {
+export default function AnimeCard({ anime }: { anime: Anime }) {
   const [loading, setLoading] = useState(true);
   return (
     <div

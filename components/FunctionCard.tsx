@@ -12,6 +12,12 @@ export default function FunctionCard({
   slug,
   logo,
   ...rest
+}: {
+  title: string;
+  description: string;
+  slug: string;
+  logo: any;
+  [key: string]: any;
 }) {
   const { enabled, intersectionRef } = useEnabledOnFirstIntersection();
   return (

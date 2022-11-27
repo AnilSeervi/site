@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, FormEvent } from 'react';
 import useSWR from 'swr';
 
 import fetcher from 'lib/fetcher';
@@ -9,18 +9,30 @@ import LoadingSpinner from 'components/LoadingSpinner';
 import InlineMetric from './InlineMetric';
 import LoadingDots from './LoadingDots';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
+import { z } from 'zod';
 
 export default function Subscribe() {
   const [form, setForm] = useState<FormState>({ state: Form.Initial });
   const inputEl = useRef(null);
   const { enabled, intersectionRef } = useEnabledOnFirstIntersection();
 
-  const subscribe = async (e) => {
+  const subscribe = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setForm({ state: Form.Loading });
 
-    const email = inputEl.current.value;
-    const res = await fetch(`/api/subscribe?email=${email}`, {
+    const email = z
+      .string()
+      .email({ message: 'Please Enter a valid email address' })
+      .safeParse(inputEl.current.value);
+
+    if (email.success === false) {
+      setForm({
+        state: Form.Error,
+        message: email.error.issues[0].message
+      });
+      return;
+    }
+    const res = await fetch(`/api/subscribe?email=${email.data}`, {
       method: 'POST'
     });
 

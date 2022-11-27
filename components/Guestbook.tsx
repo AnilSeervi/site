@@ -1,4 +1,4 @@
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, Suspense, FormEventHandler, FormEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import useSWR, { useSWRConfig } from 'swr';
 
@@ -7,6 +7,7 @@ import { Form, FormState } from 'lib/types';
 import SuccessMessage from 'components/SuccessMessage';
 import ErrorMessage from 'components/ErrorMessage';
 import LoadingSpinner from 'components/LoadingSpinner';
+import { z } from 'zod';
 
 function GuestbookEntry({ entry, user }) {
   const { mutate } = useSWRConfig();
@@ -65,13 +66,25 @@ export default function Guestbook({ fallbackData }) {
     fallbackData
   });
 
-  const leaveEntry = async (e) => {
+  const leaveEntry = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setForm({ state: Form.Loading });
+    const bodyValue = z
+      .string()
+      .min(1, { message: 'Must be more than 1 character' })
+      .max(500, { message: 'Must be less than 500 characters' })
+      .safeParse(inputEl.current.value);
 
+    if (bodyValue.success === false) {
+      setForm({
+        state: Form.Error,
+        message: bodyValue.error.issues[0].message
+      });
+      return;
+    }
     const res = await fetch('/api/guestbook', {
       body: JSON.stringify({
-        body: inputEl.current.value
+        body: bodyValue.data
       }),
       headers: {
         'Content-Type': 'application/json'

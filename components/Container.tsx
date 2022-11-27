@@ -10,7 +10,15 @@ import { usePageViews } from 'hooks/usePageViews';
 import { useEffect } from 'react';
 import { websiteURL } from 'lib/constants';
 
-function NavItem({ href, text, path }) {
+function NavItem({
+  href,
+  text,
+  path
+}: {
+  href: string;
+  text: string;
+  path: string;
+}) {
   const isActive = path === href;
 
   return (
@@ -28,7 +36,16 @@ function NavItem({ href, text, path }) {
   );
 }
 
-export default function Container(props) {
+export default function Container(props: {
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  type?: string;
+  date?: string;
+  tags?: string[];
+}) {
   const { resolvedTheme, setTheme } = useTheme();
 
   const { children, ...customMeta } = props;
@@ -38,7 +55,7 @@ export default function Container(props) {
   const { increment: incrementView } = usePageViews(slug, false);
 
   const meta = {
-    title: 'Anil Seervi – Developer, writer, creator.',
+    title: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     description: `Front-end developer, Open Source enthusiast.`,
     image: `${websiteURL}/static/images/lee-banner.png`,
     type: 'website',
@@ -47,6 +64,7 @@ export default function Container(props) {
 
   useEffect(() => {
     incrementView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
