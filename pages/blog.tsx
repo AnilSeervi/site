@@ -20,6 +20,9 @@ export default function Blog({
     <Container
       title={`Blog – ${siteTitle}`}
       description="Thoughts on the software industry, programming, tech, videography, music, and my personal life."
+      preTitle="Check out this Blog"
+      image="unsplash/photo-1519337265831-281ec6cc8514"
+      ogTitle="Priceless insights, ideas, and experiences for your dev work"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

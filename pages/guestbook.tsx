@@ -6,8 +6,10 @@ import { siteTitle } from 'lib/constants';
 export default function GuestbookPage({ fallbackData }) {
   return (
     <Container
-      title={`Guestbook – ${siteTitle}`}
+      title={`Guestbook`}
       description="Sign my digital guestbook and share some wisdom."
+      preTitle="Sign my Guestbook"
+      image="unsplash/photo-1627056503679-34051c0122c5"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold tracking-tight text-black dark:text-white md:text-5xl">

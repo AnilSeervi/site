@@ -2,7 +2,6 @@ import { PropsWithChildren, Suspense } from 'react';
 
 import Container from 'components/Container';
 import Subscribe from 'components/Subscribe';
-import MetricsCounter from 'components/MetricsCounter';
 import { Post } from 'lib/types';
 import { urlForImage } from 'lib/sanity';
 import { siteTitle, repo, websiteURL } from 'lib/constants';
@@ -22,11 +21,14 @@ export default function BlogLayout({
   children,
   post
 }: PropsWithChildren<{ post: Post }>) {
+  const coverURL = post.coverURL;
   return (
     <Container
-      title={`${post.title} – ${siteTitle}`}
+      preTitle="Check out this article"
+      title={`${post.title}`}
       description={post.excerpt}
-      image={urlForImage(post.coverImage).url()}
+      ogDescription={post.excerpt}
+      image={coverURL || urlForImage(post.coverImage)}
       date={new Date(post.date).toISOString()}
       type="article"
     >

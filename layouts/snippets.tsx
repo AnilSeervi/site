@@ -22,7 +22,8 @@ export default function SnippetLayout({
 }: PropsWithChildren<{ snippet: Snippet }>) {
   return (
     <Container
-      title={`${snippet.title} - Code Snippet`}
+      preTitle="Check out this Snippet"
+      title={`${snippet.title}`}
       description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
     >
       <article
@@ -45,7 +46,7 @@ export default function SnippetLayout({
               alt={snippet.title}
               height={48}
               width={48}
-              src={urlForImage(snippet.logo).url()}
+              src={urlForImage(snippet.logo)}
               className="rounded-full"
             />
           </div>

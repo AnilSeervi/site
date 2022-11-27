@@ -6,8 +6,12 @@ import ExternalLink from 'components/ExternalLink';
 export default function Spotify() {
   return (
     <Container
-      title="Spotify - Anil Seervi"
+      title="Spotify"
       description="My personal Spotify dashboard with my top tracks and top artists"
+      preTitle="What's hot on my Spotify"
+      ogDescription="Personal Spotify dashboard with my top tracks and top artists, updates every day."
+      image="unsplash/photo-1613329671121-5d1cf551cc3f"
+      ogTitle="Spotify Dashboard"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

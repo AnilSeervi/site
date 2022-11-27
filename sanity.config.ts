@@ -1,8 +1,8 @@
-import { createConfig } from 'sanity';
+import { defineConfig } from 'sanity';
 import { deskTool } from 'sanity/desk';
 import { markdownSchema } from 'sanity-plugin-markdown';
 
-export default createConfig({
+export default defineConfig({
   name: 'default',
   title: 'anil',
   projectId: '9u3oysk9',
@@ -42,6 +42,13 @@ export default createConfig({
             name: 'coverImage',
             title: 'Cover Image',
             type: 'image'
+          },
+          {
+            name: 'coverURL',
+            title: 'Cover URL',
+            type: 'string',
+            description:
+              "URL string for the cover image. Currenly uses Unsplash API. Syntax: 'unsplash/:id'"
           },
           {
             name: 'date',

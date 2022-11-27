@@ -34,7 +34,7 @@ export default function FunctionCard({
           alt={title}
           height={32}
           width={32}
-          src={urlForImage(logo).url()}
+          src={urlForImage(logo)}
           className="rounded-full"
         />
         <h3 className="text-left text-lg font-bold text-gray-900 dark:text-gray-100">
