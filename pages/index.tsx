@@ -10,10 +10,7 @@ import Subscribe from '../components/Subscribe';
 export default function Home() {
   return (
     <Suspense fallback={null}>
-      <Container
-        title="Anil Seervi – Developer, Designer, Open Sourcerer"
-        description="Front-end developer, Open Source enthusiast."
-      >
+      <Container title="Anil Seervi – Developer, Designer, Open Sourcerer">
         <div className="mx-auto flex max-w-2xl flex-col items-start justify-center border-gray-200 pb-16 dark:border-gray-700">
           <section className="flex flex-col-reverse items-start sm:flex-row">
             <div className="flex flex-col pr-8">

@@ -38,7 +38,7 @@ function NavItem({
 export default function Container(props: {
   children: React.ReactNode;
   title: string;
-  description: string;
+  description?: string;
   image?: string;
   url?: string;
   type?: string;
@@ -47,6 +47,8 @@ export default function Container(props: {
   preTitle?: string;
   _createdAt?: string;
   _updatedAt?: string;
+  noindex?: boolean;
+  ogDescription?: string;
 }) {
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -57,13 +59,14 @@ export default function Container(props: {
   const { increment: incrementView } = usePageViews(slug, false);
 
   const meta = {
+    description: 'Front-end developer, Open Source enthusiast.',
     type: 'website',
     ...customMeta
   };
 
   const searchParams = new URLSearchParams([
     ['title', meta.title],
-    ['description', meta.description],
+    ['description', meta.ogDescription ?? ''],
     ['image', meta.image ?? ''],
     ['url', process.env.NEXT_PUBLIC_VERCEL_URL?.replace('https://', '') + slug],
     ['preTitle', meta.preTitle ?? '']
@@ -82,7 +85,10 @@ export default function Container(props: {
     <>
       <Head>
         <title>{meta.title}</title>
-        <meta name="robots" content="follow, index" />
+        <meta
+          name="robots"
+          content={meta.noindex ? 'nofollow, noindex' : 'follow, index'}
+        />
         <meta content={meta.description} name="description" />
         <meta property="og:url" content={`${websiteURL}${slug}`} />
         <link rel="canonical" href={`${websiteURL}${slug}`} />
