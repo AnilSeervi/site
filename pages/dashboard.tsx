@@ -7,6 +7,8 @@ export default function Dashboard() {
     <Container
       title="Dashboard"
       description="My personal dashboard, built with Next.js API routes deployed as serverless functions."
+      ogTitle="Personal Dashboard"
+      image="unsplash/photo-1551288049-bebda4e38f71"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

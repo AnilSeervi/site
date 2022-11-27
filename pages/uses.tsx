@@ -7,6 +7,7 @@ export default function Uses() {
     <Container
       title="Gear that Anil uses"
       description="Here's what tech I'm currently using for coding, videos, and music."
+      image="unsplash/photo-1614624533048-a9c2f9cb5a96"
     >
       <article className="mx-auto mb-16 flex w-full max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

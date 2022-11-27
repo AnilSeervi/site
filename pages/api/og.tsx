@@ -59,7 +59,9 @@ export default async function handler(req: NextRequest, res: NextResponse) {
             />
             <div tw="text-[#a9adc1] flex flex-col ml-16 flex-1">
               <p tw="text-7xl tracking-wide">Anil Seervi</p>
-              <p tw="text-4xl -mt-3 w-full tracking-wide">{url}</p>
+              <p tw="text-4xl -mt-3 w-full tracking-wide mt-1 leading-tight">
+                {url}
+              </p>
             </div>
           </div>
         </div>

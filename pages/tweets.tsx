@@ -7,6 +7,8 @@ export default function Tweets({ tweets }) {
     <Container
       title="Tweets"
       description="A collection of tweets that inspire me, make me laugh, and make me think."
+      image="unsplash/photo-1463003160077-801f9fd8d095"
+      ogTitle="Tweets that inspire me, make me laugh, and make me think."
       preTitle="Check out these Tweets"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">

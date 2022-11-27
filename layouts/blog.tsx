@@ -27,6 +27,7 @@ export default function BlogLayout({
       preTitle="Check out this article"
       title={`${post.title}`}
       description={post.excerpt}
+      ogDescription={post.excerpt}
       image={coverURL || urlForImage(post.coverImage)}
       date={new Date(post.date).toISOString()}
       type="article"

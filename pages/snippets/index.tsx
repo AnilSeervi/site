@@ -14,6 +14,8 @@ export default function Snippets({
       title={`Code Snippets – ${siteTitle}`}
       description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
       preTitle="Check out these Snippets"
+      image="unsplash/photo-1616628188467-8fb29f49bbe8"
+      ogTitle="A collection of code snippets – including serverless functions, scripts, and CSS tricks."
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

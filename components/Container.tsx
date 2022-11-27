@@ -49,6 +49,7 @@ export default function Container(props: {
   _updatedAt?: string;
   noindex?: boolean;
   ogDescription?: string;
+  ogTitle?: string;
 }) {
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -65,7 +66,7 @@ export default function Container(props: {
   };
 
   const searchParams = new URLSearchParams([
-    ['title', meta.title],
+    ['title', meta.ogTitle || meta.title],
     ['description', meta.ogDescription ?? ''],
     ['image', meta.image ?? ''],
     ['url', process.env.NEXT_PUBLIC_VERCEL_URL?.replace('https://', '') + slug],

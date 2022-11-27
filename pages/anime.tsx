@@ -12,7 +12,9 @@ export default function Anime() {
     <Container
       title="Anime Dashboard"
       description="My personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
-      preTitle="What is Anil watching?"
+      preTitle="Weeb Stats"
+      ogDescription="Personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
+      image="unsplash/photo-1613376023733-0a73315d9b06"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

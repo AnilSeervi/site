@@ -9,6 +9,8 @@ export default function NotFound() {
       title={`404 – Oops!`}
       description="You've hit a dead end"
       noindex
+      preTitle="Thats a dead end"
+      image="unsplash/photo-1609743522653-52354461eb27"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">
