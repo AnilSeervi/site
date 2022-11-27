@@ -69,13 +69,11 @@ export default function Container(props: {
     ['title', meta.ogTitle || meta.title],
     ['description', meta.ogDescription ?? ''],
     ['image', meta.image ?? ''],
-    ['url', process.env.NEXT_PUBLIC_VERCEL_URL?.replace('https://', '') + slug],
+    ['url', websiteURL.replace('https://', '') + slug],
     ['preTitle', meta.preTitle ?? '']
   ]);
 
-  const ogURL = `https://${
-    process.env.NEXT_PUBLIC_VERCEL_URL
-  }/api/og?${searchParams.toString()}`;
+  const ogURL = `${websiteURL}/api/og?${searchParams.toString()}`;
 
   useEffect(() => {
     incrementView();
