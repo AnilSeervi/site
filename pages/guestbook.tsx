@@ -1,7 +1,6 @@
 import prisma from 'lib/prisma';
 import Container from 'components/Container';
 import Guestbook from 'components/Guestbook';
-import { siteTitle } from 'lib/constants';
 
 export default function GuestbookPage({ fallbackData }) {
   return (
