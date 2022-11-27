@@ -8,6 +8,7 @@ export default function GuestbookPage({ fallbackData }) {
     <Container
       title={`Guestbook – ${siteTitle}`}
       description="Sign my digital guestbook and share some wisdom."
+      preTitle="Sign my Guestbook"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold tracking-tight text-black dark:text-white md:text-5xl">

@@ -5,7 +5,7 @@ import GitHub from 'components/metrics/Github';
 export default function Dashboard() {
   return (
     <Container
-      title="Dashboard – Anil Seervi"
+      title="Dashboard"
       description="My personal dashboard, built with Next.js API routes deployed as serverless functions."
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">

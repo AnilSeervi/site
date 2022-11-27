@@ -8,6 +8,7 @@ export default function Spotify() {
     <Container
       title="Spotify - Anil Seervi"
       description="My personal Spotify dashboard with my top tracks and top artists"
+      preTitle="What's hot on my Spotify"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

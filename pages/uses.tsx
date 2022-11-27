@@ -5,7 +5,7 @@ import Image from 'next/image';
 export default function Uses() {
   return (
     <Container
-      title={`Uses – ${siteTitle}`}
+      title="Gear that Anil uses"
       description="Here's what tech I'm currently using for coding, videos, and music."
     >
       <article className="mx-auto mb-16 flex w-full max-w-2xl flex-col items-start justify-center">

@@ -5,8 +5,9 @@ import { getTweets } from 'lib/twitter';
 export default function Tweets({ tweets }) {
   return (
     <Container
-      title="Tweets – Anil Seervi"
+      title="Tweets"
       description="A collection of tweets that inspire me, make me laugh, and make me think."
+      preTitle="Check out these Tweets"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

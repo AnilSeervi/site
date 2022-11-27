@@ -7,6 +7,7 @@ export default function Newsletter() {
     <Container
       title={`Newsletter – ${siteTitle}`}
       description="Thoughts on the software industry, programming, tech, videography, music, and my personal life."
+      preTitle="Subscribe to my Newsletter"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">

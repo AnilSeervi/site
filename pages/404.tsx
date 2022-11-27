@@ -6,7 +6,7 @@ import { siteTitle } from 'lib/constants';
 export default function NotFound() {
   return (
     <Container
-      title={`404 – ${siteTitle}`}
+      title={`404 – Oops!`}
       description="You've hit a dead end"
       noindex
     >

@@ -10,8 +10,9 @@ export default function Anime() {
   const { data } = useSWR<AnimeStats>('/api/get-mal-stats', fetcher);
   return (
     <Container
-      title="Anime Dashboard – Anil Seervi"
+      title="Anime Dashboard"
       description="My personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
+      preTitle="What is Anil watching?"
     >
       <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
         <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">
