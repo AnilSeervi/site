@@ -23,7 +23,7 @@ export default function SnippetLayout({
   return (
     <Container
       preTitle="Check out this Snippet"
-      title={`${snippet.title} - Code Snippet`}
+      title={`${snippet.title}`}
       description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
     >
       <article

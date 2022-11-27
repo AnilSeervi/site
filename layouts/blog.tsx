@@ -24,8 +24,8 @@ export default function BlogLayout({
   const coverURL = post.coverURL;
   return (
     <Container
-      preTitle="Check out this Blog"
-      title={`${post.title} – ${siteTitle}`}
+      preTitle="Check out this article"
+      title={`${post.title}`}
       description={post.excerpt}
       image={coverURL || urlForImage(post.coverImage)}
       date={new Date(post.date).toISOString()}
