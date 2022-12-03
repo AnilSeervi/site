@@ -27,51 +27,51 @@ export default async function handler(req: NextRequest, res: NextResponse) {
   return new ImageResponse(
     (
       <div
-        tw="bg-zinc-900 h-full w-full flex pl-40 pr-24 py-28 text-slate-50"
+        tw="bg-zinc-900 h-full w-full flex pl-28 pr-20 py-24 text-slate-50"
         style={{ fontFamily: 'Hubot Sans' }}
       >
         <div tw="w-[63%] h-full flex flex-col justify-between pr-20">
           <div tw="flex flex-col">
             {preTitle && (
-              <h2 tw="text-5xl text-[#a9adc1] mb-8 tracking-wide">
+              <h2 tw="text-4xl text-[#a9adc1] mb-4 tracking-wide">
                 {preTitle}
               </h2>
             )}
-            <h1 tw="text-8xl leading-normal tracking-wide">{title}</h1>
+            <h1 tw="text-7xl leading-normal tracking-wide">{title}</h1>
             {description && (
-              <p tw="text-3xl mt-8 text-[#a9adc1] tracking-wide">
+              <p tw="text-2xl mt-4 text-[#a9adc1] tracking-wide">
                 {description}
               </p>
             )}
           </div>
           <div tw="flex items-center w-full">
             <svg
-              width="220"
-              height="220"
-              viewBox="0 0 220 220"
+              width="170"
+              height="170"
+              viewBox="0 0 170 170"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <rect width="220" height="220" rx="110" fill="black" />
+              <rect width="170" height="170" rx="85" fill="black" />
               <path
-                d="M78.277 72C76.8419 72 75.5977 71.9998 72.9977 77.4707C70.3977 82.9416 40.8734 141.154 40.6537 141.595C38.9729 144.97 41.0443 147.037 41.2112 147.205C41.3782 147.372 43.1377 149.128 46.6015 147.534C47.5011 147.12 122.143 112.567 122.143 112.567C125.283 110.991 126.062 111.536 126.257 111.672C126.452 111.808 127.239 112.358 126.432 115.566C125.676 117.992 117.224 143.479 116.657 144.795C115.381 147.757 114.209 147.978 113.733 147.976C113.257 147.975 112.026 147.757 110.896 144.795C110.896 144.795 86.0308 82.9415 83.7083 77.4707C81.3859 71.9999 79.7121 72 78.277 72Z"
+                d="M59.8547 55C58.7354 55 57.765 54.9998 55.7371 59.267C53.7091 63.5341 30.6812 108.938 30.5099 109.282C29.1989 111.914 30.8145 113.527 30.9447 113.657C31.0749 113.787 32.4473 115.157 35.149 113.914C35.8506 113.591 94.0688 86.641 94.0688 86.641C96.5175 85.4113 97.1258 85.8366 97.2778 85.9429C97.4299 86.0493 98.0433 86.4781 97.4143 88.98C96.8246 90.8721 90.2321 110.751 89.7899 111.777C88.7943 114.088 87.8807 114.26 87.5094 114.259C87.1381 114.258 86.1777 114.088 85.2962 111.777C85.2962 111.777 65.9024 63.534 64.091 59.267C62.2796 54.9999 60.9741 55 59.8547 55Z"
                 stroke="white"
-                stroke-width="8"
-                stroke-linecap="square"
-                stroke-linejoin="round"
+                strokeWidth="5"
+                strokeLinecap="square"
+                strokeLinejoin="round"
               />
               <path
-                d="M148.024 111.598L135.285 148.152M180.03 78.7828L155.835 148.152"
+                d="M114.254 85.885L104.318 114.396M139.218 60.2904L120.347 114.396"
                 stroke="white"
-                stroke-width="8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
 
-            <div tw="text-[#a9adc1] flex flex-col ml-16 flex-1">
-              <p tw="text-7xl tracking-wide">Anil Seervi</p>
-              <p tw="text-4xl -mt-3 w-full tracking-wide mt-1 leading-tight">
+            <div tw="text-[#a9adc1] flex flex-col ml-6 flex-1">
+              <p tw="text-5xl tracking-wide">Anil Seervi</p>
+              <p tw="text-2xl -mt-3 w-full tracking-wide mt-1 leading-tight">
                 {url}
               </p>
             </div>
@@ -84,7 +84,7 @@ export default async function handler(req: NextRequest, res: NextResponse) {
               isUnsplash
                 ? `https://images.unsplash.com/${
                     image.split('/')[1]
-                  }?q=80&fmt=webp&crop=entropy&w=1920&h=1080`
+                  }?q=100&fmt=webp&crop=entropy&w=1920&h=1080`
                 : image
             }
             alt="image"
@@ -99,8 +99,8 @@ export default async function handler(req: NextRequest, res: NextResponse) {
       </div>
     ),
     {
-      height: 1256,
-      width: 2400,
+      height: 942,
+      width: 1800,
       fonts: [
         {
           name: 'Hubot Sans',

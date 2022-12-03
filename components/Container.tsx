@@ -95,10 +95,14 @@ export default function Container(props: {
         <meta property="og:site_name" content="Anil Seervi" />
         <meta property="og:description" content={meta.description} />
         <meta property="og:title" content={meta.title} />
-        <meta property="og:image" content={ogURL} />
+        <meta property="og:image" content={ogURL} name="image" />
+        <meta property="og:image:height" content="1800" />
+        <meta property="og:image:width" content="942" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@linaseervi" />
+        <meta name="twitter:site" content="@linASeervi" />
+        <meta name="twitter:creator" content="@linASeervi" />
         <meta name="twitter:title" content={meta.title} />
+        <meta name="twitter:alt" content={meta.title} />
         <meta name="twitter:description" content={meta.description} />
         <meta name="twitter:image" content={ogURL} />
         {meta.date && (
