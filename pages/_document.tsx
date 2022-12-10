@@ -18,29 +18,27 @@ export default function Document(props) {
           type="font/woff2"
           crossOrigin="anonymous"
         /> */}
+        <link
+          color="#4a9885"
+          href="/static/favicons/masked-icon.svg"
+          rel="mask-icon"
+        />
+        <link
+          rel="alternate icon"
+          href="/static/favicons/favicon_32x32.png"
+          type="image/png"
+        />
+        <link
+          rel="icon"
+          type="image/svg+xml"
+          href="/static/favicons/favicon.svg"
+        />
         <link href="/static/favicons/favicon.ico" rel="shortcut icon" />
         <link href="/static/favicons/site.webmanifest" rel="manifest" />
         <link
           href="/static/favicons/apple-touch-icon.png"
           rel="apple-touch-icon"
           sizes="180x180"
-        />
-        <link
-          href="/static/favicons/favicon-32x32.png"
-          rel="icon"
-          sizes="32x32"
-          type="image/png"
-        />
-        <link
-          href="/static/favicons/favicon-16x16.png"
-          rel="icon"
-          sizes="16x16"
-          type="image/png"
-        />
-        <link
-          color="#4a9885"
-          href="/static/favicons/safari-pinned-tab.svg"
-          rel="mask-icon"
         />
         <meta content="#ffffff" name="theme-color" />
         <meta content="#ffffff" name="msapplication-TileColor" />
@@ -59,6 +57,25 @@ export default function Document(props) {
         />
       </Head>
       <body className="bg-gray-50 text-white antialiased dark:bg-gray-900 dark:text-black">
+        <svg
+          className="pointer-events-none fixed isolate z-50 opacity-60 mix-blend-soft-light"
+          width="100%"
+          height="100%"
+        >
+          <filter id="pedroduarteisalegend">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.80"
+              numOctaves="4"
+              stitchTiles="stitch"
+            />
+          </filter>
+          <rect
+            width="100%"
+            height="100%"
+            filter="url(#pedroduarteisalegend)"
+          ></rect>
+        </svg>
         <Main />
         <NextScript />
       </body>

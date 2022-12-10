@@ -27,7 +27,6 @@ export default function Tweet({
     .replace('&amp;', '&');
   const quoteTweet =
     referenced_tweets && referenced_tweets.find((t) => t.type === 'quoted');
-
   return (
     <div className="tweet my-4 w-full rounded-lg border border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center">
@@ -109,7 +108,7 @@ export default function Tweet({
               height={m.height}
               width={m.width}
               src={m.url}
-              className="rounded"
+              className="h-full rounded"
             />
           ))}
         </div>

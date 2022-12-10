@@ -2,8 +2,9 @@ import Container from 'components/Container';
 import TopTracks from 'components/TopTracks';
 import TopArtistsIcons from 'components/TopArtistsIcons';
 import ExternalLink from 'components/ExternalLink';
+import { getTopArtists, getTopTracks } from 'lib/spotify';
 
-export default function Spotify() {
+export default function Spotify({ tracks, artists }) {
   return (
     <Container
       title="Spotify"
@@ -37,12 +38,44 @@ export default function Spotify() {
           Curious what I'm currently jamming to? Here's my top tracks on Spotify
           updated daily.
         </p>
-        <TopTracks />
+        <TopTracks data={tracks} />
         <h2 className="mb-4 mt-16 text-3xl font-bold text-black dark:text-white">
           Top Artists
         </h2>
-        <TopArtistsIcons />
+        <TopArtistsIcons data={artists} />
       </div>
     </Container>
   );
+}
+
+export async function getStaticProps() {
+  const topTracksResponse = await getTopTracks();
+  const topArtistsResponse = await getTopArtists();
+
+  const { items: topTrackItems } = await topTracksResponse.json();
+  const { items: topArtistItems } = await topArtistsResponse.json();
+
+  const tracks = topTrackItems.map((track) => ({
+    artist: track.artists.map((_artist) => _artist.name).join(', '),
+    songUrl: track.external_urls.spotify,
+    title: track.name,
+    image: track.album.images[0].url,
+    previewUrl: track.preview_url,
+    id: track.id
+  }));
+
+  const artists = topArtistItems.slice(0, 13).map((artist) => ({
+    artistUrl: artist.external_urls.spotify,
+    name: artist.name,
+    followers: artist.followers.total,
+    image: artist.images[2].url
+  }));
+
+  return {
+    props: {
+      tracks: { tracks },
+      artists: { artists }
+    },
+    revalidate: 200
+  };
 }

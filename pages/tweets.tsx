@@ -33,7 +33,10 @@ export async function getStaticProps() {
     '1402689156434776069',
     '992629481578745856',
     '1471558914579722245',
-    '1578193236832579585'
+    '1578193236832579585',
+    '1599544717943123969',
+    '1595085193253355521',
+    '1578101851114729472'
   ]); // ids of particular tweets that can be get from the tweet URL
 
   return { props: { tweets } };
