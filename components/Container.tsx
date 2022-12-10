@@ -111,26 +111,12 @@ export default function Container(props: {
         {meta._updatedAt && (
           <meta property="article:modified_time" content={meta._updatedAt} />
         )}
+        <meta
+          name="theme-color"
+          content={resolvedTheme === 'dark' ? '#111827' : '#f9fafb'}
+        />
+        <meta name="color-scheme" content="light dark" />
       </Head>
-      <svg
-        className="pointer-events-none fixed isolate z-50 opacity-60 mix-blend-soft-light"
-        width="100%"
-        height="100%"
-      >
-        <filter id="pedroduarteisalegend">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.80"
-            numOctaves="4"
-            stitchTiles="stitch"
-          />
-        </filter>
-        <rect
-          width="100%"
-          height="100%"
-          filter="url(#pedroduarteisalegend)"
-        ></rect>
-      </svg>
       <header className="flex flex-col justify-center px-8">
         <nav className="relative mx-auto flex w-full max-w-2xl items-center justify-between border-gray-200 bg-gray-50 bg-opacity-60 pt-8 pb-8  text-gray-900 dark:border-gray-700  dark:bg-gray-900 dark:text-gray-100 sm:pb-16">
           <a href="#skip" className="skip-nav">

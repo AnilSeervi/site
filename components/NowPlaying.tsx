@@ -57,13 +57,9 @@ const ShowPlayingMetrics = () => {
     <>
       {data?.albumImageUrl ? (
         <div className="ml-2 flex min-w-[38px]">
-          <Image
-            loading="lazy"
-            src={data.albumImageUrl}
-            alt={data.title}
-            width={38}
-            height={38}
-            className="rounded-sm"
+          <NowPlayingImage
+            title={data.title}
+            albumImageUrl={data.albumImageUrl}
           />
         </div>
       ) : (
@@ -110,5 +106,23 @@ const ShowPlayingMetrics = () => {
         {data?.songUrl && <AnimatedBars playing={data?.isPlaying} />}
       </div>
     </>
+  );
+};
+
+const NowPlayingImage = ({ albumImageUrl, title }) => {
+  // const [loading, setLoading] = useState(true);
+  return (
+    <Image
+      loading="lazy"
+      src={albumImageUrl}
+      alt={title}
+      width={38}
+      height={38}
+      // onLoadingComplete={() => setTimeout(() => setLoading(false), 300)}
+      className={clsx(
+        'rounded-sm'
+        // loading ? 'scale-110 blur-sm grayscale' : 'scale-100 blur-0 grayscale-0'
+      )}
+    />
   );
 };
