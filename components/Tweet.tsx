@@ -117,6 +117,7 @@ export default function Tweet({
                 width={m.width}
                 src={m.url}
                 className="h-full rounded"
+                loading="lazy"
               />
             ) : m.type === 'video' ? (
               <a
@@ -132,6 +133,7 @@ export default function Tweet({
                   width={m.width}
                   src={m.preview_image_url}
                   className="h-full rounded"
+                  loading="lazy"
                 />
                 <div className="absolute bottom-3 left-2 flex items-center gap-1 text-white">
                   <div className="rounded-[4px] bg-black/70 px-1">
