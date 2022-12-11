@@ -1,6 +1,6 @@
 import Container from 'components/Container';
 import Tweet from 'components/Tweet';
-import { getTweets } from 'lib/twitter';
+import { getBookmarkedTweets } from 'lib/twitter';
 
 export default function Tweets({ tweets }) {
   return (
@@ -18,7 +18,7 @@ export default function Tweets({ tweets }) {
         <p className="mb-4 text-gray-600 dark:text-gray-400">
           This is a collection of tweets I've enjoyed.
         </p>
-        {tweets.map((tweet) => (
+        {tweets?.map((tweet) => (
           <Tweet key={tweet.id} {...tweet} />
         ))}
       </div>
@@ -27,17 +27,19 @@ export default function Tweets({ tweets }) {
 }
 
 export async function getStaticProps() {
-  const tweets = await getTweets([
-    '1308509070140162048',
-    '1247031847952891904',
-    '1402689156434776069',
-    '992629481578745856',
-    '1471558914579722245',
-    '1578193236832579585',
-    '1599544717943123969',
-    '1595085193253355521',
-    '1578101851114729472'
-  ]); // ids of particular tweets that can be get from the tweet URL
+  const tweets = await getBookmarkedTweets();
+  // const tweets = await getTweets([
+  //   '1308509070140162048',
+  //   '1247031847952891904',
+  //   '1402689156434776069',
+  //   '992629481578745856',
+  //   '1471558914579722245',
+  //   '1578193236832579585',
+  //   '1599544717943123969',
+  //   '1595085193253355521',
+  //   '1578101851114729472'
+  // ]);
+  // ids of particular tweets that can be get from the tweet URL
 
-  return { props: { tweets } };
+  return { props: { tweets }, revalidate: 60 * 60 * 6 };
 }
