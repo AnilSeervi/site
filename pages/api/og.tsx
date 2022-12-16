@@ -84,7 +84,7 @@ export default async function handler(req: NextRequest, res: NextResponse) {
               isUnsplash
                 ? `https://images.unsplash.com/${
                     image.split('/')[1]
-                  }?q=100&fmt=webp&crop=entropy&w=1920&h=1080`
+                  }?q=100&fmt=webp&crop=entropy&w=1536&h=864`
                 : image
             }
             alt="image"
@@ -99,8 +99,8 @@ export default async function handler(req: NextRequest, res: NextResponse) {
       </div>
     ),
     {
-      height: 942,
-      width: 1800,
+      height: 882,
+      width: 1686,
       fonts: [
         {
           name: 'Hubot Sans',

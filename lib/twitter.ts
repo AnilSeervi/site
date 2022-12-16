@@ -23,14 +23,6 @@ const BOOKMARKS_ENDPOINT = `https://api.twitter.com/2/users/${2496313362}/bookma
 //       }
 //     }
 //   );
-//   console.log(
-//     TOKEN_ENDPOINT +
-//       new URLSearchParams({
-//         grant_type: 'refresh_token',
-//         refresh_token
-//       })
-//   );
-//   ;
 //   return response.json();
 // };
 
@@ -75,7 +67,7 @@ export const getBookmarkedTweets = async () => {
   };
 
   return (
-    tweets.data.reduce((allTweets, tweet) => {
+    tweets.data?.reduce((allTweets, tweet) => {
       const tweetWithAuthor = {
         ...tweet,
         media:
@@ -139,7 +131,7 @@ export const getTweets = async (ids) => {
   };
 
   return (
-    tweets.data.reduce((allTweets, tweet) => {
+    tweets.data?.reduce((allTweets, tweet) => {
       const tweetWithAuthor = {
         ...tweet,
         media:
