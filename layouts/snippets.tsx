@@ -1,19 +1,17 @@
 import Image from 'next/image';
-
 import Container from 'components/Container';
 import type { PropsWithChildren } from 'react';
 import { Snippet } from 'lib/types';
 import { urlForImage } from 'lib/sanity';
 import Link from 'next/link';
-import localFont from '@next/font/local';
+import { JetBrains_Mono } from '@next/font/google';
 import clsx from 'clsx';
 import { LikeButton } from 'components/LikeButton';
 
-const iosevkaRegular = localFont({
-  src: '../public/fonts/iosevka-regular.woff2',
+const jetBrainsMono = JetBrains_Mono({
   weight: '400',
   display: 'swap',
-  variable: '--font-iosevka'
+  variable: '--font-jetbrains-mono'
 });
 
 export default function SnippetLayout({
@@ -29,7 +27,7 @@ export default function SnippetLayout({
       <article
         className={clsx(
           'mx-auto mb-16 flex w-full max-w-2xl flex-col items-start justify-center',
-          iosevkaRegular.variable
+          jetBrainsMono.variable
         )}
       >
         <section className="mb-8 flex w-full justify-between">
@@ -51,7 +49,7 @@ export default function SnippetLayout({
             />
           </div>
         </section>
-        <div className="prose w-full dark:prose-dark">{children}</div>
+        <div className="prose min-w-full dark:prose-dark">{children}</div>
         <div className="mt-8">
           <LikeButton slug={`/snippets/${snippet.slug}`} />
         </div>

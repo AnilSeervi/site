@@ -1,20 +1,18 @@
 import { PropsWithChildren, Suspense } from 'react';
-
 import Container from 'components/Container';
 import Subscribe from 'components/Subscribe';
 import { Post } from 'lib/types';
 import { urlForImage } from 'lib/sanity';
-import { siteTitle, repo, websiteURL } from 'lib/constants';
+import { repo, websiteURL } from 'lib/constants';
 import Link from 'next/link';
-import localFont from '@next/font/local';
+import { JetBrains_Mono } from '@next/font/google';
 import clsx from 'clsx';
 import { LikeButton } from 'components/LikeButton';
 
-const iosevkaRegular = localFont({
-  src: '../public/fonts/iosevka-regular.woff2',
+const jetBrainsMono = JetBrains_Mono({
   weight: '400',
   display: 'swap',
-  variable: '--font-iosevka'
+  variable: '--font-jetbrains-mono'
 });
 
 export default function BlogLayout({
@@ -35,7 +33,7 @@ export default function BlogLayout({
       <article
         className={clsx(
           'mx-auto mb-16 flex w-full max-w-2xl flex-col items-start justify-center',
-          iosevkaRegular.variable
+          jetBrainsMono.variable
         )}
       >
         <h1 className="mb-4 text-3xl font-medium text-black dark:text-white md:text-5xl">
