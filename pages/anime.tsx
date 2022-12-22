@@ -16,38 +16,36 @@ export default function Anime() {
       ogDescription="Personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
       image="unsplash/photo-1613376023733-0a73315d9b06"
     >
-      <div className="mx-auto mb-16 flex max-w-2xl flex-col items-start justify-center">
-        <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">
-          /anime
-        </h1>
-        <p className="mb-8 text-gray-600 dark:text-gray-400">
-          This is my personal anime dashboard, with all the animes I've watched,
-          am currently watching and plan to watch with their scores.
-        </p>
-        <h2 className="mb-4 text-2xl font-bold text-black dark:text-white md:text-3xl">
-          Anime Stats
-        </h2>
-        <p className="mb-6 text-gray-600 dark:text-gray-400">
-          Here's some of my weeb stats, pulled from my{' '}
-          <a
-            href="https://myanimelist.net/profile/anilseervi"
-            className="transition-colors hover:text-gray-800 dark:hover:text-gray-300"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            MyAnimeList
-            <ExternalLink />
-          </a>{' '}
-          account. Currently I've watched {data?.days_watched ?? '--'} days of
-          anime.
-        </p>
+      <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
+        /anime
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400">
+        This is my personal anime dashboard, with all the animes I've watched,
+        am currently watching and plan to watch with their scores.
+      </p>
+      <h2 className="mt-3 border-t-2 border-gray-200 pt-8 text-2xl font-bold text-black dark:border-gray-700 dark:text-white md:text-3xl">
+        Anime Stats
+      </h2>
+      <p className="text-gray-600 dark:text-gray-400">
+        Here's some of my weeb stats, pulled from my{' '}
+        <a
+          href="https://myanimelist.net/profile/anilseervi"
+          className="transition-colors hover:text-gray-800 dark:hover:text-gray-300"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          MyAnimeList
+          <ExternalLink />
+        </a>{' '}
+        account. Currently I've watched {data?.days_watched ?? '--'} days of
+        anime.
+      </p>
 
-        <div className="mb-8 grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
-          <AnimeMetrics />
-        </div>
-        <div className="my-2 flex w-full flex-col gap-10">
-          <AnimeList />
-        </div>
+      <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
+        <AnimeMetrics />
+      </div>
+      <div className="flex w-full flex-col gap-10">
+        <AnimeList />
       </div>
     </Container>
   );

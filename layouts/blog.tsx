@@ -94,7 +94,7 @@ export default function BlogLayout({
             {'Discuss on Twitter'}
           </a>
           {` • `}
-          <a href={`${repo}issues/`} target="_blank" rel="noopener noreferrer">
+          <a href={`${repo}/issues/`} target="_blank" rel="noopener noreferrer">
             {'Suggest Change'}
           </a>
         </div>

@@ -117,7 +117,7 @@ export default function Container(props: {
         />
         <meta name="color-scheme" content="light dark" />
       </Head>
-      <header className="flex flex-col justify-center px-8">
+      <header className="flex flex-col justify-center px-4 xl:px-0">
         <nav className="relative mx-auto flex w-full max-w-2xl items-center justify-between border-gray-200 bg-gray-50 bg-opacity-60 pt-8 pb-8  text-gray-900 dark:border-gray-700  dark:bg-gray-900 dark:text-gray-100 sm:pb-16">
           <a href="#skip" className="skip-nav">
             Skip to content
@@ -159,7 +159,7 @@ export default function Container(props: {
       </header>
       <main
         id="skip"
-        className="flex flex-col justify-center bg-gray-50 px-8 dark:bg-gray-900"
+        className="relative mb-8 grid grid-cols-[1fr,min(672px,100%),1fr] gap-y-8 px-4 xl:grid-cols-[1fr,minmax(auto,240px),min(672px,100%),minmax(auto,240px),1fr] xl:gap-x-9 xl:px-0 [&>*]:col-start-2 xl:[&>*]:col-start-3"
       >
         {children}
       </main>
