@@ -63,7 +63,7 @@ export const LikeButton = ({ slug }: { slug: string }) => {
 
         <button
           className={cx(
-            'shadow-lgx group relative block transform overflow-hidden rounded-lg bg-gradient-to-tl from-white/5 to-white/30 p-1 transition-all duration-300 ease-out hover:scale-[1.2] hover:rounded-[10px] active:scale-100 active:rounded-lg',
+            'shadow-lgx group relative block transform overflow-hidden rounded-lg bg-gradient-to-tl from-gray-200/70 to-gray-200/90 p-1 transition-all duration-300 ease-out hover:scale-[1.2] hover:rounded-[10px] active:scale-100 active:rounded-lg dark:from-white/5 dark:to-white/30',
             FOCUS_VISIBLE_OUTLINE,
             {
               'animate-pulse': isLoading,
@@ -75,7 +75,7 @@ export const LikeButton = ({ slug }: { slug: string }) => {
         >
           <div
             className={cx(
-              'absolute inset-0 transform-gpu bg-gradient-to-tl from-purple-500 to-rose-400 transition-transform',
+              'absolute inset-0 transform-gpu bg-gradient-to-tl from-purple-500/70 to-rose-400/70 transition-transform dark:from-purple-500 dark:to-rose-400',
               {
                 'translate-y-8': currentUserLikes === 0,
                 'translate-y-5': currentUserLikes === 1,
@@ -84,7 +84,7 @@ export const LikeButton = ({ slug }: { slug: string }) => {
             )}
           />
 
-          <HeartIcon className="relative w-5 transform text-rose-100 transition delay-100 duration-500 ease-out group-hover:scale-110" />
+          <HeartIcon className="relative w-5 transform text-rose-200 transition delay-100 duration-500 ease-out group-hover:scale-110 dark:text-rose-100" />
         </button>
       </div>
 
