@@ -2,12 +2,19 @@ import AnimeList from 'components/AnimeList';
 import AnimeMetrics from 'components/AnimeMetrics';
 import Container from 'components/Container';
 import ExternalLink from 'components/ExternalLink';
-import fetcher from 'lib/fetcher';
-import { AnimeStats } from 'lib/types';
-import useSWR from 'swr';
+import { getMAL, getMALStats } from 'lib/mal';
+import { AnimeListNode, AnimeStats, Error } from 'lib/types';
+import { GetStaticProps } from 'next';
 
-export default function Anime() {
-  const { data } = useSWR<AnimeStats>('/api/get-mal-stats', fetcher);
+export default function Anime({
+  stats,
+  list
+}: {
+  stats: { animeStats: AnimeStats; animeStatErr: Error };
+  list: { animeList: AnimeListNode[]; animeListErr: Error };
+}) {
+  const { animeList, animeListErr } = list;
+  const { animeStatErr, animeStats } = stats;
   return (
     <Container
       title="Anime Dashboard"
@@ -37,16 +44,47 @@ export default function Anime() {
           MyAnimeList
           <ExternalLink />
         </a>{' '}
-        account. Currently I've watched {data?.days_watched ?? '--'} days of
-        anime.
+        account. Currently I've watched{' '}
+        {animeStats.anime_statistics.num_days ?? '--'} days of anime.
       </p>
 
       <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
-        <AnimeMetrics />
+        <AnimeMetrics animeStats={animeStats} error={animeStatErr} />
       </div>
       <div className="flex w-full flex-col gap-10">
-        <AnimeList />
+        <AnimeList animeList={animeList} error={animeListErr} />
       </div>
     </Container>
   );
 }
+
+export const getStaticProps: GetStaticProps = async () => {
+  let animeStatsData: AnimeStats = null;
+  let animeListData: AnimeListNode[] = null;
+  let animeStatErr: Error = null;
+  let animeListErr: Error = null;
+  try {
+    const animeStatsRes = await getMALStats();
+    animeStatsData = await animeStatsRes.json();
+  } catch (err: any) {
+    animeStatErr = {
+      message: err.message
+    };
+  }
+  try {
+    const animeListRes = await getMAL();
+    animeListData = (await animeListRes.json()).data;
+  } catch (err: any) {
+    animeListErr = {
+      message: err.message
+    };
+  }
+
+  return {
+    props: {
+      stats: { animeStats: animeStatsData, animeStatErr },
+      list: { animeList: animeListData, animeListErr }
+    },
+    revalidate: 60 * 60 * 24 // 1 day
+  };
+};

@@ -1,24 +1,30 @@
-import fetcher from 'lib/fetcher';
-import { Animes } from 'lib/types';
-import Image from 'next/image';
-import useSWR from 'swr';
+import { AnimeListNode, Error } from 'lib/types';
 import AnimeCard from './AnimeCard';
 
-interface AnimesWithError extends Animes {
-  message?: string;
-}
+export default function AnimeList({
+  animeList,
+  error
+}: {
+  animeList: AnimeListNode[];
+  error: Error;
+}) {
+  const watching = animeList.filter(
+    (anime) => anime.node.my_list_status.status === 'watching'
+  );
+  const completed = animeList.filter(
+    (anime) => anime.node.my_list_status.status === 'completed'
+  );
+  const onHold = animeList.filter(
+    (anime) => anime.node.my_list_status.status === 'on_hold'
+  );
+  const dropped = animeList.filter(
+    (anime) => anime.node.my_list_status.status === 'dropped'
+  );
+  const planToWatch = animeList.filter(
+    (anime) => anime.node.my_list_status.status === 'plan_to_watch'
+  );
 
-export default function AnimeList() {
-  const { data } = useSWR<AnimesWithError>('/api/get-mal', fetcher);
-
-  if (!data || data.message)
-    return <p className="text-black dark:text-white">{data?.message}</p>;
-
-  const watching = data.filter((anime) => anime.status === 'watching');
-  const completed = data.filter((anime) => anime.status === 'completed');
-  const onHold = data.filter((anime) => anime.status === 'on_hold');
-  const dropped = data.filter((anime) => anime.status === 'dropped');
-  const planToWatch = data.filter((anime) => anime.status === 'plan_to_watch');
+  if (error) return <div className="text-center">Error: {error.message}</div>;
 
   return (
     <>
@@ -32,7 +38,7 @@ export default function AnimeList() {
           </h3>
           <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
             {watching.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
+              <AnimeCard anime={anime.node} key={anime.node.id} />
             ))}
           </div>
         </section>
@@ -47,7 +53,7 @@ export default function AnimeList() {
           </h3>
           <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
             {completed.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
+              <AnimeCard anime={anime.node} key={anime.node.id} />
             ))}
           </div>
         </section>
@@ -62,7 +68,7 @@ export default function AnimeList() {
           </h3>
           <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
             {planToWatch.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
+              <AnimeCard anime={anime.node} key={anime.node.id} />
             ))}
           </div>
         </section>
@@ -77,7 +83,7 @@ export default function AnimeList() {
           </h3>
           <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
             {onHold.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
+              <AnimeCard anime={anime.node} key={anime.node.id} />
             ))}
           </div>
         </section>
@@ -92,7 +98,7 @@ export default function AnimeList() {
           </h3>
           <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
             {dropped.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
+              <AnimeCard anime={anime.node} key={anime.node.id} />
             ))}
           </div>
         </section>

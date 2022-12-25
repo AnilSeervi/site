@@ -3,7 +3,7 @@ const client_secret = process.env.MAL_CLIENT_SECRET;
 const refresh_token = process.env.MAL_REFRESH_TOKEN;
 
 const basic = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
-const MAL_ENDPOINT = `https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=1000`;
+const MAL_ENDPOINT = `https://api.myanimelist.net/v2/users/@me/animelist?fields=my_list_status{status,num_episodes_watched,score},media_type,num_episodes,status,main_picture{large}&limit=1000`;
 const MAL_STATS_ENDPOINT = `https://api.myanimelist.net/v2/users/@me?fields=anime_statistics`;
 const TOKEN_ENDPOINT = `https://myanimelist.net/v1/oauth2/token`;
 

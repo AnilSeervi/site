@@ -1,10 +1,23 @@
 import clsx from 'clsx';
-import { Anime } from 'lib/types';
+import { MyAnimeList } from 'lib/types';
 import Image from 'next/image';
 import { useState } from 'react';
 
-export default function AnimeCard({ anime }: { anime: Anime }) {
+const getEps = (anime: MyAnimeList) => {
+  if (anime.media_type === 'movie') return 'Movie';
+  if (anime.num_episodes === 0) return 'Unknown Eps';
+  if (
+    anime.my_list_status.num_episodes_watched === 0 ||
+    anime.my_list_status.num_episodes_watched === anime.num_episodes
+  )
+    return `${anime.num_episodes} Eps`;
+
+  return `${anime.my_list_status.num_episodes_watched} / ${anime.num_episodes} Eps`;
+};
+
+export default function AnimeCard({ anime }: { anime: MyAnimeList }) {
   const [loading, setLoading] = useState(true);
+
   return (
     <div
       key={anime.id}
@@ -18,7 +31,7 @@ export default function AnimeCard({ anime }: { anime: Anime }) {
               ? 'scale-110 blur-lg grayscale'
               : 'scale-100 blur-0 grayscale-0'
           )}
-          src={anime.image}
+          src={anime.main_picture.large}
           onLoadingComplete={() => setLoading(false)}
           alt={anime.title}
           width={400}
@@ -32,10 +45,10 @@ export default function AnimeCard({ anime }: { anime: Anime }) {
       <div className="p-2 pt-[0.4rem]">
         <div className="flex justify-between">
           <span className="text-xs text-gray-600 dark:text-gray-400">
-            Score: {anime.score}
+            Score: {anime.my_list_status.score || 'TBD'}
           </span>
           <span className="text-xs text-gray-600 dark:text-gray-400">
-            {anime.episodes} Eps
+            {getEps(anime)}
           </span>
         </div>
       </div>
