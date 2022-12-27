@@ -22,11 +22,11 @@ html.light [data-theme='dark'] {
   display: none;
 }
 
-body .prose :where(code):not(:where(pre code)) {
-  @apply font-normal text-inherit;
+body :where(code):not(:where(pre code)) {
+  @apply font-normal text-inherit !text-[0.875em];
 }
 
-.prose :where(code):not(:where(pre code))::after,
-.prose :where(code):not(:where(pre code))::before {
-  content: initial
+:where(code):not(:where(pre code))::after,
+:where(code):not(:where(pre code))::before {
+  content: '`'
 }

@@ -56,43 +56,6 @@ font-family: var(--font-jetbrains-mono);
   }
 }
 
-.prose .anchor {
-  @apply absolute invisible no-underline;
-  margin-left: -1em;
-  padding-right: 0.5em;
-  width: 80%;
-  max-width: 700px;
-  cursor: pointer;
-}
-
-.anchor:hover {
-  @apply visible;
-}
-
-.prose a {
-  @apply transition-all;
-}
-
-.prose .anchor:after {
-  @apply text-gray-300 dark:text-gray-700;
-  content: '#';
-}
-
-.prose *:hover>.anchor {
-  @apply visible;
-}
-
-.prose img {
-  /* Don't apply styles to next/image */
-  @apply m-0;
-}
-
-.prose> :first-child {
-  /* Override removing top margin, causing layout shift */
-  margin-top: 1.25em !important;
-  margin-bottom: 1.25em !important;
-}
-
 /* Remove Safari input shadow on mobile */
 input[type='text'],
 input[type='email'] {
@@ -109,20 +72,11 @@ input[type='email'] {
   @apply my-0;
 }
 
-.prose .tweet a {
-  text-decoration: inherit;
-  font-weight: inherit;
-}
-
 table {
   display: block;
   max-width: fit-content;
   overflow-x: auto;
   white-space: nowrap;
-}
-
-.prose .callout>p {
-  margin: 0 !important;
 }
 
 @import url("./shiki.css")

@@ -50,6 +50,7 @@ export default function Container(props: {
   noindex?: boolean;
   ogDescription?: string;
   ogTitle?: string;
+  style?: string;
 }) {
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -157,12 +158,28 @@ export default function Container(props: {
           </button>
         </nav>
       </header>
-      <main
-        id="skip"
-        className="relative mb-8 grid grid-cols-[1fr,min(672px,100%),1fr] gap-y-8 px-4 xl:grid-cols-[1fr,minmax(auto,240px),min(672px,100%),minmax(auto,240px),1fr] xl:gap-x-9 xl:px-0 [&>*]:col-start-2 xl:[&>*]:col-start-3"
-      >
-        {children}
-      </main>
+      {props.type !== 'article' ? (
+        <main
+          id="skip"
+          className={clsx(
+            'relative mb-8 grid grid-cols-[1fr,min(672px,100%),1fr] gap-y-8 px-4 text-base text-black dark:text-white xl:grid-cols-[1fr,minmax(auto,240px),min(672px,100%),minmax(auto,240px),1fr] xl:gap-x-9 xl:px-0 [&>*]:col-start-2 xl:[&>*]:col-start-3',
+            props.style
+          )}
+        >
+          {children}
+        </main>
+      ) : (
+        <main id="skip">
+          <article
+            className={clsx(
+              'relative mb-8 grid grid-cols-[1fr,min(672px,100%),1fr] gap-y-8 px-4 text-base text-black dark:text-white xl:grid-cols-[1fr,minmax(auto,240px),min(672px,100%),minmax(auto,240px),1fr] xl:gap-x-9 xl:px-0 [&>*]:col-start-2 xl:[&>*]:col-start-3',
+              props.style
+            )}
+          >
+            {children}
+          </article>
+        </main>
+      )}
       <Footer slug={slug} />
     </>
   );
