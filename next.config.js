@@ -9,6 +9,7 @@ module.exports = {
       'pbs.twimg.com', // Twitter Profile Picture
       'cdn.sanity.io',
       'api-cdn.myanimelist.net', // MyAnimeList Anime Art
+      'cdn.myanimelist.net'
     ]
   },
   experimental: {

@@ -7,7 +7,7 @@ type propType = {
   link?: string;
   metric: string;
   external?: boolean;
-  isLoading: boolean;
+  isLoading?: boolean;
 };
 
 export default function MetricCard({

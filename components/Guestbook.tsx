@@ -23,7 +23,7 @@ function GuestbookEntry({ entry, user }) {
 
   return (
     <div className="flex flex-col space-y-2">
-      <div className="prose w-full break-words dark:prose-dark">
+      <div className="w-full break-words text-gray-900 dark:text-gray-50">
         {entry.body}
       </div>
       <div className="flex items-center space-x-3">

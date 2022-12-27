@@ -15,30 +15,69 @@ export type Post = {
   _updatedAt: string;
 };
 
-export type Anime = {
+export type ListStatus =
+  | 'finished_airing'
+  | 'currently_airing'
+  | 'not_yet_aired';
+export type MyListStatus =
+  | 'watching'
+  | 'completed'
+  | 'on_hold'
+  | 'dropped'
+  | 'plan_to_watch';
+
+export type MyAnimeList = {
   id: number;
   title: string;
-  score: number;
-  status: string;
-  episodes: number;
-  image: string;
-  start_date: string;
-  finish_date: string;
+  main_picture: {
+    large: string;
+    medium: string;
+  };
+  status: ListStatus;
+  media_type: 'tv' | 'movie' | 'ova' | 'special' | 'ona' | 'music' | 'unknown';
+  num_episodes: number;
+  my_list_status: {
+    status: MyListStatus;
+    score: number;
+    num_episodes_watched: number;
+    start_date: string;
+    finish_date: string;
+    updated_at: string;
+    is_rewatching: boolean;
+  };
 };
 
-export type Animes = Anime[];
+export type AnimeListNode = {
+  node: MyAnimeList;
+};
+
+export type Error = {
+  message: string;
+};
 
 export type AnimeStats = {
+  id: number;
   name: string;
-  mean_score: number;
-  episodes: number;
-  watching: number;
-  completed: number;
-  plan_to_watch: number;
-  on_hold: number;
-  dropped: number;
-  total: number;
-  days_watched: number;
+  birthday: string;
+  joined_at: string;
+  location: string;
+  anime_statistics: {
+    num_items_watching: number;
+    num_items_completed: number;
+    num_items_on_hold: number;
+    num_items_dropped: number;
+    num_items_plan_to_watch: number;
+    num_items: number;
+    num_days_watched: number;
+    num_days_watching: number;
+    num_days_completed: number;
+    num_days_on_hold: number;
+    num_days_dropped: number;
+    num_days: number;
+    num_episodes: number;
+    num_times_rewatched: number;
+    mean_score: number;
+  };
 };
 
 export type Snippet = {
