@@ -28,7 +28,7 @@
     "styled-components": "^5.2",
     "swr": "2.0.0",
     "use-delayed-render": "^0.0.7",
-    "zod": "^3.19.1"
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@types/node": "18.11.18",
@@ -40,18 +40,18 @@
     "postcss": "^8.4.20",
     "prettier": "2.8.1",
     "prettier-plugin-tailwindcss": "^0.2.1",
-    "prisma": "4.6.1",
+    "prisma": "4.8.0",
     "reading-time": "^1.5.0",
     "rehype": "12.0.1",
     "rehype-autolink-headings": "6.1.1",
-    "rehype-pretty-code": "^0.5.1",
+    "rehype-pretty-code": "^0.6.0",
     "rehype-slug": "5.1.0",
     "rehype-toc": "^3.0.2",
     "remark-gfm": "^3.0.1",
     "rss": "1.2.2",
     "shiki": "^0.12.1",
-    "tailwindcss": "^3.2.3",
-    "typescript": "^4.8.4",
+    "tailwindcss": "^3.2.4",
+    "typescript": "^4.9.4",
     "unist-util-visit": "^4.1.1"
   }
 }
