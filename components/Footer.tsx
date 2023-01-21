@@ -45,7 +45,11 @@ export default function Footer({ slug }) {
           <FooterLink href="/about" text="About" />
           <FooterLink href="/dashboard" text="Dashboard" />
           <FooterLink href="/uses" text="Uses" />
-          <FooterLink href="/newsletter" text="Newsletter" />
+          <FooterLink
+            href="https://anilseervi.substack.com"
+            isExternal
+            text="Newsletter"
+          />
         </div>
         <div className="flex flex-col items-start space-y-4">
           <FooterLink

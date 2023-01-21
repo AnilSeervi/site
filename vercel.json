@@ -5,7 +5,23 @@
   "redirects": [
     {
       "source": "/newsletter/(.*)",
-      "destination": "/newsletter"
+      "destination": "https://anilseervi.substack.com/"
+    },
+    {
+      "source": "/newsletter",
+      "destination": "https://anilseervi.substack.com/"
+    },
+    {
+      "source": "/linkedin",
+      "destination": "https://www.linkedin.com/in/anilseervi/"
+    },
+    {
+      "source": "/twitter",
+      "destination": "https://twitter.com/linaseervi"
+    },
+    {
+      "source": "/github",
+      "destination": "https://github.com/anilseervi"
     }
   ]
 }
