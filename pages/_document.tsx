@@ -40,6 +40,7 @@ export default function Document(props) {
           rel="apple-touch-icon"
           sizes="180x180"
         />
+        <meta name="google-site-verification" content="AlcrbE7Ls7GlEZia-k9tF8tL7qG_aEsm9gwXOGJXwXU" />
         <meta content="#ffffff" name="theme-color" />
         <meta content="#ffffff" name="msapplication-TileColor" />
         <meta
