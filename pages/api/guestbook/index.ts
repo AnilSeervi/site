@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import prisma from 'lib/prisma';
+import { Guestbook } from 'lib/types';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,7 +20,7 @@ export default async function handler(
         body: entry.body,
         created_by: entry.created_by,
         updated_at: entry.updated_at
-      }))
+      })) as Guestbook[]
     );
   }
 
