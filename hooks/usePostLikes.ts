@@ -45,7 +45,7 @@ export const usePostLikes = (slug: string, config?: SWRConfiguration) => {
 
   const increment = () => {
     // Prevent the user from liking more than 3 times
-    if (!data || data.currentUserLikes >= 3) {
+    if (!data || +data.currentUserLikes >= 3) {
       return;
     }
 
@@ -54,8 +54,8 @@ export const usePostLikes = (slug: string, config?: SWRConfiguration) => {
     // while we update the database
     mutate(
       {
-        likes: +data.likes + 1,
-        currentUserLikes: +data.currentUserLikes + 1
+        likes: (+data.likes + 1).toString(),
+        currentUserLikes: (+data.currentUserLikes + 1).toString()
       },
       false
     );
@@ -78,8 +78,8 @@ export const usePostLikes = (slug: string, config?: SWRConfiguration) => {
   );
 
   return {
-    currentUserLikes: data?.currentUserLikes ?? 0,
-    likes: data?.likes ?? 0,
+    currentUserLikes: data?.currentUserLikes ?? '0',
+    likes: data?.likes ?? '0',
     isLoading: (!error && !data) || !!error,
     increment
   };
