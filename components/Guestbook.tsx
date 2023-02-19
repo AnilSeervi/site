@@ -111,7 +111,7 @@ export default function Guestbook({ fallbackData, session }) {
       message: `Hooray! Thanks for signing my Guestbook.`
     });
   };
-  console.log(session);
+
   return (
     <>
       <div className="my-4 w-full rounded border border-slate-200 bg-slate-100 p-6 dark:border-gray-800 dark:bg-zinc-900">
