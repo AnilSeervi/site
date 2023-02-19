@@ -16,7 +16,7 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-async function Blog({ params, preview = false }) {
+async function Blog({ params }) {
   let post: Post;
 
   const { post: fetchPost } = await sanityClient.fetch(postQuery, {

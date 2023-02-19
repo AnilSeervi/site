@@ -16,7 +16,7 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-async function Snippet({ params, preview = false }) {
+async function Snippet({ params }) {
   let snippet: Snippet;
 
   const { snippet: fetchSnippet } = await sanityClient.fetch(snippetsQuery, {

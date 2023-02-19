@@ -3,10 +3,10 @@ import { indexQuery } from 'lib/queries';
 import { getClient } from 'lib/sanity-server';
 import { Post } from 'lib/types';
 
-async function BlogIndex({ preview = false }) {
+async function BlogIndex() {
   let posts: Post[] = [];
   try {
-    posts = await getClient(preview).fetch(indexQuery);
+    posts = await getClient(false).fetch(indexQuery);
   } catch (e) {
     console.log(e);
   }

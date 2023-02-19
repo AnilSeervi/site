@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { Button } from './ui/Button';
 
 export const TryPlaying = ({ previewUrl }) => {
   const [playing, setPlaying] = useState(false);

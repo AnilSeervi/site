@@ -3,11 +3,11 @@ import { allSnippetsQuery } from 'lib/queries';
 import { getClient } from 'lib/sanity-server';
 import { Snippet } from 'lib/types';
 
-async function SnippetsIndex({ preview = false }) {
+async function SnippetsIndex() {
   let snippets: Snippet[] = [];
 
   try {
-    snippets = await getClient(preview).fetch(allSnippetsQuery);
+    snippets = await getClient(false).fetch(allSnippetsQuery);
   } catch (e) {
     console.log(e);
   }
