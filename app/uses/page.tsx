@@ -24,6 +24,8 @@ export const metadata = {
     ]
   },
   twitter: {
+    card: 'summary_large_image',
+    title: 'Uses',
     images: [
       {
         url: getOG({

@@ -10,11 +10,10 @@ const defaultMetadata = {
     default: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     template: '%s | Anil Seervi'
   },
-  description: 'Front-end developer, Open Source enthusiast.',
-  robots: {
-    index: true,
-    follow: true
+  icons: {
+    shorcut: '/static/favicons/favicon.ico'
   },
+  description: 'Front-end developer, Open Source enthusiast.',
   twitter: {
     title: 'Anil Seervi',
     card: 'summary_large_image'
@@ -22,6 +21,10 @@ const defaultMetadata = {
   openGraph: {
     title: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     description: 'Front-end developer, Open Source enthusiast.',
+    locale: 'en_US',
+    type: 'website',
+    url: 'https://anil.vercel.app',
+    siteName: 'Anil Seervi',
     images: [
       {
         url: ogURL,
@@ -30,13 +33,19 @@ const defaultMetadata = {
       }
     ]
   },
-  locale: 'en_US',
-  type: 'website',
-  url: 'https://anil.vercel.app',
-  siteName: 'Anil Seervi',
-  other: {
-    'google-site-verification': 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw',
-    robots: 'max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1
+    }
+  },
+  verification: {
+    'google-site-verification': 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw'
   }
 };
 

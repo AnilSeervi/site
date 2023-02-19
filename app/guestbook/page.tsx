@@ -38,6 +38,8 @@ export const metadata = {
     ]
   },
   twitter: {
+    card: 'summary_large_image',
+    title: 'Guestbook',
     images: [
       {
         url: getOG({
