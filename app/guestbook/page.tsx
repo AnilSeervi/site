@@ -12,6 +12,8 @@ async function getGuestbook() {
   return entries;
 }
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 1800;
 
 async function GuestBook() {
