@@ -1,4 +1,3 @@
-import Backtotop from 'components/backtotop';
 import { LikeButton } from 'components/LikeButton';
 import { mdxToHtml } from 'lib/mdx';
 import { snippetSlugsQuery, snippetsQuery } from 'lib/queries';
@@ -72,7 +71,6 @@ async function Snippet({ params }) {
           >
             cd <span className="font-semibold">..</span>
           </Link>
-          <Backtotop />
         </p>
       </div>
     </>

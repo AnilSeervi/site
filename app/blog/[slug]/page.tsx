@@ -1,4 +1,3 @@
-import Backtotop from 'components/backtotop';
 import { LikeButton } from 'components/LikeButton';
 import { repo, websiteURL } from 'lib/constants';
 import { mdxToHtml } from 'lib/mdx';
@@ -73,7 +72,6 @@ async function Blog({ params }) {
           >
             cd <span className="font-semibold">..</span>
           </Link>
-          <Backtotop />
         </p>
       </div>
       <div className="text-sm text-gray-700 dark:text-gray-300">
