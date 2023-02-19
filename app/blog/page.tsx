@@ -2,6 +2,50 @@ import SearchInput from 'app/blog/SearchInput';
 import { indexQuery } from 'lib/queries';
 import { getClient } from 'lib/sanity-server';
 import { Post } from 'lib/types';
+import { getOG } from 'utils/og';
+
+export const metadata = {
+  title: 'Blog',
+  description:
+    'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+  openGraph: {
+    title: 'Blog',
+    description:
+      'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+    images: [
+      {
+        url: getOG({
+          title: 'Priceless insights, ideas, and experiences for your dev work',
+          description:
+            'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+          slug: '/blog',
+          preTitle: 'Check out this Blog',
+          image: 'unsplash/photo-1519337265831-281ec6cc8514'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Blog'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Priceless insights, ideas, and experiences for your dev work',
+          description:
+            'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+          slug: '/blog',
+          preTitle: 'Check out this Blog',
+          image: 'unsplash/photo-1519337265831-281ec6cc8514'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Blog'
+      }
+    ]
+  }
+};
 
 async function BlogIndex() {
   let posts: Post[] = [];
@@ -48,9 +92,3 @@ async function BlogIndex() {
 }
 
 export default BlogIndex;
-
-// title={`Blog – ${siteTitle}`}
-// description="Thoughts on the software industry, programming, tech, videography, music, and my personal life."
-// preTitle="Check out this Blog"
-// image="unsplash/photo-1519337265831-281ec6cc8514"
-// ogTitle="Priceless insights, ideas, and experiences for your dev work"

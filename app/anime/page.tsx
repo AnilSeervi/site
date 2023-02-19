@@ -3,8 +3,52 @@ import AnimeMetrics from 'components/AnimeMetrics';
 import ExternalLink from 'components/ExternalLink';
 import { getMAL, getMALStats } from 'lib/mal';
 import { AnimeListNode, AnimeStats, Error } from 'lib/types';
+import { getOG } from 'utils/og';
 
 export const revalidate = 86400; // 24 hours
+
+export const metadata = {
+  title: 'Anime Dashboard',
+  description:
+    "My personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+  openGraph: {
+    title: 'Anime Dashboard',
+    description:
+      "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+    images: [
+      {
+        url: getOG({
+          title: 'Anime Dashboard',
+          description:
+            "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+          slug: '/anime',
+          preTitle: 'Weeb Stats',
+          image: 'unsplash/photo-1613376023733-0a73315d9b06'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Anime Dashboard'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Anime Dashboard',
+          description:
+            "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+          slug: '/anime',
+          preTitle: 'Weeb Stats',
+          image: 'unsplash/photo-1613376023733-0a73315d9b06'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Anime Dashboard'
+      }
+    ]
+  }
+};
 
 async function Anime() {
   let animeStats: AnimeStats = null;
@@ -66,11 +110,3 @@ async function Anime() {
 }
 
 export default Anime;
-
-// title = 'Anime Dashboard';
-// description =
-//   "My personal anime dashboard, with all the animes I've watched and am currently watching with their scores.";
-// preTitle = 'Weeb Stats';
-// ogDescription =
-//   "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.";
-// image = 'unsplash/photo-1613376023733-0a73315d9b06';

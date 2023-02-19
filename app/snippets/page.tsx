@@ -2,6 +2,50 @@ import FunctionCard from 'components/FunctionCard';
 import { allSnippetsQuery } from 'lib/queries';
 import { getClient } from 'lib/sanity-server';
 import { Snippet } from 'lib/types';
+import { getOG } from 'utils/og';
+
+export const metadata = {
+  title: 'Snippets',
+  description:
+    'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+  openGraph: {
+    title: 'Snippets',
+    description:
+      'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+    images: [
+      {
+        url: getOG({
+          title: 'Snippets',
+          description:
+            'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+          slug: '/snippets',
+          preTitle: 'Check out this Snippets',
+          image: 'unsplash/photo-1616628188467-8fb29f49bbe8'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Snippets'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Snippets',
+          description:
+            'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+          slug: '/snippets',
+          preTitle: 'Check out this Snippets',
+          image: 'unsplash/photo-1616628188467-8fb29f49bbe8'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Snippets'
+      }
+    ]
+  }
+};
 
 async function SnippetsIndex() {
   let snippets: Snippet[] = [];
@@ -37,9 +81,3 @@ async function SnippetsIndex() {
 }
 
 export default SnippetsIndex;
-
-//  title={`Code Snippets – ${siteTitle}`}
-//       description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
-//       preTitle="Check out these Snippets"
-//       image="unsplash/photo-1616628188467-8fb29f49bbe8"
-//       ogTitle="A collection of code snippets – including serverless functions, scripts, and CSS tricks."

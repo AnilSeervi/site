@@ -2,8 +2,51 @@ import ExternalLink from 'components/ExternalLink';
 import TopArtistsIcons from 'components/TopArtistsIcons';
 import TopTracks from 'components/TopTracks';
 import { getTopArtists, getTopTracks } from 'lib/spotify';
+import { getOG } from 'utils/og';
 
 export const revalidate = 200;
+
+export const metadata = {
+  title: 'Spotify Dashboard',
+  description: 'My personal Spotify dashboard, with my top tracks and artists.',
+  openGraph: {
+    title: 'Spotify Dashboard',
+    description:
+      'My personal Spotify dashboard, with my top tracks and artists.',
+    images: [
+      {
+        url: getOG({
+          title: 'Spotify Dashboard',
+          description:
+            'Personal Spotify dashboard with my top tracks and top artists, updates every day.',
+          slug: '/spotify',
+          preTitle: "What's hot on my Spotify",
+          image: 'unsplash/photo-1613329671121-5d1cf551cc3f'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Spotify Dashboard'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Spotify Dashboard',
+          description:
+            'Personal Spotify dashboard with my top tracks and top artists, updates every day.',
+          slug: '/spotify',
+          preTitle: "What's hot on my Spotify",
+          image: 'unsplash/photo-1613329671121-5d1cf551cc3f'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Spotify Dashboard'
+      }
+    ]
+  }
+};
 
 async function Spotify() {
   let topTrackItems = null;
@@ -81,12 +124,3 @@ async function Spotify() {
 }
 
 export default Spotify;
-
-//  title = 'Spotify';
-//  description =
-//    'My personal Spotify dashboard with my top tracks and top artists';
-//  preTitle = "What's hot on my Spotify";
-//  ogDescription =
-//    'Personal Spotify dashboard with my top tracks and top artists, updates every day.';
-//  image = 'unsplash/photo-1613329671121-5d1cf551cc3f';
-//  ogTitle = 'Spotify Dashboard';

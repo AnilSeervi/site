@@ -1,7 +1,44 @@
+import { getOG } from 'utils/og';
+
 export const metadata = {
   title: 'Uses',
   description:
-    "Here's what tech I'm currently using for coding, videos, and music."
+    "Here's what tech I'm currently using for coding, videos, and music.",
+  openGraph: {
+    title: 'Uses',
+    description:
+      "Here's what tech I'm currently using for coding, videos, and music.",
+    images: [
+      {
+        url: getOG({
+          title: 'Uses',
+          description:
+            "Here's what tech I'm currently using for coding, videos, and music.",
+          slug: '/uses',
+          image: 'unsplash/photo-1614624533048-a9c2f9cb5a96'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Uses'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Uses',
+          description:
+            "Here's what tech I'm currently using for coding, videos, and music.",
+          slug: '/uses',
+          image: 'unsplash/photo-1614624533048-a9c2f9cb5a96'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Uses'
+      }
+    ]
+  }
 };
 
 function Uses() {
@@ -18,5 +55,3 @@ function Uses() {
 }
 
 export default Uses;
-
-//  image = 'unsplash/photo-1614624533048-a9c2f9cb5a96';

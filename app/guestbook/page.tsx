@@ -2,6 +2,7 @@ import Guestbook from 'components/Guestbook';
 import prisma from 'lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from 'pages/api/auth/[...nextauth]';
+import { getOG } from 'utils/og';
 
 async function getGuestbook() {
   const entries = await prisma.guestbook.findMany({
@@ -15,6 +16,43 @@ async function getGuestbook() {
 export const dynamic = 'force-dynamic';
 
 export const revalidate = 1800;
+
+export const metadata = {
+  title: 'Guestbook',
+  description: 'My personal guestbook, built with Next.js API routes.',
+  openGraph: {
+    title: 'Guestbook',
+    description: 'My personal guestbook, built with Next.js API routes.',
+    images: [
+      {
+        url: getOG({
+          title: 'Guestbook',
+          description: 'My personal guestbook, built with Next.js API routes.',
+          slug: '/guestbook',
+          image: 'unsplash/photo-1627056503679-34051c0122c5'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Guestbook'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Guestbook',
+          description: 'My personal guestbook, built with Next.js API routes.',
+          slug: '/guestbook',
+          image: 'unsplash/photo-1627056503679-34051c0122c5'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Guestbook'
+      }
+    ]
+  }
+};
 
 async function GuestBook() {
   let entries = [],
@@ -60,8 +98,3 @@ async function GuestBook() {
 }
 
 export default GuestBook;
-
-//  title={`Guestbook`}
-//     description="Sign my digital guestbook and share some wisdom."
-//     preTitle="Sign my Guestbook"
-//     image="unsplash/photo-1627056503679-34051c0122c5"

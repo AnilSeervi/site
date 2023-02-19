@@ -1,6 +1,48 @@
 import AnalyticsCard from 'components/metrics/Analytics';
 import GitHubCard from 'components/metrics/Github';
 import React from 'react';
+import { getOG } from 'utils/og';
+
+export const metadata = {
+  title: 'Dashboard',
+  description:
+    'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+  openGraph: {
+    title: 'Personal Dashboard',
+    description:
+      'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+    images: [
+      {
+        url: getOG({
+          title: 'Personal Dashboard',
+          description:
+            'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+          slug: '/dashboard',
+          image: 'unsplash/photo-1551288049-bebda4e38f71'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Personal Dashboard'
+      }
+    ]
+  },
+  twitter: {
+    images: [
+      {
+        url: getOG({
+          title: 'Personal Dashboard',
+          description:
+            'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+          slug: '/dashboard',
+          image: 'unsplash/photo-1551288049-bebda4e38f71'
+        }),
+        width: 1920,
+        height: 1080,
+        alt: 'Personal Dashboard'
+      }
+    ]
+  }
+};
 
 function Dashboard() {
   return (
@@ -22,9 +64,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
-// title = 'Dashboard';
-// description =
-//   'My personal dashboard, built with Next.js API routes deployed as serverless functions.';
-// ogTitle = 'Personal Dashboard';
-// image = 'unsplash/photo-1551288049-bebda4e38f71';
