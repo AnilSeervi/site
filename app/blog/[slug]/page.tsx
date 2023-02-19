@@ -15,11 +15,6 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params, searchParams }) {
-  console.log(params, searchParams);
-  return {};
-}
-
 async function Blog({ params }) {
   let post: Post;
 
