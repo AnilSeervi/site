@@ -4,6 +4,7 @@ import Header from 'components/Header';
 import globalMetadata from 'utils/metadata';
 import ProviderTheme from 'components/ProviderTheme';
 import Footer from 'components/Footer';
+import AnalyticsWrapper from 'components/AnalyticsWrapper';
 
 const karla = Karla({ variable: '--font-karla', display: 'swap' });
 
@@ -24,6 +25,7 @@ function RootLayout({ children }: { children: React.ReactNode }) {
           </main>
           <Footer />
         </ProviderTheme>
+        <AnalyticsWrapper />
       </body>
     </html>
   );
