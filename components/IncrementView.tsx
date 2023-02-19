@@ -11,7 +11,7 @@ function IncrementView() {
 
   useEffect(() => {
     incrementView();
-  }, [slug, incrementView]);
+  }, [slug]);
   return <></>;
 }
 
