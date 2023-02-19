@@ -1,3 +1,5 @@
+'use client';
+
 import cx from 'clsx';
 import { usePostLikes } from 'hooks/usePostLikes';
 import React from 'react';

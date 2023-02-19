@@ -1,37 +1,41 @@
-import { PropsWithChildren, Suspense } from 'react';
-import Container from 'components/Container';
-import { Post } from 'lib/types';
-import { urlForImage } from 'lib/sanity';
-import { repo, websiteURL } from 'lib/constants';
-import Link from 'next/link';
-import { JetBrains_Mono } from '@next/font/google';
 import { LikeButton } from 'components/LikeButton';
-import LoadingDots from 'components/LoadingDots';
-import InlineMetric from 'components/InlineMetric';
-import { usePageStats } from 'hooks/usePageStats';
+import { repo, websiteURL } from 'lib/constants';
+import { mdxToHtml } from 'lib/mdx';
+import { postQuery, postSlugsQuery } from 'lib/queries';
+import { sanityClient } from 'lib/sanity-server';
+import { Post } from 'lib/types';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import MdxWrapper from './MdxWrapper';
+import Metrics from './Metrics';
 
-const jetBrainsMono = JetBrains_Mono({
-  weight: '400',
-  display: 'swap',
-  variable: '--font-jetbrains-mono'
-});
+export async function generateStaticParams() {
+  const paths = await sanityClient.fetch(postSlugsQuery);
+  return paths.map((slug) => ({ slug }));
+}
 
-export default function BlogLayout({
-  children,
-  post
-}: PropsWithChildren<{ post: Post }>) {
-  const coverURL = post.coverURL;
+async function Blog({ params }) {
+  let post: Post;
+
+  const { post: fetchPost } = await sanityClient.fetch(postQuery, {
+    slug: params.slug
+  });
+
+  if (!fetchPost) {
+    notFound();
+  }
+
+  const { html, readingTime } = await mdxToHtml(fetchPost.content);
+
+  post = {
+    ...fetchPost,
+    content: html,
+    readingTime
+  };
+
   return (
-    <Container
-      preTitle="Check out this article"
-      title={`${post.title}`}
-      description={post.excerpt}
-      ogDescription={post.excerpt}
-      image={coverURL || urlForImage(post.coverImage)}
-      date={new Date(post.date).toISOString()}
-      type="article"
-      style={jetBrainsMono.variable}
-    >
+    <>
       <div className="xl:!col-end-5">
         <h1 className="mb-4 text-2xl font-medium text-black dark:text-white md:text-3xl">
           {post.title}
@@ -54,7 +58,9 @@ export default function BlogLayout({
       <div className="sticky top-10 hidden h-0 self-center xl:!col-start-4 xl:row-start-2 xl:flex">
         <LikeButton slug={`/blog/${post.slug}`} />
       </div>
-      <Suspense fallback={null}>{children}</Suspense>
+      <Suspense fallback={null}>
+        <MdxWrapper post={post} />
+      </Suspense>
       <div className="mt-8">
         <LikeButton slug={`/blog/${post.slug}`} />
       </div>
@@ -66,12 +72,6 @@ export default function BlogLayout({
           >
             cd <span className="font-semibold">..</span>
           </Link>
-          <span
-            className="cursor-pointer transition-colors hover:text-gray-900 hover:dark:text-gray-100 xl:hidden"
-            onClick={() => window.scrollTo({ top: 0 })}
-          >
-            Back to top
-          </span>
         </p>
       </div>
       <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -97,25 +97,17 @@ export default function BlogLayout({
           {'Suggest Change'}
         </a>
       </div>
-    </Container>
+    </>
   );
 }
 
-const Metrics = ({ slug }: { slug: string }) => {
-  const { stats, isLoading } = usePageStats(slug);
-  const likes = stats?.likes || '0';
-  const views = stats?.views || '1';
+export default Blog;
 
-  return (
-    <>
-      <span>{`•`}</span>
-      <span>
-        {isLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
-      </span>
-      {/* <span>{`•`}</span>
-      <span>
-        {isLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
-      </span> */}
-    </>
-  );
-};
+// preTitle="Check out this article"
+//     title={`${post.title}`}
+//     description={post.excerpt}
+//     ogDescription={post.excerpt}
+//     image={coverURL || urlForImage(post.coverImage)}
+//     date={new Date(post.date).toISOString()}
+//     type="article"
+//     style={jetBrainsMono.variable}

@@ -99,8 +99,8 @@ export default async function handler(req: NextRequest, res: NextResponse) {
       </div>
     ),
     {
-      height: 882,
-      width: 1686,
+      height: 1080,
+      width: 1920,
       fonts: [
         {
           name: 'Hubot Sans',

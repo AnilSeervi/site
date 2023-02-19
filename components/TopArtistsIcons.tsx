@@ -1,15 +1,15 @@
-import { TopArtists } from 'lib/types';
+import { Artist } from 'lib/types';
 import Image from 'next/image';
 
 const formatNumberToIntl = (number) =>
   new Intl.NumberFormat('en-US').format(number);
 
-export default function TopArtistsIcons({ data }: { data: TopArtists }) {
+export default function TopArtistsIcons({ data }: { data: Artist[] }) {
   if (!data) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-4">
-      {data.artists.map((artist, index) => (
+      {data.map((artist, index) => (
         <div className="flex flex-col items-center" key={index}>
           <div className="flex min-w-[42px]">
             <a href={artist.artistUrl} target="_blank" rel="noreferrer">

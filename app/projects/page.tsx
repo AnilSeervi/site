@@ -1,9 +1,12 @@
-import Container from 'components/Container';
 import ExternalLink from 'components/ExternalLink';
+
+export const metadata = {
+  title: 'Projects built by'
+};
 
 function Projects() {
   return (
-    <Container title="Projects built by Anil">
+    <>
       <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
         /projects
       </h1>
@@ -19,7 +22,7 @@ function Projects() {
           <ExternalLink />
         </a>
       </p>
-    </Container>
+    </>
   );
 }
 

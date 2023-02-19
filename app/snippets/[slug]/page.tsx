@@ -1,30 +1,40 @@
-import Image from 'next/image';
-import Container from 'components/Container';
-import { PropsWithChildren, Suspense } from 'react';
-import { Snippet } from 'lib/types';
-import { urlForImage } from 'lib/sanity';
-import Link from 'next/link';
-import { JetBrains_Mono } from '@next/font/google';
 import { LikeButton } from 'components/LikeButton';
+import { mdxToHtml } from 'lib/mdx';
+import { snippetSlugsQuery, snippetsQuery } from 'lib/queries';
+import { urlForImage } from 'lib/sanity';
+import { sanityClient } from 'lib/sanity-server';
+import { Snippet } from 'lib/types';
+import Image from 'next/image';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import MdxWrapper from './MdxWrapper';
 
-const jetBrainsMono = JetBrains_Mono({
-  weight: '400',
-  display: 'swap',
-  variable: '--font-jetbrains-mono'
-});
+export async function generateStaticParams() {
+  const paths = await sanityClient.fetch(snippetSlugsQuery);
+  return paths.map((slug) => ({ slug }));
+}
 
-export default function SnippetLayout({
-  children,
-  snippet
-}: PropsWithChildren<{ snippet: Snippet }>) {
+async function Snippet({ params }) {
+  let snippet: Snippet;
+
+  const { snippet: fetchSnippet } = await sanityClient.fetch(snippetsQuery, {
+    slug: params.slug
+  });
+
+  if (!fetchSnippet) {
+    notFound();
+  }
+
+  const { html } = await mdxToHtml(fetchSnippet.content);
+
+  snippet = {
+    ...fetchSnippet,
+    content: html
+  };
+
   return (
-    <Container
-      preTitle="Check out this Snippet"
-      title={`${snippet.title}`}
-      description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
-      type="article"
-      style={jetBrainsMono.variable}
-    >
+    <>
       <section className="mb-8 flex w-full justify-between">
         <div>
           <h1 className="mb-4 text-3xl font-bold text-black dark:text-white md:text-5xl">
@@ -47,7 +57,9 @@ export default function SnippetLayout({
       <div className="sticky top-10 hidden h-0 self-center xl:!col-start-4 xl:row-start-2 xl:flex">
         <LikeButton slug={`/snippets/${snippet.slug}`} />
       </div>
-      <Suspense fallback={null}>{children}</Suspense>
+      <Suspense fallback={null}>
+        <MdxWrapper snippet={snippet} />
+      </Suspense>
       <div className="mt-8">
         <LikeButton slug={`/snippets/${snippet.slug}`} />
       </div>
@@ -59,14 +71,16 @@ export default function SnippetLayout({
           >
             cd <span className="font-semibold">..</span>
           </Link>
-          <span
-            className="cursor-pointer transition-colors hover:text-gray-900 hover:dark:text-gray-100 xl:hidden"
-            onClick={() => window.scrollTo({ top: 0 })}
-          >
-            Back to top
-          </span>
         </p>
       </div>
-    </Container>
+    </>
   );
 }
+
+export default Snippet;
+
+// preTitle="Check out this Snippet"
+//     title={`${snippet.title}`}
+//     description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
+//     type="article"
+//     style={jetBrainsMono.variable}

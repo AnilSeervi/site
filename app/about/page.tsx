@@ -1,11 +1,13 @@
-import Link from 'next/link';
-import Container from 'components/Container';
-import { siteTitle, websiteURL } from 'lib/constants';
 import { components } from 'components/ProseComponents';
+import { websiteURL } from 'lib/constants';
 
-export default function About() {
+export const metadata = {
+  title: 'About'
+};
+
+function About() {
   return (
-    <Container title={`About – ${siteTitle}`}>
+    <>
       <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
         /about
       </h1>
@@ -40,6 +42,8 @@ export default function About() {
           </components.a>
         </li>
       </components.ul>
-    </Container>
+    </>
   );
 }
+
+export default About;

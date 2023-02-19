@@ -1,13 +1,22 @@
 import { type Options } from 'rehype-pretty-code';
 import { visit } from 'unist-util-visit';
+import { JetBrains_Mono } from '@next/font/google';
+
+const jetBrainsMono = JetBrains_Mono({
+  weight: '400',
+  display: 'swap',
+  variable: '--font-jetbrains-mono'
+});
 
 // div.BLOCK > pre.PRE > code.CODE
 const BLOCK =
   'overflow-hidden font-normal rounded-lg bg-gray-200/40 dark:bg-stone-900/20 shadow-surface-elevation-low ring-1 ring-rose-100/[3%] ring-inset';
 const TITLE =
-  'mb-0.5 rounded-md bg-gray-100/10 dark:bg-rose-100/10 px-3 py-1 font-mono text-xs dark:text-rose-100/70 text-gray-700 shadow-sm';
+  'mb-0.5 rounded-md bg-gray-100/10 dark:bg-rose-100/10 px-3 py-1 font-mono text-xs dark:text-rose-100/70 text-gray-700 shadow-sm ' +
+  jetBrainsMono.variable;
 const PRE =
-  'overflow-x-auto py-2 text-[13px] leading-6 [color-scheme:dark] bg-transparent m-0 px-0';
+  'overflow-x-auto py-2 text-[13px] leading-6 [color-scheme:dark] bg-transparent m-0 px-0 ' +
+  jetBrainsMono.variable;
 const CODE =
   'grid [&>span]:border-l-4 [&>span]:border-l-transparent [&>span]:pl-2 [&>span]:pr-3';
 const INLINE_BLOCK =

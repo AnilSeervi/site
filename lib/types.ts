@@ -121,11 +121,7 @@ export type Stats = {
   likes: string;
 };
 
-export type Subscribers = {
-  count: number;
-};
-
-export type Guestbook = {
+export type GuestbookType = {
   id: string;
   email: string;
   body: string;

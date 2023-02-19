@@ -1,3 +1,5 @@
+'use client';
+
 import clsx from 'clsx';
 import { MyAnimeList } from 'lib/types';
 import Image from 'next/image';
