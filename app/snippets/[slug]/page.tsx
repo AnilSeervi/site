@@ -11,11 +11,10 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import MdxWrapper from './MdxWrapper';
 
-export async function generateStaticPaths() {
+export async function generateStaticParams() {
   const paths = await sanityClient.fetch(snippetSlugsQuery);
   return {
-    paths: paths.map((slug) => ({ params: { slug } })),
-    fallback: 'blocking'
+    paths: paths.map((slug) => ({ params: { slug } }))
   };
 }
 

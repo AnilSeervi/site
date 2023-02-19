@@ -11,7 +11,7 @@ import { Suspense } from 'react';
 import MdxWrapper from './MdxWrapper';
 import Metrics from './Metrics';
 
-export async function generateStaticPaths() {
+export async function generateStaticParams() {
   const paths = await sanityClient.fetch(postSlugsQuery);
   return {
     paths: paths.map((slug) => ({ params: { slug } }))
