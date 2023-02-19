@@ -13,9 +13,7 @@ import MdxWrapper from './MdxWrapper';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(snippetSlugsQuery);
-  return {
-    paths: paths.map((slug) => ({ params: { slug } }))
-  };
+  return paths.map((slug) => ({ slug }));
 }
 
 async function Snippet({ params, preview = false }) {

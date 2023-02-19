@@ -13,9 +13,7 @@ import Metrics from './Metrics';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(postSlugsQuery);
-  return {
-    paths: paths.map((slug) => ({ params: { slug } }))
-  };
+  return paths.map((slug) => ({ slug }));
 }
 
 async function Blog({ params, preview = false }) {
