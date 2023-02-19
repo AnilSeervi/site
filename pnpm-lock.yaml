@@ -9,6 +9,7 @@ specifiers:
   '@vercel/analytics': ^0.1.8
   '@vercel/og': ^0.0.27
   autoprefixer: 10.4.13
+  class-variance-authority: ^0.4.0
   clsx: ^1.2.1
   eslint: 8.33.0
   eslint-config-next: 13.1.6
@@ -37,6 +38,7 @@ specifiers:
   shiki: ^0.14.0
   styled-components: ^5.2
   swr: 2.0.3
+  tailwind-merge: ^1.9.1
   tailwindcss: ^3.2.4
   typescript: ^4.9.5
   unist-util-visit: ^4.1.2
@@ -49,6 +51,7 @@ dependencies:
   '@sanity/webhook': 2.0.0
   '@vercel/analytics': 0.1.8_react@18.2.0
   '@vercel/og': 0.0.27
+  class-variance-authority: 0.4.0_typescript@4.9.5
   clsx: 1.2.1
   next: 13.1.6_pjwopsidmaokadturxaafygjp4
   next-auth: 4.19.2_3vryta7zmbcsw4rrqf4axjqggm
@@ -61,6 +64,7 @@ dependencies:
   sanity-plugin-markdown: 4.0.0_rj5bdv7sqh2a4hi3jpe4vkkapu
   styled-components: 5.3.6_7i5myeigehqah43i5u7wbekgba
   swr: 2.0.3_react@18.2.0
+  tailwind-merge: 1.9.1
   use-delayed-render: 0.0.7_react@18.2.0
   zod: 3.20.2
 
@@ -1197,7 +1201,7 @@ packages:
       eventsource: 2.0.2
       fast-deep-equal: 3.1.3
       groq: 3.2.6
-      groq-js: 1.2.1-beta.1
+      groq-js: 1.1.7
       mendoza: 2.1.1
       simple-get: 4.0.1
       split2: 4.1.0
@@ -2138,6 +2142,17 @@ packages:
 
   /chownr/1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
+    dev: false
+
+  /class-variance-authority/0.4.0_typescript@4.9.5:
+    resolution: {integrity: sha512-74enNN8O9ZNieycac/y8FxqgyzZhZbxmCitAtAeUrLPlxjSd5zA7LfpprmxEcOmQBnaGs5hYhiSGnJ0mqrtBLQ==}
+    peerDependencies:
+      typescript: '>= 4.5.5 < 5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      typescript: 4.9.5
     dev: false
 
   /classnames/2.3.2:
@@ -3664,8 +3679,8 @@ packages:
     resolution: {integrity: sha512-qJeuEgziddryH1ClsJvMoZM9aXNQbBViNZZrJwhHKr2wU8HGGM7uNWNVFglWXMX60MMaa2SClX3UohP76Ut68g==}
     dev: false
 
-  /groq-js/1.2.1-beta.1:
-    resolution: {integrity: sha512-hmfctKi0Za0wj9VRRVytMiJKAe/QdqOtYKnHAIL8VgzuLSOP3EzXHEYJFNDbkaml8mVuFvfT9vO6DsPtofPp8w==}
+  /groq-js/1.1.7:
+    resolution: {integrity: sha512-MpcHeNRSqFKdsoYd8vKiTa+Yojz5k83GyB4MCO7u5K2bizu5KAr3LdU7QxyoLotKGqF6yxiddVKYuTbCta2Bew==}
     engines: {node: '>= 14'}
     dev: false
 
@@ -7048,6 +7063,10 @@ packages:
       tslib: 2.5.0
     dev: true
 
+  /tailwind-merge/1.9.1:
+    resolution: {integrity: sha512-ED9MkiUHlmfh58EC1xHRqXcH1IQyRtmDP0AmXlugYkP2tvfu7ejtjFEHJLJt93mQ7ZJkcqSIgm9M394bq5vOJg==}
+    dev: false
+
   /tailwindcss/3.2.4_postcss@8.4.21:
     resolution: {integrity: sha512-AhwtHCKMtR71JgeYDaswmZXhPcW9iuI9Sp2LvZPo9upDZ7231ZJ7eA9RaURbhpXGVlrjX4cFNlB4ieTetEb7hQ==}
     engines: {node: '>=12.13.0'}
@@ -7285,7 +7304,6 @@ packages:
     resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
     engines: {node: '>=4.2.0'}
     hasBin: true
-    dev: true
 
   /typo-js/1.2.2:
     resolution: {integrity: sha512-C7pYBQK17EjSg8tVNY91KHdUt5Nf6FMJ+c3js076quPmBML57PmNMzAcIq/2kf/hSYtFABNDIYNYlJRl5BJhGw==}

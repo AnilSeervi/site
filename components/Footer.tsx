@@ -1,11 +1,13 @@
-import Link from 'next/link';
+'use client';
 
+import Link from 'next/link';
 import NowPlaying from 'components/NowPlaying';
 import ExternalLink from './ExternalLink';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
 import { usePageViews } from 'hooks/usePageViews';
 import LoadingDots from './LoadingDots';
 import InlineMetric from './InlineMetric';
+import { usePathname } from 'next/navigation';
 
 type FooterLinkType = {
   href: string;
@@ -33,7 +35,9 @@ const FooterLink = ({ href, text, isExternal }: FooterLinkType) =>
     </Link>
   );
 
-export default function Footer({ slug }) {
+export default function Footer() {
+  const slug = usePathname();
+
   const { enabled, intersectionRef } = useEnabledOnFirstIntersection();
   return (
     <footer className="mx-auto mb-8 flex w-full max-w-2xl flex-col items-start justify-center px-4 md:px-0">

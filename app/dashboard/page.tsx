@@ -1,15 +1,10 @@
-import Analytics from 'components/metrics/Analytics';
-import Container from 'components/Container';
-import GitHub from 'components/metrics/Github';
+import AnalyticsCard from 'components/metrics/Analytics';
+import GitHubCard from 'components/metrics/Github';
+import React from 'react';
 
-export default function Dashboard() {
+function Dashboard() {
   return (
-    <Container
-      title="Dashboard"
-      description="My personal dashboard, built with Next.js API routes deployed as serverless functions."
-      ogTitle="Personal Dashboard"
-      image="unsplash/photo-1551288049-bebda4e38f71"
-    >
+    <>
       <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
         /dashboard
       </h1>
@@ -19,9 +14,17 @@ export default function Dashboard() {
         across platforms like GitHub and this very site.
       </p>
       <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        <Analytics />
-        <GitHub />
+        <AnalyticsCard />
+        <GitHubCard />
       </div>
-    </Container>
+    </>
   );
 }
+
+export default Dashboard;
+
+// title = 'Dashboard';
+// description =
+//   'My personal dashboard, built with Next.js API routes deployed as serverless functions.';
+// ogTitle = 'Personal Dashboard';
+// image = 'unsplash/photo-1551288049-bebda4e38f71';

@@ -1,22 +1,19 @@
-import Container from 'components/Container';
 import FunctionCard from 'components/FunctionCard';
-import { InferGetStaticPropsType } from 'next';
 import { allSnippetsQuery } from 'lib/queries';
 import { getClient } from 'lib/sanity-server';
 import { Snippet } from 'lib/types';
-import { siteTitle } from 'lib/constants';
 
-export default function Snippets({
-  snippets
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+async function SnippetsIndex({ preview = false }) {
+  let snippets: Snippet[] = [];
+
+  try {
+    snippets = await getClient(preview).fetch(allSnippetsQuery);
+  } catch (e) {
+    console.log(e);
+  }
+
   return (
-    <Container
-      title={`Code Snippets – ${siteTitle}`}
-      description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
-      preTitle="Check out these Snippets"
-      image="unsplash/photo-1616628188467-8fb29f49bbe8"
-      ogTitle="A collection of code snippets – including serverless functions, scripts, and CSS tricks."
-    >
+    <>
       <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
         /snippets
       </h1>
@@ -35,12 +32,14 @@ export default function Snippets({
           />
         ))}
       </div>
-    </Container>
+    </>
   );
 }
 
-export async function getStaticProps({ preview = false }) {
-  const snippets: Snippet[] = await getClient(preview).fetch(allSnippetsQuery);
+export default SnippetsIndex;
 
-  return { props: { snippets } };
-}
+//  title={`Code Snippets – ${siteTitle}`}
+//       description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
+//       preTitle="Check out these Snippets"
+//       image="unsplash/photo-1616628188467-8fb29f49bbe8"
+//       ogTitle="A collection of code snippets – including serverless functions, scripts, and CSS tricks."

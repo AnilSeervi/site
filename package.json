@@ -15,6 +15,7 @@
     "@sanity/webhook": "^2.0.0",
     "@vercel/analytics": "^0.1.8",
     "@vercel/og": "^0.0.27",
+    "class-variance-authority": "^0.4.0",
     "clsx": "^1.2.1",
     "next": "13.1.6",
     "next-auth": "4.19.2",
@@ -27,6 +28,7 @@
     "sanity-plugin-markdown": "^4.0.0",
     "styled-components": "^5.2",
     "swr": "2.0.3",
+    "tailwind-merge": "^1.9.1",
     "use-delayed-render": "^0.0.7",
     "zod": "^3.20.2"
   },

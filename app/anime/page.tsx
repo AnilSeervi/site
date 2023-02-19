@@ -1,28 +1,35 @@
 import AnimeList from 'components/AnimeList';
 import AnimeMetrics from 'components/AnimeMetrics';
-import Container from 'components/Container';
 import ExternalLink from 'components/ExternalLink';
 import { getMAL, getMALStats } from 'lib/mal';
 import { AnimeListNode, AnimeStats, Error } from 'lib/types';
-import { GetStaticProps } from 'next';
 
-export default function Anime({
-  stats,
-  list
-}: {
-  stats: { animeStats: AnimeStats; animeStatErr: Error };
-  list: { animeList: AnimeListNode[]; animeListErr: Error };
-}) {
-  const { animeList, animeListErr } = list;
-  const { animeStatErr, animeStats } = stats;
+export const revalidate = 86400; // 24 hours
+
+async function Anime() {
+  let animeStats: AnimeStats = null;
+  let animeList: AnimeListNode[] = null;
+  let animeStatErr: Error = null;
+  let animeListErr: Error = null;
+  try {
+    const animeStatsRes = await getMALStats();
+    animeStats = await animeStatsRes.json();
+  } catch (err: any) {
+    animeStatErr = {
+      message: err.message
+    };
+  }
+  try {
+    const animeListRes = await getMAL();
+    animeList = (await animeListRes.json())?.data;
+  } catch (err: any) {
+    animeListErr = {
+      message: err.message
+    };
+  }
+
   return (
-    <Container
-      title="Anime Dashboard"
-      description="My personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
-      preTitle="Weeb Stats"
-      ogDescription="Personal anime dashboard, with all the animes I've watched and am currently watching with their scores."
-      image="unsplash/photo-1613376023733-0a73315d9b06"
-    >
+    <>
       <h1 className="text-3xl font-bold text-black dark:text-white md:text-5xl">
         /anime
       </h1>
@@ -54,37 +61,16 @@ export default function Anime({
       <div className="flex w-full flex-col gap-10">
         <AnimeList animeList={animeList} error={animeListErr} />
       </div>
-    </Container>
+    </>
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  let animeStatsData: AnimeStats = null;
-  let animeListData: AnimeListNode[] = null;
-  let animeStatErr: Error = null;
-  let animeListErr: Error = null;
-  try {
-    const animeStatsRes = await getMALStats();
-    animeStatsData = await animeStatsRes.json();
-  } catch (err: any) {
-    animeStatErr = {
-      message: err.message
-    };
-  }
-  try {
-    const animeListRes = await getMAL();
-    animeListData = (await animeListRes.json()).data;
-  } catch (err: any) {
-    animeListErr = {
-      message: err.message
-    };
-  }
+export default Anime;
 
-  return {
-    props: {
-      stats: { animeStats: animeStatsData, animeStatErr },
-      list: { animeList: animeListData, animeListErr }
-    },
-    revalidate: 60 * 60 * 24 // 1 day
-  };
-};
+// title = 'Anime Dashboard';
+// description =
+//   "My personal anime dashboard, with all the animes I've watched and am currently watching with their scores.";
+// preTitle = 'Weeb Stats';
+// ogDescription =
+//   "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.";
+// image = 'unsplash/photo-1613376023733-0a73315d9b06';

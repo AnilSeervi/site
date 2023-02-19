@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+'use client';
+
 // import useSWR from 'swr';
 import usePollIfInView from 'hooks/usePollIfInView';
 
@@ -44,7 +45,7 @@ export default function MetricsCounter({ slug }: { slug: string }) {
   // }, [slug]);
 
   return (
-    <div ref={intersectionRef} className="flex items-center gap-1">
+    <span ref={intersectionRef} className="flex items-center gap-1">
       <span>
         {viewsIsLoading ? <LoadingDots /> : <InlineMetric stat={views} />} views
       </span>
@@ -52,6 +53,6 @@ export default function MetricsCounter({ slug }: { slug: string }) {
       <span>
         {likesIsLoading ? <LoadingDots /> : <InlineMetric stat={likes} />} likes
       </span>
-    </div>
+    </span>
   );
 }

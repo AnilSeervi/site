@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ImageProps } from 'next/image';
 import clsx from 'clsx';
 import { BlurImage } from './BlurImage';
+import Step from './Step';
 
 export const LINK_STYLES = `text-gray-900/80 dark:text-gray-100/80 underline decoration-gray-900/30 dark:decoration-gray-200/30 underline-offset-2 transition-all hover:text-gray-900 hover:dark:text-gray-100 hover:dark:decoration-gray-100/50 hover:decoration-gray-900/50`;
 export const FOCUS_VISIBLE_OUTLINE = `focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70`;
@@ -108,5 +109,6 @@ export const components = {
       className="text-gray-900/70 line-through dark:text-gray-100/70"
       {...props}
     />
-  )
+  ),
+  Step: (props: any) => <Step {...props} />
 };
