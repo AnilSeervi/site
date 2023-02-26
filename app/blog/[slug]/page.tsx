@@ -7,12 +7,69 @@ import { Post } from 'lib/types';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import { getOG } from 'utils/og';
 import MdxWrapper from './MdxWrapper';
 import Metrics from './Metrics';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(postSlugsQuery);
   return paths.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({ params }) {
+  const { slug } = params;
+  const {
+    post: { title, excerpt, date, coverURL, _updatedAt }
+  } = await sanityClient.fetch(postQuery, {
+    slug
+  });
+
+  return {
+    title: title,
+    description: excerpt,
+    type: 'article',
+    url: `${websiteURL}/blog/${slug}`,
+    openGraph: {
+      title: title,
+      description: excerpt,
+      type: 'article',
+      publishedTime: date,
+      modifiedTime: _updatedAt,
+      images: [
+        {
+          url: getOG({
+            title: title,
+            description: excerpt,
+            slug: `/blog/${slug}`,
+            preTitle: 'Check out this Blog',
+            image: coverURL
+          }),
+          width: 1920,
+          height: 1080,
+          alt: title
+        }
+      ]
+    },
+
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      images: [
+        {
+          url: getOG({
+            title: title,
+            description: excerpt,
+            slug: `/blog/${slug}`,
+            preTitle: 'Check out this Blog',
+            image: coverURL
+          }),
+          alt: title,
+          height: 1080,
+          width: 1920
+        }
+      ]
+    }
+  };
 }
 
 async function Blog({ params }) {
@@ -102,12 +159,3 @@ async function Blog({ params }) {
 }
 
 export default Blog;
-
-// preTitle="Check out this article"
-//     title={`${post.title}`}
-//     description={post.excerpt}
-//     ogDescription={post.excerpt}
-//     image={coverURL || urlForImage(post.coverImage)}
-//     date={new Date(post.date).toISOString()}
-//     type="article"
-//     style={jetBrainsMono.variable}

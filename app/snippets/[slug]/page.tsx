@@ -1,4 +1,5 @@
 import { LikeButton } from 'components/LikeButton';
+import { websiteURL } from 'lib/constants';
 import { mdxToHtml } from 'lib/mdx';
 import { snippetSlugsQuery, snippetsQuery } from 'lib/queries';
 import { urlForImage } from 'lib/sanity';
@@ -8,11 +9,66 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import { getOG } from 'utils/og';
 import MdxWrapper from './MdxWrapper';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(snippetSlugsQuery);
   return paths.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({ params }) {
+  const { slug } = params;
+
+  const {
+    snippet: { title, _createdAt, _updatedAt }
+  } = await sanityClient.fetch(snippetsQuery, {
+    slug
+  });
+
+  return {
+    title,
+    description:
+      'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
+    type: 'article',
+    url: `${websiteURL}/snippets/${slug}`,
+    openGraph: {
+      title,
+      description:
+        'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
+      type: 'article',
+      publishedTime: _createdAt,
+      modifiedTime: _updatedAt,
+      images: [
+        {
+          url: getOG({
+            title,
+            slug: `/snippets/${slug}`,
+            preTitle: 'Check out this Snippet'
+          })
+        }
+      ],
+      width: 1920,
+      height: 1080,
+      alt: title
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description:
+        'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
+      images: [
+        {
+          url: getOG({
+            title,
+            slug: `/snippets/${slug}`,
+            preTitle: 'Check out this Snippet'
+          }),
+          alt: title
+        }
+      ]
+    }
+  };
 }
 
 async function Snippet({ params }) {
@@ -78,9 +134,3 @@ async function Snippet({ params }) {
 }
 
 export default Snippet;
-
-// preTitle="Check out this Snippet"
-//     title={`${snippet.title}`}
-//     description="A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks."
-//     type="article"
-//     style={jetBrainsMono.variable}

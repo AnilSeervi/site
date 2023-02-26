@@ -45,7 +45,7 @@ const defaultMetadata = {
     }
   },
   verification: {
-    'google-site-verification': 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw'
+    google: 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw'
   }
 };
 
