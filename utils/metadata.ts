@@ -45,7 +45,7 @@ const defaultMetadata = {
     }
   },
   verification: {
-    google: 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw'
+    google: 'AlcrbE7Ls7GlEZia-k9tF8tL7qG_aEsm9gwXOGJXwXU'
   }
 };
 
