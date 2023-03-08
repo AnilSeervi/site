@@ -2,7 +2,7 @@ import AnimeList from 'components/AnimeList';
 import AnimeMetrics from 'components/AnimeMetrics';
 import ExternalLink from 'components/ExternalLink';
 import { getMAL, getMALStats } from 'lib/mal';
-import { AnimeListNode, AnimeStats, Error } from 'lib/types';
+import { AnimeListNode, AnimeStats, GenericError } from 'lib/types';
 import { getOG } from 'utils/og';
 
 export const revalidate = 86400; // 24 hours
@@ -55,8 +55,8 @@ export const metadata = {
 async function Anime() {
   let animeStats: AnimeStats = null;
   let animeList: AnimeListNode[] = null;
-  let animeStatErr: Error = null;
-  let animeListErr: Error = null;
+  let animeStatErr: GenericError = null;
+  let animeListErr: GenericError = null;
   try {
     const animeStatsRes = await getMALStats();
     animeStats = await animeStatsRes.json();

@@ -7,9 +7,11 @@ import Footer from 'components/Footer';
 import AnalyticsWrapper from 'components/AnalyticsWrapper';
 import IncrementView from 'components/IncrementView';
 
+import type { Metadata } from 'next';
+
 const karla = Karla({ variable: '--font-karla', display: 'swap' });
 
-export const metadata = globalMetadata;
+export const metadata: Metadata = globalMetadata;
 
 function RootLayout({ children }: { children: React.ReactNode }) {
   return (

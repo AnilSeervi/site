@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getOG } from './og';
 
 const ogURL = getOG({
@@ -5,19 +6,34 @@ const ogURL = getOG({
   slug: ''
 });
 
-const defaultMetadata = {
+const defaultMetadata: Metadata = {
   title: {
     default: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     template: '%s | Anil Seervi'
   },
-  icons: {
-    shorcut: '/static/favicons/favicon.ico'
-  },
   description: 'Front-end developer, Open Source enthusiast.',
-  twitter: {
-    title: 'Anil Seervi',
-    card: 'summary_large_image'
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' }
+  ],
+  creator: 'Anil Seervi',
+  icons: {
+    icon: '/static/favicons/favicon.svg',
+    shortcut: '/static/favicons/favicon.ico',
+    apple: '/static/favicons/apple-touch-icon.png',
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/static/favicons/masked-icon.svg'
+        // color: '#4a9885'
+      },
+      {
+        rel: 'alternate icon',
+        url: '/static/favicons/favicon_32x32.png'
+      }
+    ]
   },
+  manifest: '/static/favicons/site.webmanifest',
   openGraph: {
     title: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     description: 'Front-end developer, Open Source enthusiast.',
@@ -33,9 +49,16 @@ const defaultMetadata = {
       }
     ]
   },
+  twitter: {
+    title: 'Anil Seervi',
+    card: 'summary_large_image',
+    site: '@anil_seervi',
+    creator: '@anil_seervi'
+  },
   robots: {
     index: true,
     follow: true,
+    nocache: true,
     googleBot: {
       index: true,
       follow: true,
@@ -46,6 +69,9 @@ const defaultMetadata = {
   },
   verification: {
     google: 'AlcrbE7Ls7GlEZia-k9tF8tL7qG_aEsm9gwXOGJXwXU'
+  },
+  other: {
+    'msapplication-config': '/static/favicons/browserconfig.xml'
   }
 };
 
