@@ -85,7 +85,7 @@ export default function Footer() {
         </div>
       </div>
       <div
-        className="mt-8 flex items-center justify-between self-stretch text-sm text-gray-300 dark:text-gray-600"
+        className="mt-8 flex items-center justify-between self-stretch text-sm text-gray-500 dark:text-gray-400/90"
         ref={intersectionRef}
       >
         <p>
