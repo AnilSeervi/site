@@ -51,7 +51,7 @@ export type AnimeListNode = {
   node: MyAnimeList;
 };
 
-export type Error = {
+export type GenericError = {
   message: string;
 };
 

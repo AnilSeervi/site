@@ -1,10 +1,10 @@
 import { getMALStats } from 'lib/mal';
-import { AnimeStats, Error } from 'lib/types';
+import { AnimeStats, GenericError } from 'lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<AnimeStats | Error>
+  res: NextApiResponse<AnimeStats | GenericError>
 ) {
   try {
     const response = await getMALStats();
