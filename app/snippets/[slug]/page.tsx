@@ -17,7 +17,7 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }) {
+export const generateMetadata = async ({ params }) => {
   const { slug } = params;
 
   const {
@@ -30,7 +30,6 @@ export async function generateMetadata({ params }) {
     title,
     description:
       'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
-    type: 'article',
     url: `${websiteURL}/snippets/${slug}`,
     openGraph: {
       title,
@@ -45,12 +44,12 @@ export async function generateMetadata({ params }) {
             title,
             slug: `/snippets/${slug}`,
             preTitle: 'Check out this Snippet'
-          })
+          }),
+          width: 1920,
+          height: 1080,
+          alt: title
         }
-      ],
-      width: 1920,
-      height: 1080,
-      alt: title
+      ]
     },
     twitter: {
       card: 'summary_large_image',
@@ -69,7 +68,7 @@ export async function generateMetadata({ params }) {
       ]
     }
   };
-}
+};
 
 async function Snippet({ params }) {
   let snippet: Snippet;

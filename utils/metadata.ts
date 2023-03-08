@@ -14,10 +14,6 @@ const defaultMetadata = {
     shorcut: '/static/favicons/favicon.ico'
   },
   description: 'Front-end developer, Open Source enthusiast.',
-  twitter: {
-    title: 'Anil Seervi',
-    card: 'summary_large_image'
-  },
   openGraph: {
     title: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     description: 'Front-end developer, Open Source enthusiast.',
@@ -32,6 +28,12 @@ const defaultMetadata = {
         height: 1080
       }
     ]
+  },
+  twitter: {
+    title: 'Anil Seervi',
+    card: 'summary_large_image',
+    site: '@anil_seervi',
+    creator: '@anil_seervi'
   },
   robots: {
     index: true,

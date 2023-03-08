@@ -16,7 +16,7 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }) {
+export const generateMetadata = async ({ params }) => {
   const { slug } = params;
   const {
     post: { title, excerpt, date, coverURL, _updatedAt }
@@ -70,7 +70,7 @@ export async function generateMetadata({ params }) {
       ]
     }
   };
-}
+};
 
 async function Blog({ params }) {
   let post: Post;
