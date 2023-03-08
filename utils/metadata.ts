@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getOG } from './og';
 
 const ogURL = getOG({
@@ -5,7 +6,7 @@ const ogURL = getOG({
   slug: ''
 });
 
-const defaultMetadata = {
+const defaultMetadata: Metadata = {
   title: {
     default: 'Anil Seervi – Developer, Designer, Open Sourcerer',
     template: '%s | Anil Seervi'
@@ -18,7 +19,7 @@ const defaultMetadata = {
   creator: 'Anil Seervi',
   icons: {
     icon: '/static/favicons/favicon.svg',
-    shorcut: '/static/favicons/favicon.ico',
+    shortcut: '/static/favicons/favicon.ico',
     apple: '/static/favicons/apple-touch-icon.png',
     other: [
       {
