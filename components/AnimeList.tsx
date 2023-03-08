@@ -1,4 +1,4 @@
-import { AnimeListNode, Error } from 'lib/types';
+import { AnimeListNode, GenericError } from 'lib/types';
 import AnimeCard from './AnimeCard';
 
 export default function AnimeList({
@@ -6,7 +6,7 @@ export default function AnimeList({
   error
 }: {
   animeList: AnimeListNode[];
-  error: Error;
+  error: GenericError;
 }) {
   const watching = animeList.filter(
     (anime) => anime.node.my_list_status.status === 'watching'

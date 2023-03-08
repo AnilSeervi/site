@@ -1,4 +1,4 @@
-import { AnimeStats, Error } from 'lib/types';
+import { AnimeStats, GenericError } from 'lib/types';
 import MetricCard from './metrics/Card';
 
 export default function AnimeMetrics({
@@ -6,7 +6,7 @@ export default function AnimeMetrics({
   error
 }: {
   animeStats: AnimeStats;
-  error: Error;
+  error: GenericError;
 }) {
   const total = animeStats.anime_statistics?.num_items.toString() ?? '0';
   const episodes = animeStats.anime_statistics?.num_episodes.toString() ?? '0';
