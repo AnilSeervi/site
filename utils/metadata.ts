@@ -24,8 +24,8 @@ const defaultMetadata: Metadata = {
     other: [
       {
         rel: 'mask-icon',
-        url: '/static/favicons/masked-icon.svg',
-        color: '#4a9885'
+        url: '/static/favicons/masked-icon.svg'
+        // color: '#4a9885'
       },
       {
         rel: 'alternate icon',
