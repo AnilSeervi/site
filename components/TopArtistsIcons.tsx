@@ -22,6 +22,7 @@ export default function TopArtistsIcons({ data }: { data: Artist[] }) {
                 title={`${artist.name} - ${formatNumberToIntl(
                   artist.followers
                 )}`}
+                loading="lazy"
               />
             </a>
           </div>
