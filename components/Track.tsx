@@ -20,6 +20,7 @@ export default function Track(track) {
           height={48}
           width={48}
           className="rounded-sm"
+          loading="lazy"
         />
       </div>
       <div className="flex flex-col">

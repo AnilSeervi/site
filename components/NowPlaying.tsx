@@ -110,7 +110,6 @@ const ShowPlayingMetrics = () => {
 };
 
 const NowPlayingImage = ({ albumImageUrl, title }) => {
-  // const [loading, setLoading] = useState(true);
   return (
     <Image
       loading="lazy"
@@ -118,11 +117,7 @@ const NowPlayingImage = ({ albumImageUrl, title }) => {
       alt={title}
       width={38}
       height={38}
-      // onLoadingComplete={() => setTimeout(() => setLoading(false), 300)}
-      className={clsx(
-        'rounded-sm'
-        // loading ? 'scale-110 blur-sm grayscale' : 'scale-100 blur-0 grayscale-0'
-      )}
+      className={clsx('rounded-sm')}
     />
   );
 };
