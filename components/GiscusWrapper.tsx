@@ -17,7 +17,7 @@ function GiscusWrapper() {
       reactionsEnabled="1"
       emitMetadata="0"
       inputPosition="top"
-      theme={theme === 'dark' ? 'dark' : 'light'}
+      theme={theme === 'system' ? 'preferred_color_scheme' : theme}
       lang="en"
       loading="lazy"
     />
