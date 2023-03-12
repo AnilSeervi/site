@@ -1,3 +1,4 @@
+import GiscusWrapper from 'components/GiscusWrapper';
 import { LikeButton } from 'components/LikeButton';
 import { repo, websiteURL } from 'lib/constants';
 import { mdxToHtml } from 'lib/mdx';
@@ -154,6 +155,7 @@ async function Blog({ params }) {
           {'Suggest Change'}
         </a>
       </div>
+      <GiscusWrapper />
     </>
   );
 }
