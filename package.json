@@ -10,6 +10,7 @@
     "sanity-dev": "sanity dev"
   },
   "dependencies": {
+    "@giscus/react": "^2.2.8",
     "@next/font": "^13.2.3",
     "@prisma/client": "^4.11.0",
     "@sanity/webhook": "^2.0.0",

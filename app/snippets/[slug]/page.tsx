@@ -1,3 +1,4 @@
+import GiscusWrapper from 'components/GiscusWrapper';
 import { LikeButton } from 'components/LikeButton';
 import { websiteURL } from 'lib/constants';
 import { mdxToHtml } from 'lib/mdx';
@@ -5,7 +6,6 @@ import { snippetSlugsQuery, snippetsQuery } from 'lib/queries';
 import { urlForImage } from 'lib/sanity';
 import { sanityClient } from 'lib/sanity-server';
 import { Snippet } from 'lib/types';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -130,6 +130,7 @@ async function Snippet({ params }) {
           </Link>
         </p>
       </div>
+      <GiscusWrapper />
     </>
   );
 }
