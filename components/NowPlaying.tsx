@@ -2,7 +2,6 @@ import useSWR from 'swr';
 import clsx from 'clsx';
 import fetcher from 'lib/fetcher';
 import { NowPlayingSong } from 'lib/types';
-import Image from 'next/image';
 import { TryPlaying } from './TryPlaying';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
 import LoadingDots from './LoadingDots';
@@ -111,13 +110,16 @@ const ShowPlayingMetrics = () => {
 
 const NowPlayingImage = ({ albumImageUrl, title }) => {
   return (
-    <Image
-      loading="lazy"
-      src={albumImageUrl}
-      alt={title}
-      width={38}
-      height={38}
-      className={clsx('rounded-sm')}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        loading="lazy"
+        src={albumImageUrl}
+        alt={title}
+        width={38}
+        height={38}
+        className={clsx('rounded-sm')}
+      />
+    </>
   );
 };

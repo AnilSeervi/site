@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import Image from 'next/image';
 
 export default function Track(track) {
   return (
@@ -14,7 +13,8 @@ export default function Track(track) {
         {track.ranking}
       </p>
       <div className="flex min-w-[48px]">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={track.image}
           alt={track.title}
           height={48}

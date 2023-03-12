@@ -100,12 +100,14 @@ async function Snippet({ params }) {
           </p>
         </div>
         <div className="mt-2 sm:mt-0">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             alt={snippet.title}
             height={48}
             width={48}
             src={urlForImage(snippet.logo)}
             className="rounded-full"
+            loading="lazy"
           />
         </div>
       </section>
