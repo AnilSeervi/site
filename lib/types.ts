@@ -26,6 +26,15 @@ export type MyListStatus =
   | 'dropped'
   | 'plan_to_watch';
 
+export type MangaStatus = 'finished' | 'publishing' | 'not_yet_published';
+
+export type MangaListStatus =
+  | 'reading'
+  | 'completed'
+  | 'on_hold'
+  | 'dropped'
+  | 'plan_to_read';
+
 export type MyAnimeList = {
   id: number;
   title: string;
@@ -45,6 +54,44 @@ export type MyAnimeList = {
     updated_at: string;
     is_rewatching: boolean;
   };
+};
+
+export type MyMangaStats = {
+  total: number;
+  reading: number;
+  completed: number;
+  on_hold: number;
+  dropped: number;
+  plan_to_read: number;
+  mean_score: number;
+  read: number;
+};
+
+export type MyMangaList = {
+  id: number;
+  title: string;
+  main_picture: {
+    large: string;
+    medium: string;
+  };
+  status: MangaStatus;
+  media_type: 'manga' | 'novel' | 'oneshot' | 'doujin' | 'manhwa' | 'manhua';
+  num_chapters: number;
+  num_volumes: number;
+  my_list_status: {
+    status: MangaListStatus;
+    score: number;
+    num_chapters_read: number;
+    num_volumes_read: number;
+    start_date: string;
+    finish_date: string;
+    updated_at: string;
+    is_rereading: boolean;
+  };
+};
+
+export type MangaListNode = {
+  node: MyMangaList;
 };
 
 export type AnimeListNode = {
