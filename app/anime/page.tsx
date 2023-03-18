@@ -1,8 +1,16 @@
 import AnimeList from 'components/AnimeList';
 import AnimeMetrics from 'components/AnimeMetrics';
 import ExternalLink from 'components/ExternalLink';
-import { getMAL, getMALStats } from 'lib/mal';
-import { AnimeListNode, AnimeStats, GenericError } from 'lib/types';
+import MangaList from 'components/MangaList';
+import MangaMetrics from 'components/MangaMetrics';
+import { getMAL, getMALManga, getMALStats } from 'lib/mal';
+import {
+  AnimeListNode,
+  AnimeStats,
+  GenericError,
+  MangaListNode,
+  MyMangaStats
+} from 'lib/types';
 import { getOG } from 'utils/og';
 
 export const revalidate = 86400; // 24 hours
@@ -57,6 +65,10 @@ async function Anime() {
   let animeList: AnimeListNode[] = null;
   let animeStatErr: GenericError = null;
   let animeListErr: GenericError = null;
+  let mangaList: MangaListNode[] = null;
+  let mangaListErr: GenericError = null;
+  let mangaStats: MyMangaStats = null;
+
   try {
     const animeStatsRes = await getMALStats();
     animeStats = await animeStatsRes.json();
@@ -69,7 +81,50 @@ async function Anime() {
     const animeListRes = await getMAL();
     animeList = (await animeListRes.json())?.data;
   } catch (err: any) {
+    console.error(err);
     animeListErr = {
+      message: err.message
+    };
+  }
+
+  try {
+    const mangaListRes = await getMALManga();
+    mangaList = (await mangaListRes.json())?.data;
+
+    mangaStats = mangaList.reduce(
+      (acc, manga) => {
+        if (manga.node.my_list_status.status === 'reading') {
+          acc.reading += 1;
+        } else if (manga.node.my_list_status.status === 'plan_to_read') {
+          acc.plan_to_read += 1;
+        } else if (manga.node.my_list_status.status === 'completed') {
+          acc.completed += 1;
+        } else if (manga.node.my_list_status.status === 'on_hold') {
+          acc.on_hold += 1;
+        } else if (manga.node.my_list_status.status === 'dropped') {
+          acc.dropped += 1;
+        }
+        acc.read += manga.node.my_list_status.num_chapters_read;
+        return acc;
+      },
+      {
+        total: mangaList.length,
+        read: 0,
+        mean_score:
+          mangaList.reduce(
+            (acc, manga) => acc + manga.node.my_list_status.score,
+            0
+          ) / mangaList.length,
+        reading: 0,
+        plan_to_read: 0,
+        completed: 0,
+        on_hold: 0,
+        dropped: 0
+      }
+    );
+  } catch (err: any) {
+    console.log(err);
+    mangaListErr = {
       message: err.message
     };
   }
@@ -89,7 +144,7 @@ async function Anime() {
       <p className="text-gray-600 dark:text-gray-400">
         Here's some of my weeb stats, pulled from my{' '}
         <a
-          href="https://myanimelist.net/profile/anilseervi"
+          href="https://myanimelist.net/animelist/anilseervi"
           className="transition-colors hover:text-gray-800 dark:hover:text-gray-300"
           target="_blank"
           rel="noopener noreferrer"
@@ -106,6 +161,29 @@ async function Anime() {
       </div>
       <div className="flex w-full flex-col gap-10">
         <AnimeList animeList={animeList} error={animeListErr} />
+      </div>
+      <h2 className="mt-3 border-t-2 border-gray-200 pt-8 text-2xl font-bold text-black dark:border-gray-700 dark:text-white md:text-3xl">
+        Manga Stats
+      </h2>
+      <p className="text-gray-600 dark:text-gray-400">
+        Here's some of my manga reading stats, pulled also from my{' '}
+        <a
+          href="https://myanimelist.net/mangalist/anilseervi"
+          className="transition-colors hover:text-gray-800 dark:hover:text-gray-300"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          MyAnimeList
+          <ExternalLink />
+        </a>{' '}
+        account. Currently I've read {mangaStats.total ?? '--'} mangas.
+      </p>
+
+      <section>
+        <MangaMetrics mangaStats={mangaStats} error={mangaListErr} />
+      </section>
+      <div className="flex w-full flex-col gap-10">
+        <MangaList mangaList={mangaList} error={mangaListErr} />
       </div>
     </>
   );
