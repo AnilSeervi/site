@@ -1,6 +1,6 @@
 import { type Options } from 'rehype-pretty-code';
 import { visit } from 'unist-util-visit';
-import { JetBrains_Mono } from '@next/font/google';
+import { JetBrains_Mono } from 'next/font/google';
 
 const jetBrainsMono = JetBrains_Mono({
   weight: '400',

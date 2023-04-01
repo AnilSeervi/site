@@ -26,7 +26,10 @@ export type MyListStatus =
   | 'dropped'
   | 'plan_to_watch';
 
-export type MangaStatus = 'finished' | 'publishing' | 'not_yet_published';
+export type MangaStatus =
+  | 'finished'
+  | 'currently_publishing'
+  | 'not_yet_published';
 
 export type MangaListStatus =
   | 'reading'

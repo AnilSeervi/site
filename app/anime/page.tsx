@@ -111,10 +111,10 @@ async function Anime() {
         total: mangaList.length,
         read: 0,
         mean_score:
-          mangaList.reduce(
-            (acc, manga) => acc + manga.node.my_list_status.score,
-            0
-          ) / mangaList.length,
+          mangaList
+            .filter((manga) => manga.node.my_list_status.score)
+            .reduce((acc, manga) => acc + manga.node.my_list_status.score, 0) /
+          mangaList.filter((manga) => manga.node.my_list_status.score).length,
         reading: 0,
         plan_to_read: 0,
         completed: 0,
