@@ -1,5 +1,5 @@
 import '../styles/global.css';
-import { Karla } from '@next/font/google';
+import { Karla } from 'next/font/google';
 import Header from 'components/Header';
 import globalMetadata from 'utils/metadata';
 import ProviderTheme from 'components/ProviderTheme';
@@ -17,7 +17,7 @@ function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={karla.variable}>
       <head prefix="og:http//ogp.me/ns#"></head>
-      <body className="bg-gray-50 text-white antialiased dark:bg-gray-900 dark:text-black">
+      <body className="bg-gray-50 text-black antialiased dark:bg-gray-900 dark:text-white">
         <ProviderTheme>
           <Header />
           <main

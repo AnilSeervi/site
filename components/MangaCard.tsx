@@ -3,6 +3,11 @@ import AnimeCardImage from './AnimeCardImage';
 
 const getEps = (manga: MyMangaList) => {
   if (
+    manga.status === 'currently_publishing' &&
+    manga.my_list_status.num_chapters_read === 0
+  )
+    return 'Publishing';
+  if (
     manga.my_list_status.num_chapters_read === 0 ||
     manga.my_list_status.num_chapters_read === manga.num_chapters
   )
