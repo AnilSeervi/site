@@ -5,7 +5,8 @@ import { JetBrains_Mono } from 'next/font/google';
 const jetBrainsMono = JetBrains_Mono({
   weight: '400',
   display: 'swap',
-  variable: '--font-jetbrains-mono'
+  variable: '--font-jetbrains-mono',
+  subsets: ['latin']
 });
 
 // div.BLOCK > pre.PRE > code.CODE
