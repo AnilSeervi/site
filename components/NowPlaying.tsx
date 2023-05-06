@@ -5,32 +5,35 @@ import { NowPlayingSong } from 'lib/types';
 import { TryPlaying } from './TryPlaying';
 import { useEnabledOnFirstIntersection } from 'hooks/useEnabledOnFirstIntersection';
 import LoadingDots from './LoadingDots';
+import Link from 'next/link';
 
 function AnimatedBars({ playing }) {
   return (
-    <div className="flex w-auto items-end overflow-hidden">
-      <span
-        id="bar1"
-        className={clsx(
-          playing && `motion-safe:animate-bar1`,
-          `mr-[3px] h-2 w-1 bg-gray-300 opacity-75 dark:bg-gray-500`
-        )}
-      />
-      <span
-        id="bar2"
-        className={clsx(
-          playing && `motion-safe:animate-bar2`,
-          `mr-[3px] h-1 w-1 bg-gray-300 dark:bg-gray-500`
-        )}
-      />
-      <span
-        id="bar3"
-        className={clsx(
-          playing && `motion-safe:animate-bar3`,
-          `h-3 w-1 bg-gray-300 opacity-80 dark:bg-gray-500`
-        )}
-      />
-    </div>
+    <Link href="/spotify">
+      <div className="flex w-auto items-end overflow-hidden">
+        <span
+          id="bar1"
+          className={clsx(
+            playing && `motion-safe:animate-bar1`,
+            `mr-[3px] h-2 w-1 bg-gray-300 opacity-75 dark:bg-gray-500`
+          )}
+        />
+        <span
+          id="bar2"
+          className={clsx(
+            playing && `motion-safe:animate-bar2`,
+            `mr-[3px] h-1 w-1 bg-gray-300 dark:bg-gray-500`
+          )}
+        />
+        <span
+          id="bar3"
+          className={clsx(
+            playing && `motion-safe:animate-bar3`,
+            `h-3 w-1 bg-gray-300 opacity-80 dark:bg-gray-500`
+          )}
+        />
+      </div>
+    </Link>
   );
 }
 

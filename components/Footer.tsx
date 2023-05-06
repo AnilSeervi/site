@@ -45,7 +45,6 @@ export default function Footer() {
       <NowPlaying />
       <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col items-start space-y-4">
-          <FooterLink href="/" text="Home" />
           <FooterLink href="/about" text="About" />
           <FooterLink href="/dashboard" text="Dashboard" />
           <FooterLink href="/uses" text="Uses" />
@@ -56,16 +55,6 @@ export default function Footer() {
           />
         </div>
         <div className="flex flex-col items-start space-y-4">
-          <FooterLink
-            href="https://twitter.com/linaseervi"
-            text="Twitter"
-            isExternal
-          />
-          <FooterLink
-            href="https://github.com/AnilSeervi"
-            text="GitHub"
-            isExternal
-          />
           <FooterLink
             href="https://www.linkedin.com/in/anilseervi/"
             text="LinkedIn"
@@ -78,10 +67,8 @@ export default function Footer() {
           />
         </div>
         <div className="flex flex-col items-start space-y-4">
-          <FooterLink href="/blog" text="Blog" />
-          <FooterLink href="/snippets" text="Snippets" />
-          <FooterLink href="/anime" text="Anime" />
           <FooterLink href="/spotify" text="Spotify" />
+          <FooterLink href="/projects" text="Projects" />
         </div>
       </div>
       <div

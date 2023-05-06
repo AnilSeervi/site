@@ -28,17 +28,19 @@
   background: 0;
   border: 0;
   opacity: 0.8;
-  padding: 10px;
+  /* padding: 10px; */
   border-radius: 50%;
   position: relative;
   isolation: isolate;
+  width: 100%;
+  height: 100%;
 }
 
 #theme-toggle svg {
-  width: 1.7rem;
-  height: 1.7rem;
+  /* width: 1.7rem;
+  height: 1.7rem; */
   margin: 0;
-  fill: var(--clr-foreground);
+  fill: var(--color);
 }
 
 #theme-toggle::before {
@@ -56,7 +58,7 @@
    animation: pulse 650ms ease-out infinite;
 } */
 
-#theme-toggle::after {
+/* #theme-toggle::after {
   content: attr(aria-label);
   position: absolute;
   color: var(--clr-background);
@@ -72,7 +74,7 @@
   transform: scale(0);
   transform-origin: top;
   transition: transform 0ms linear 100ms, opacity 100ms linear;
-}
+} */
 
 
 
@@ -85,12 +87,12 @@
 
 }
 
-#theme-toggle:hover,
+/* #theme-toggle:hover,
 #theme-toggle:focus {
   outline: 0;
   opacity: 1;
   background: hsl(0 0% 50% / 0.15);
-}
+} */
 
 #theme-toggle:hover::after,
 #theme-toggle:focus-visible::after {

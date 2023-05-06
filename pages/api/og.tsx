@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { ImageResponse } from '@vercel/og';
+import { ImageResponse } from 'next/server';
 import { websiteURL } from 'lib/constants';
 import { NextRequest, NextResponse } from 'next/server';
 

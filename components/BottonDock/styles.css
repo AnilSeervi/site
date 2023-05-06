@@ -1,0 +1,134 @@
+.dock-card-tooltip {
+  position: fixed;
+}
+
+.dock-card svg {
+  width: 50%;
+  height: 50%;
+  pointer-events: none;
+  transform-origin: unset !important;
+}
+
+.dock {
+  display: flex;
+  align-items: flex-end;
+  width: auto;
+  height: 58px;
+  padding-inline: 8px;
+  position: fixed;
+  bottom: -8px;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(80px);
+  will-change: contents;
+  transform-origin: center bottom;
+  backdrop-filter: blur(100px) saturate(400%) brightness(100%);
+  z-index: 10;
+  animation: 500ms ease 200ms 1 normal forwards translateUp;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+}
+
+.dock_shimmer {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0), hsl(0 0% 20.5%) 20%, hsl(0 0% 49.4%) 67.19%, rgba(0, 0, 0, 0));
+}
+
+@keyframes translateUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0px) translateY(80px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0px) translateY(0px) scale(var(--scale));
+  }
+}
+
+.dock-card {
+  --gradient-color-1: hsl(0 0% 97.3%);
+  --gradient-color-2: hsl(0 0% 90.9%);
+  --color: hsl(0 0% 52.3%);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  background-image: linear-gradient(45deg, var(--gradient-color-1), var(--gradient-color-2), var(--gradient-color-1), var(--gradient-color-2));
+  background-size: 200% 100%;
+
+  border: 0px;
+  padding: 0px;
+  margin: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-radius: 9999px;
+  color: var(--color);
+  position: relative;
+}
+
+.dock-card a {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .dock-card {
+  background: hsl(0 0% 13.6%)
+}
+
+.dark .dock-card {
+  --gradient-color-1: hsl(0 0% 11.0%);
+  --gradient-color-2: hsl(0 0% 13.6%);
+}
+
+.dock-card-shimmer {
+  position: absolute;
+}
+
+.dark .dock-card-shimmer {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0), hsl(0 0% 15.8%) 20%, hsl(0 0% 24.3%) 67.19%, rgba(0, 0, 0, 0));
+  top: -1px;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  z-index: -1;
+}
+
+.dock-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #fff;
+}
+
+.dock_divider {
+  width: 1px;
+  height: 36px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.divider__container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.divider__container:hover {
+  cursor: ns-resize;
+}
+
+@media (max-width: 430px) {
+  .dock {
+    width: calc(100% - 69px);
+    bottom: 0px;
+  }
+}
+
+@media (max-width: 720px) {
+  .dock-inner {
+    height: 72px;
+    overflow: auto hidden;
+  }
+}
