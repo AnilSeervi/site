@@ -12,10 +12,11 @@
   "dependencies": {
     "@giscus/react": "^2.2.8",
     "@prisma/client": "^4.12.0",
+    "@reach/tooltip": "^0.18.0",
     "@react-spring/web": "^9.7.2",
     "@sanity/webhook": "^2.0.0",
+    "@use-gesture/react": "^10.2.26",
     "@vercel/analytics": "^0.1.11",
-    "@vercel/og": "^0.5.2",
     "class-variance-authority": "^0.5.2",
     "clsx": "^1.2.1",
     "next": "13.3.0",

@@ -5,19 +5,15 @@ import { useTheme } from 'next-themes';
 function Changetheme() {
   const { resolvedTheme, setTheme } = useTheme();
   return (
-    <button
-      aria-label={`Switch to ${
-        resolvedTheme === 'dark' ? 'light' : 'dark'
-      } theme`}
+    <div
       id="theme-toggle"
-      type="button"
-      className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 ring-gray-300 transition-all  dark:bg-gray-600"
+      className="flex h-10 w-10 items-center justify-center rounded-lg ring-gray-300 transition-all"
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="472.39"
-        height="472.39"
+        width="24"
+        height="24"
         viewBox="0 0 472.39 472.39"
       >
         <g className="toggle-sun">
@@ -27,7 +23,7 @@ function Changetheme() {
           <circle className="cls-1" cx="236.2" cy="236.2" r="103.78" />
         </g>
       </svg>
-    </button>
+    </div>
   );
 }
 

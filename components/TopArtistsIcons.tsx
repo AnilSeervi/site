@@ -1,3 +1,6 @@
+'use client';
+
+import { Tooltip } from '@reach/tooltip';
 import { Artist } from 'lib/types';
 
 const formatNumberToIntl = (number) =>
@@ -11,18 +14,22 @@ export default function TopArtistsIcons({ data }: { data: Artist[] }) {
         <div className="flex flex-col items-center" key={index}>
           <div className="flex min-w-[42px]">
             <a href={artist.artistUrl} target="_blank" rel="noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={artist.image}
-                alt={artist.name}
-                height={42}
-                width={42}
-                className="h-11 w-11 rounded-full object-cover"
-                title={`${artist.name} - ${formatNumberToIntl(
+              <Tooltip
+                className="reach-tooltip"
+                label={`${artist.name} - ${formatNumberToIntl(
                   artist.followers
                 )}`}
-                loading="lazy"
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={artist.image}
+                  alt={artist.name}
+                  height={42}
+                  width={42}
+                  className="h-11 w-11 rounded-full object-cover"
+                  loading="lazy"
+                />
+              </Tooltip>
             </a>
           </div>
         </div>
