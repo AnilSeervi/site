@@ -119,7 +119,7 @@
   cursor: ns-resize;
 }
 
-@media (max-width: 430px) {
+@media (max-width:580px) {
   .dock {
     width: calc(100% - 69px);
     bottom: 0px;
