@@ -21,6 +21,16 @@ interface DockCardProps {
 
 const INITIAL_WIDTH = 40;
 
+const centered = (triggerRect, tooltipRect) => {
+  const triggerCenter = triggerRect.left + triggerRect.width / 2;
+  const left = triggerCenter - tooltipRect.width / 2;
+  const maxLeft = window.innerWidth - tooltipRect.width - 2;
+  return {
+    left: Math.min(Math.max(2, left), maxLeft) + window.scrollX,
+    top: triggerRect.top - INITIAL_WIDTH + window.scrollY
+  };
+};
+
 export const DockCard = ({ children, showDot, label }: DockCardProps) => {
   const cardRef = React.useRef<HTMLButtonElement>(null!);
   /**
@@ -141,10 +151,7 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
     <Tooltip
       label={label}
       className="dock-card-tooltip reach-tooltip"
-      position={(triggerRect, tooltipRect) => ({
-        top: triggerRect.top - tooltipRect.height - 10,
-        left: triggerRect.left - tooltipRect.width / 2 + triggerRect.width / 2
-      })}
+      position={centered}
     >
       <animated.button
         ref={cardRef}
