@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@giscus/react": "^2.2.8",
+    "@planetscale/database": "^1.7.0",
     "@prisma/client": "^4.13.0",
     "@reach/tooltip": "^0.18.0",
     "@react-spring/web": "^9.7.2",
@@ -19,6 +20,8 @@
     "@vercel/analytics": "^1.0.1",
     "class-variance-authority": "^0.6.0",
     "clsx": "^1.2.1",
+    "kysely": "^0.24.2",
+    "kysely-planetscale": "^1.3.0",
     "next": "13.4.1",
     "next-auth": "4.22.1",
     "next-mdx-remote": "^4.4.1",
