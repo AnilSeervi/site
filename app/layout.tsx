@@ -1,12 +1,9 @@
 import '../styles/global.css';
 import { Karla } from 'next/font/google';
-import Header from 'components/Header';
 import globalMetadata from 'utils/metadata';
 import ProviderTheme from 'components/ProviderTheme';
 import Footer from 'components/Footer';
-
 import IncrementView from 'components/IncrementView';
-
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import DockBottom from './DockBottom';
