@@ -1,17 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import prisma from 'lib/prisma';
+import { queryBuilder } from 'lib/planetscale';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === 'GET') {
-    const entries = await prisma.guestbook.findMany({
-      orderBy: {
-        updated_at: 'desc'
-      }
-    });
+
+    const entries = await queryBuilder
+      .selectFrom('guestbook')
+      .selectAll()
+      .orderBy('updated_at', 'desc')
+      .execute();
 
     return res.json(
       entries.map((entry) => ({
@@ -31,13 +32,15 @@ export default async function handler(
   }
 
   if (req.method === 'POST') {
-    const newEntry = await prisma.guestbook.create({
-      data: {
+
+    const [newEntry] = await queryBuilder.
+      insertInto('guestbook')
+      .values({
         email,
         body: req.body.body || '',
         created_by: name
-      }
-    });
+      }).returning(['id', 'body', 'created_by', 'updated_at'])
+      .execute();
 
     return res.status(200).json({
       id: newEntry.id.toString(),
