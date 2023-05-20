@@ -42,14 +42,14 @@ export default async function handler(
 
       await Promise.all([
         await queryBuilder.insertInto('page').values({
-          slug, likes: 1
+          slug, likes: count
         })
           .onDuplicateKeyUpdate({
             likes: +post.likes + count,
           }).execute(),
 
         await queryBuilder.insertInto('session').values({
-          id: sessionId, likes: 1
+          id: sessionId, likes: count
         })
           .onDuplicateKeyUpdate({
             likes: currentUserLikes + count,
