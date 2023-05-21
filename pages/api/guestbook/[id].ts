@@ -16,8 +16,6 @@ export default async function handler(
     .select(['id', 'body', 'created_by', 'updated_at', 'email'])
     .execute();
 
-
-
   if (req.method === 'GET') {
     return res.json({
       id: entry.id.toString(),

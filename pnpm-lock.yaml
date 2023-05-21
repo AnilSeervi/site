@@ -38,8 +38,8 @@ dependencies:
     specifier: 13.4.3
     version: 13.4.3(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
   next-auth:
-    specifier: 4.22.1
-    version: 4.22.1(next@13.4.3)(react-dom@18.2.0)(react@18.2.0)
+    specifier: 4.19.0
+    version: 4.19.0(next@13.4.3)(react-dom@18.2.0)(react@18.2.0)
   next-mdx-remote:
     specifier: ^4.4.1
     version: 4.4.1(react-dom@18.2.0)(react@18.2.0)
@@ -5664,8 +5664,8 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
 
-  /next-auth@4.22.1(next@13.4.3)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-NTR3f6W7/AWXKw8GSsgSyQcDW6jkslZLH8AiZa5PQ09w1kR8uHtR9rez/E9gAq/o17+p0JYHE8QjF3RoniiObA==}
+  /next-auth@4.19.0(next@13.4.3)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-56Pc/Ni0cxfrVDAz2KeWdj+VXvABbHF1grgFR4+ktXbRmKQOiMU9uyMwhasBQkbL+pRrWujO0Ib/bwkP0oZS4g==}
     peerDependencies:
       next: ^12.2.5 || ^13
       nodemailer: ^6.6.5

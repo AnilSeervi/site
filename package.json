@@ -22,7 +22,7 @@
     "kysely": "^0.24.2",
     "kysely-planetscale": "^1.3.0",
     "next": "13.4.3",
-    "next-auth": "4.22.1",
+    "next-auth": "4.19.0",
     "next-mdx-remote": "^4.4.1",
     "next-sanity": "^4.3.2",
     "next-themes": "^0.2.1",
