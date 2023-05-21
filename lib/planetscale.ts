@@ -11,7 +11,7 @@ export interface Guestbook {
   body: string;
   created_by: string;
   created_at: Generated<Date>;
-  updated_at: Generated<Date>;
+  updated_at: Generated<Date> | string;
 }
 
 export interface Page {

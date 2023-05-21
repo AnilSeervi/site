@@ -1,15 +1,17 @@
 import Guestbook from 'components/Guestbook';
-import prisma from 'lib/prisma';
+import { queryBuilder } from 'lib/planetscale';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from 'pages/api/auth/[...nextauth]';
 import { getOG } from 'utils/og';
 
-async function getGuestbook() {
-  const entries = await prisma.guestbook.findMany({
-    orderBy: {
-      updated_at: 'desc'
-    }
-  });
+async function getGuestbookData() {
+  const entries = await queryBuilder
+    .selectFrom('guestbook')
+    .select(['id', 'body', 'created_by', 'updated_at'])
+    .orderBy('updated_at', 'desc')
+    .limit(100)
+    .execute();
+
   return entries;
 }
 
@@ -61,7 +63,7 @@ async function GuestBook() {
     session = null;
   try {
     const [data, sessionRes] = await Promise.allSettled([
-      getGuestbook(),
+      getGuestbookData(),
       getServerSession(authOptions)
     ]);
     if (data.status === 'fulfilled' && data.value[0]) {
@@ -81,7 +83,7 @@ async function GuestBook() {
       console.error(sessionRes);
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
   return (
     <>
@@ -93,7 +95,7 @@ async function GuestBook() {
           Leave a comment below. It could be anything – appreciation,
           information, wisdom, or even humor. Surprise me!
         </p>
-        <Guestbook fallbackData={entries} session={session} />
+        <Guestbook entries={entries} session={session} />
       </div>
     </>
   );

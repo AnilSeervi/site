@@ -26,6 +26,7 @@ export default async function handler(
 
     const session = await getSession({ req });
     const { email, name } = session.user;
+    console.log(session, "session")
 
     if (!session) {
       return res.status(403).send('Unauthorized');

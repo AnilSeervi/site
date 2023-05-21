@@ -12,7 +12,6 @@
   "dependencies": {
     "@giscus/react": "^2.2.8",
     "@planetscale/database": "^1.7.0",
-    "@prisma/client": "^4.13.0",
     "@reach/tooltip": "^0.18.0",
     "@react-spring/web": "^9.7.2",
     "@sanity/webhook": "^2.0.0",

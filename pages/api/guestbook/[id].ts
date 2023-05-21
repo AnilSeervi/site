@@ -1,6 +1,6 @@
+import { queryBuilder } from 'lib/planetscale';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import prisma from 'lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,11 +11,12 @@ export default async function handler(
   const { id } = req.query;
   const { email } = session.user;
 
-  const entry = await prisma.guestbook.findUnique({
-    where: {
-      id: Number(id)
-    }
-  });
+  const [entry] = await queryBuilder.selectFrom('guestbook')
+    .where('id', '=', Number(id))
+    .select(['id', 'body', 'created_by', 'updated_at', 'email'])
+    .execute();
+
+
 
   if (req.method === 'GET') {
     return res.json({
@@ -31,11 +32,10 @@ export default async function handler(
   }
 
   if (req.method === 'DELETE') {
-    await prisma.guestbook.delete({
-      where: {
-        id: Number(id)
-      }
-    });
+
+    await queryBuilder.deleteFrom('guestbook')
+      .where('id', '=', Number(id))
+      .execute();
 
     return res.status(204).json({});
   }
@@ -43,15 +43,12 @@ export default async function handler(
   if (req.method === 'PUT') {
     const body = (req.body.body || '').slice(0, 500);
 
-    await prisma.guestbook.update({
-      where: {
-        id: Number(id)
-      },
-      data: {
-        body,
-        updated_at: new Date().toISOString()
-      }
-    });
+    await queryBuilder.updateTable('guestbook').set({
+      body,
+      updated_at: new Date().toISOString()
+    })
+      .where('id', '=', Number(id))
+      .execute();
 
     return res.status(201).json({
       ...entry,
