@@ -34,14 +34,14 @@ export default async function handler(
 
     if (req.method === 'POST') {
 
-      const [newEntry] = await queryBuilder.
+      const newEntry = await queryBuilder.
         insertInto('guestbook')
         .values({
           email,
           body: req.body.body || '',
           created_by: name
         }).returning(['id', 'body', 'created_by', 'updated_at'])
-        .execute();
+        .executeTakeFirstOrThrow();
 
       return res.status(200).json({
         id: newEntry.id.toString(),
