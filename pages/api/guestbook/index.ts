@@ -34,14 +34,21 @@ export default async function handler(
 
     if (req.method === 'POST') {
 
-      const newEntry = await queryBuilder.
+      await queryBuilder.
         insertInto('guestbook')
         .values({
           email,
           body: req.body.body || '',
           created_by: name
-        }).returning(['id', 'body', 'created_by', 'updated_at'])
-        .executeTakeFirstOrThrow();
+        }).execute();
+
+      // Matching with email is not a good idea, replace with id
+      const [newEntry] = await queryBuilder
+        .selectFrom('guestbook')
+        .where('email', '=', email)
+        .select(['id', 'body', 'created_by', 'updated_at'])
+        .execute();
+
 
       return res.status(200).json({
         id: newEntry.id.toString(),
