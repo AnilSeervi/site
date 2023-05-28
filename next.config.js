@@ -25,8 +25,8 @@ module.exports = {
 
 // https://nextjs.org/docs/advanced-features/security-headers
 const ContentSecurityPolicy = `
-    default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' *.youtube.com *.twitter.com;
+    default-src 'self' vercel.live;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' cdn.vercel-insights.com vercel.live;
     child-src *.youtube.com *.google.com *.twitter.com giscus.app;
     style-src 'self' 'unsafe-inline';
     img-src * blob: data:;

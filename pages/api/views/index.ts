@@ -1,20 +1,25 @@
+import { queryBuilder } from 'lib/planetscale';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import prisma from 'lib/prisma';
 
 export default async function handler(
-  req: NextApiRequest,
+  _: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
-    const totalViews = await prisma.page.aggregate({
-      _sum: {
-        views: true
-      }
-    });
+    const total = await queryBuilder
+      .selectFrom('page')
+      .select(['views'])
+      .execute();
+
+    const totalViews = total.reduce((acc, curr) => {
+      acc.views += +curr.views;
+      return acc;
+    }, { views: 0 });
 
     res.setHeader('Allow', ['GET']);
-    return res.status(200).json({ total: totalViews._sum.views.toString() });
+    return res.status(200).json({ total: totalViews.views.toString() });
   } catch (e) {
+    console.error(e)
     return res.status(500).json({ message: e.message });
   }
 }

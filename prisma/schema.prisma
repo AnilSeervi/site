@@ -19,7 +19,7 @@ model guestbook {
 }
 
 model page {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("(uuid())"))
   createdAt DateTime @default(now())
   slug      String   @unique @db.VarChar(128)
   likes     BigInt   @default(0)
