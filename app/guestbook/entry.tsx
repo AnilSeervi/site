@@ -1,6 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+
 function Entry({ entry, user }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const deleteEntry = async (e) => {
     e.preventDefault();
 
@@ -8,7 +13,9 @@ function Entry({ entry, user }) {
       method: 'DELETE'
     });
 
-    window.location.reload();
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   return (
@@ -37,6 +44,7 @@ function Entry({ entry, user }) {
             <button
               className="text-sm text-red-600 dark:text-red-400"
               onClick={deleteEntry}
+              disabled={isPending}
             >
               Delete
             </button>
