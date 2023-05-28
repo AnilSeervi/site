@@ -26,21 +26,20 @@ export default async function handler(
 
     const session = await getSession({ req });
     const { email, name } = session.user;
-    console.log(session, "session")
 
     if (!session) {
       return res.status(403).send('Unauthorized');
     }
 
     if (req.method === 'POST') {
-
-      await queryBuilder.
-        insertInto('guestbook')
+      await queryBuilder
+        .insertInto('guestbook')
         .values({
           email,
           body: req.body.body || '',
           created_by: name
-        }).execute();
+        })
+        .execute();
 
       // Matching with email is not a good idea, replace with id
       const [newEntry] = await queryBuilder
@@ -48,7 +47,6 @@ export default async function handler(
         .where('email', '=', email)
         .select(['id', 'body', 'created_by', 'updated_at'])
         .execute();
-
 
       return res.status(200).json({
         id: newEntry.id.toString(),
@@ -59,9 +57,8 @@ export default async function handler(
     }
 
     return res.send('Method not allowed.');
-  }
-  catch (e) {
-    console.error(e)
-    return res.status(500).json({ message: e.message });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 }
