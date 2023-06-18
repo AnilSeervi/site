@@ -30,7 +30,7 @@ export default async function handler(req: NextRequest, res: NextResponse) {
           height: '100%',
           width: '100%',
           display: 'flex',
-          background: `url(${websiteURL}/og-bg.png)`,
+          background: `url(${websiteURL}/og-bg.jpg)`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
