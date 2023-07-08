@@ -13,7 +13,7 @@ import {
 } from 'lib/types';
 import { getOG } from 'utils/og';
 
-export const revalidate = 86400; // 24 hours
+export const revalidate = 60 * 5;
 
 export const metadata = {
   title: 'Anime Dashboard',
