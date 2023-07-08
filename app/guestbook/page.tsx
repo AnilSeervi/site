@@ -33,8 +33,8 @@ export const metadata = {
           slug: '/guestbook',
           image: 'unsplash/photo-1627056503679-34051c0122c5'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Guestbook'
       }
     ]
@@ -42,19 +42,18 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Guestbook',
-    images: [
-      {
-        url: getOG({
-          title: 'Guestbook',
-          description: 'My personal guestbook, built with Next.js API routes.',
-          slug: '/guestbook',
-          image: 'unsplash/photo-1627056503679-34051c0122c5'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Guestbook'
-      }
-    ]
+    description: 'My personal guestbook, built with Next.js API routes.',
+    images: {
+      url: getOG({
+        title: 'Guestbook',
+        description: 'My personal guestbook, built with Next.js API routes.',
+        slug: '/guestbook',
+        image: 'unsplash/photo-1627056503679-34051c0122c5'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Guestbook'
+    }
   }
 };
 

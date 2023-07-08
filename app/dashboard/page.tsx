@@ -20,8 +20,8 @@ export const metadata = {
           slug: '/dashboard',
           image: 'unsplash/photo-1551288049-bebda4e38f71'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Personal Dashboard'
       }
     ]
@@ -29,20 +29,20 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Personal Dashboard',
-    images: [
-      {
-        url: getOG({
-          title: 'Personal Dashboard',
-          description:
-            'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
-          slug: '/dashboard',
-          image: 'unsplash/photo-1551288049-bebda4e38f71'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Personal Dashboard'
-      }
-    ]
+    description:
+      'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+    images: {
+      url: getOG({
+        title: 'Personal Dashboard',
+        description:
+          'My personal dashboard, built with Next.js API routes deployed as serverless functions.',
+        slug: '/dashboard',
+        image: 'unsplash/photo-1551288049-bebda4e38f71'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Personal Dashboard'
+    }
   }
 };
 

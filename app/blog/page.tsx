@@ -22,8 +22,8 @@ export const metadata = {
           preTitle: 'Check out this Blog',
           image: 'unsplash/photo-1519337265831-281ec6cc8514'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Blog'
       }
     ]
@@ -31,21 +31,21 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Blog',
-    images: [
-      {
-        url: getOG({
-          title: 'Priceless insights, ideas, and experiences for your dev work',
-          description:
-            'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
-          slug: '/blog',
-          preTitle: 'Check out this Blog',
-          image: 'unsplash/photo-1519337265831-281ec6cc8514'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Blog'
-      }
-    ]
+    description:
+      'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+    images: {
+      url: getOG({
+        title: 'Priceless insights, ideas, and experiences for your dev work',
+        description:
+          'Thoughts on the software industry, programming, tech, videography, music, and my personal life.',
+        slug: '/blog',
+        preTitle: 'Check out this Blog',
+        image: 'unsplash/photo-1519337265831-281ec6cc8514'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Blog'
+    }
   }
 };
 

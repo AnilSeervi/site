@@ -45,8 +45,8 @@ export const generateMetadata = async ({ params }) => {
             slug: `/snippets/${slug}`,
             preTitle: 'Check out this Snippet'
           }),
-          width: 1920,
-          height: 1080,
+          width: 1280,
+          height: 720,
           alt: title
         }
       ]
@@ -56,16 +56,14 @@ export const generateMetadata = async ({ params }) => {
       title,
       description:
         'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
-      images: [
-        {
-          url: getOG({
-            title,
-            slug: `/snippets/${slug}`,
-            preTitle: 'Check out this Snippet'
-          }),
-          alt: title
-        }
-      ]
+      images: {
+        url: getOG({
+          title,
+          slug: `/snippets/${slug}`,
+          preTitle: 'Check out this Snippet'
+        }),
+        alt: title
+      }
     }
   };
 };

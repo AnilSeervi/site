@@ -22,8 +22,8 @@ export const metadata = {
           preTitle: 'Check out this Snippets',
           image: 'unsplash/photo-1616628188467-8fb29f49bbe8'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Snippets'
       }
     ]
@@ -31,21 +31,21 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Snippets',
-    images: [
-      {
-        url: getOG({
-          title: 'Snippets',
-          description:
-            'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
-          slug: '/snippets',
-          preTitle: 'Check out this Snippets',
-          image: 'unsplash/photo-1616628188467-8fb29f49bbe8'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Snippets'
-      }
-    ]
+    description:
+      'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+    images: {
+      url: getOG({
+        title: 'Snippets',
+        description:
+          'A collection of code snippets I have used and saved. Mostly CSS and JS tricks, but also some serverless functions and some setup instructions.',
+        slug: '/snippets',
+        preTitle: 'Check out this Snippets',
+        image: 'unsplash/photo-1616628188467-8fb29f49bbe8'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Snippets'
+    }
   }
 };
 
