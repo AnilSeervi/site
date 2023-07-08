@@ -33,8 +33,8 @@ export const metadata = {
           preTitle: 'Weeb Stats',
           image: 'unsplash/photo-1613376023733-0a73315d9b06'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Anime Dashboard'
       }
     ]
@@ -42,21 +42,21 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Anime Dashboard',
-    images: [
-      {
-        url: getOG({
-          title: 'Anime Dashboard',
-          description:
-            "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
-          slug: '/anime',
-          preTitle: 'Weeb Stats',
-          image: 'unsplash/photo-1613376023733-0a73315d9b06'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Anime Dashboard'
-      }
-    ]
+    description:
+      "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+    images: {
+      url: getOG({
+        title: 'Anime Dashboard',
+        description:
+          "Personal anime dashboard, with all the animes I've watched and am currently watching with their scores.",
+        slug: '/anime',
+        preTitle: 'Weeb Stats',
+        image: 'unsplash/photo-1613376023733-0a73315d9b06'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Anime Dashboard'
+    }
   }
 };
 

@@ -45,30 +45,28 @@ export const generateMetadata = async ({ params }) => {
             preTitle: 'Check out this Blog',
             image: coverURL
           }),
-          width: 1920,
-          height: 1080,
+          width: 1280,
+          height: 720,
           alt: title
         }
       ]
     },
-
     twitter: {
       card: 'summary_large_image',
       title: title,
-      images: [
-        {
-          url: getOG({
-            title: title,
-            description: excerpt,
-            slug: `/blog/${slug}`,
-            preTitle: 'Check out this Blog',
-            image: coverURL
-          }),
-          alt: title,
-          height: 1080,
-          width: 1920
-        }
-      ]
+      description: excerpt,
+      images: {
+        url: getOG({
+          title: title,
+          description: excerpt,
+          slug: `/blog/${slug}`,
+          preTitle: 'Check out this Blog',
+          image: coverURL
+        }),
+        alt: title,
+        height: 720,
+        width: 1280
+      }
     }
   };
 };

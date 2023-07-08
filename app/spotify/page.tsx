@@ -23,8 +23,8 @@ export const metadata = {
           preTitle: "What's hot on my Spotify",
           image: 'unsplash/photo-1613329671121-5d1cf551cc3f'
         }),
-        width: 1920,
-        height: 1080,
+        width: 1280,
+        height: 720,
         alt: 'Spotify Dashboard'
       }
     ]
@@ -32,21 +32,21 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Spotify Dashboard',
-    images: [
-      {
-        url: getOG({
-          title: 'Spotify Dashboard',
-          description:
-            'Personal Spotify dashboard with my top tracks and top artists, updates every day.',
-          slug: '/spotify',
-          preTitle: "What's hot on my Spotify",
-          image: 'unsplash/photo-1613329671121-5d1cf551cc3f'
-        }),
-        width: 1920,
-        height: 1080,
-        alt: 'Spotify Dashboard'
-      }
-    ]
+    description:
+      'My personal Spotify dashboard, with my top tracks and artists.',
+    images: {
+      url: getOG({
+        title: 'Spotify Dashboard',
+        description:
+          'Personal Spotify dashboard with my top tracks and top artists, updates every day.',
+        slug: '/spotify',
+        preTitle: "What's hot on my Spotify",
+        image: 'unsplash/photo-1613329671121-5d1cf551cc3f'
+      }),
+      width: 1280,
+      height: 720,
+      alt: 'Spotify Dashboard'
+    }
   }
 };
 

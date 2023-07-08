@@ -44,16 +44,21 @@ const defaultMetadata: Metadata = {
     images: [
       {
         url: ogURL,
-        width: 1920,
-        height: 1080
+        width: 1280,
+        height: 720
       }
     ]
   },
   twitter: {
     title: 'Anil Seervi',
+    description: 'Front-end developer, Open Source enthusiast.',
     card: 'summary_large_image',
     site: '@anil_seervi',
-    creator: '@anil_seervi'
+    creator: '@anil_seervi',
+    images: {
+      url: ogURL,
+      alt: 'Anil Seervi – Developer, Designer, Open Sourcerer'
+    }
   },
   robots: {
     index: true,
