@@ -10,9 +10,6 @@ module.exports = {
       'cdn.sanity.io',
     ]
   },
-  experimental: {
-    appDir: true,
-  },
   async headers() {
     return [
       {
