@@ -1,3 +1,4 @@
+import { websiteURL } from 'lib/constants';
 import type { Metadata } from 'next';
 import { getOG } from './og';
 
@@ -13,6 +14,7 @@ const defaultMetadata: Metadata = {
   },
   description: 'Front-end developer, Open Source enthusiast.',
   creator: 'Anil Seervi',
+  metadataBase: new URL(websiteURL),
   icons: {
     icon: '/static/favicons/favicon.svg',
     shortcut: '/static/favicons/favicon.ico',
