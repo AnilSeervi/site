@@ -1,11 +1,11 @@
-import '../styles/global.css';
-import { Karla } from 'next/font/google';
-import globalMetadata from 'utils/metadata';
-import ProviderTheme from 'components/ProviderTheme';
+import { Analytics } from '@vercel/analytics/react';
 import Footer from 'components/Footer';
 import IncrementView from 'components/IncrementView';
-import type { Metadata } from 'next';
-import { Analytics } from '@vercel/analytics/react';
+import ProviderTheme from 'components/ProviderTheme';
+import type { Metadata, Viewport } from 'next';
+import { Karla } from 'next/font/google';
+import globalMetadata from 'utils/metadata';
+import '../styles/global.css';
 import DockBottom from './DockBottom';
 
 const karla = Karla({
@@ -14,6 +14,12 @@ const karla = Karla({
   subsets: ['latin']
 });
 
+export const viewport :Viewport = {
+  themeColor:[
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' }
+  ]
+}
 export const metadata: Metadata = globalMetadata;
 
 function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,3 +1,4 @@
+import { websiteURL } from 'lib/constants';
 import type { Metadata } from 'next';
 import { getOG } from './og';
 
@@ -12,11 +13,8 @@ const defaultMetadata: Metadata = {
     template: '%s | Anil Seervi'
   },
   description: 'Front-end developer, Open Source enthusiast.',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' }
-  ],
   creator: 'Anil Seervi',
+  metadataBase: new URL(websiteURL),
   icons: {
     icon: '/static/favicons/favicon.svg',
     shortcut: '/static/favicons/favicon.ico',
