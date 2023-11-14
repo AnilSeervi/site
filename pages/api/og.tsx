@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
-import { ImageResponse } from 'next/server';
 import { websiteURL } from 'lib/constants';
+import { ImageResponse } from 'next/og';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -11,16 +11,13 @@ const kaiseiFont = fetch(
   new URL('../../public/fonts/kaisei-tokumin-bold.ttf', import.meta.url)
 ).then((res) => res.arrayBuffer());
 
-export default async function handler(req: NextRequest, res: NextResponse) {
+export default async function handler(req: NextRequest) {
   const kaiseiFontBuffer = await kaiseiFont;
   const { searchParams } = req.nextUrl;
-  const preTitle = searchParams.get('preTitle');
   const title = searchParams.get('title');
-  const url = searchParams.get('url');
   const image =
     searchParams.get('image') || `unsplash/photo-1638482856830-16b0e15fcf2c`;
   const isUnsplash = image?.includes('unsplash');
-  const description = searchParams.get('description');
   console.log(isUnsplash);
   return new ImageResponse(
     (
