@@ -12,10 +12,6 @@ const defaultMetadata: Metadata = {
     template: '%s | Anil Seervi'
   },
   description: 'Front-end developer, Open Source enthusiast.',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' }
-  ],
   creator: 'Anil Seervi',
   icons: {
     icon: '/static/favicons/favicon.svg',
