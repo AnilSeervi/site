@@ -97,7 +97,6 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
     setElCenterX(x + INITIAL_WIDTH / 2);
   });
 
-  const timesLooped = React.useRef(0);
   const timeoutRef = React.useRef<number>();
   const isAnimating = React.useRef(false);
 
@@ -106,11 +105,9 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
       isAnimating.current = true;
       opacity.start(0.5);
 
-      timesLooped.current = 0;
 
       y.start(-(INITIAL_WIDTH + 10) / 2, {
         loop: () => {
-          if (1 === timesLooped.current++) {
             timeoutRef.current = window.setTimeout(() => {
               opacity.start(0);
               y.set(0);
@@ -119,7 +116,6 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
             }, 0);
 
             y.stop();
-          }
 
           return {
             reverse: true,
