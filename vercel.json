@@ -26,6 +26,10 @@
     {
       "source": "/hentai",
       "destination": "https://youtu.be/dQw4w9WgXcQ"
+    },
+    {
+      "source": "/insta",
+      "destination": "https://www.instagram.com/linaseervi/"
     }
   ]
 }
