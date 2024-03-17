@@ -4,16 +4,11 @@ import Footer from 'components/Footer';
 import IncrementView from 'components/IncrementView';
 import ProviderTheme from 'components/ProviderTheme';
 import type { Metadata, Viewport } from 'next';
-import { Karla } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans'
 import globalMetadata from 'utils/metadata';
 import '../styles/global.css';
 import DockBottom from './DockBottom';
 
-const karla = Karla({
-  variable: '--font-karla',
-  display: 'swap',
-  subsets: ['latin']
-});
 
 export const viewport :Viewport = {
   themeColor:[
@@ -25,7 +20,7 @@ export const metadata: Metadata = globalMetadata;
 
 function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={karla.variable}>
+    <html lang="en" className={GeistSans.variable}>
       <head prefix="og:http//ogp.me/ns#"></head>
       <body className="bg-gray-50 text-black antialiased dark:bg-gray-900 dark:text-white">
         <ProviderTheme>
