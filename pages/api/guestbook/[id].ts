@@ -1,4 +1,6 @@
-import { queryBuilder } from 'lib/planetscale';
+import { eq } from 'drizzle-orm';
+import { guestbook } from 'drizzle/schema';
+import { db } from 'lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 
@@ -11,10 +13,16 @@ export default async function handler(
   const { id } = req.query;
   const { email } = session.user;
 
-  const [entry] = await queryBuilder.selectFrom('guestbook')
-    .where('id', '=', Number(id))
-    .select(['id', 'body', 'created_by', 'updated_at', 'email'])
-    .execute();
+  const [entry] = await db
+    .select({
+      id: guestbook.id,
+      body: guestbook.body,
+      created_by: guestbook.created_by,
+      updated_at: guestbook.updated_at,
+      email: guestbook.email
+    })
+    .from(guestbook)
+    .where(eq(guestbook.id, Number(id)));
 
   if (req.method === 'GET') {
     return res.json({
@@ -30,10 +38,7 @@ export default async function handler(
   }
 
   if (req.method === 'DELETE') {
-
-    await queryBuilder.deleteFrom('guestbook')
-      .where('id', '=', Number(id))
-      .execute();
+    await db.delete(guestbook).where(eq(guestbook.id, Number(id)));
 
     return res.status(204).json({});
   }
@@ -41,12 +46,19 @@ export default async function handler(
   if (req.method === 'PUT') {
     const body = (req.body.body || '').slice(0, 500);
 
-    await queryBuilder.updateTable('guestbook').set({
-      body,
-      updated_at: new Date().toISOString()
-    })
-      .where('id', '=', Number(id))
-      .execute();
+    const [entry] = await db
+      .update(guestbook)
+      .set({
+        body,
+        updated_at: new Date().getTime()
+      })
+      .where(eq(guestbook.id, Number(id)))
+      .returning({
+        id: guestbook.id,
+        body: guestbook.body,
+        created_by: guestbook.created_by,
+        updated_at: guestbook.updated_at
+      });
 
     return res.status(201).json({
       ...entry,

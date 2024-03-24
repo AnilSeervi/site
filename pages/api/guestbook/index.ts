@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { queryBuilder } from 'lib/planetscale';
+import { db } from 'lib/db';
+import { guestbook } from 'drizzle/schema';
+import { desc } from 'drizzle-orm';
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,14 +10,14 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-      const entries = await queryBuilder
-        .selectFrom('guestbook')
-        .selectAll()
-        .orderBy('updated_at', 'desc')
-        .execute();
+      const entries = db
+        .select()
+        .from(guestbook)
+        .orderBy(desc(guestbook.updated_at));
+      console.log(entries[0]);
 
       return res.json(
-        entries.map((entry) => ({
+        entries[0]?.map((entry) => ({
           id: entry.id.toString(),
           body: entry.body,
           created_by: entry.created_by,
@@ -32,21 +34,19 @@ export default async function handler(
     }
 
     if (req.method === 'POST') {
-      await queryBuilder
-        .insertInto('guestbook')
+      const [newEntry] = await db
+        .insert(guestbook)
         .values({
           email,
           body: req.body.body || '',
           created_by: name
         })
-        .execute();
-
-      // Matching with email is not a good idea, replace with id
-      const [newEntry] = await queryBuilder
-        .selectFrom('guestbook')
-        .where('email', '=', email)
-        .select(['id', 'body', 'created_by', 'updated_at'])
-        .execute();
+        .returning({
+          id: guestbook.id,
+          body: guestbook.body,
+          created_by: guestbook.created_by,
+          updated_at: guestbook.updated_at
+        });
 
       return res.status(200).json({
         id: newEntry.id.toString(),

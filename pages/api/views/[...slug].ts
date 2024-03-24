@@ -1,7 +1,8 @@
-import { queryBuilder } from 'lib/planetscale';
+import { eq } from 'drizzle-orm';
+import { page } from 'drizzle/schema';
+import { db } from 'lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSlug } from 'utils';
-
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,21 +11,27 @@ export default async function handler(
   try {
     const slug = getSlug(req.query.slug);
 
-    const post = await queryBuilder
-      .selectFrom('page')
-      .where('slug', '=', slug)
-      .select(['views'])
-      .execute();
+    const postViews = await db
+      .select({
+        views: page.views
+      })
+      .from(page)
+      .where(eq(page.slug, slug));
 
-    const views = !post.length ? 0 : Number(post[0].views);
+    const views = postViews[0]?.views || 0;
 
     if (req.method === 'POST') {
+      if (!postViews[0]) {
+        await db.insert(page).values({
+          slug,
+          views: 1
+        });
+      }
 
-      await queryBuilder.insertInto('page').values({
-        slug, views: 1
-      }).onDuplicateKeyUpdate({
-        views: views + 1,
-      }).execute();
+      await db
+        .update(page)
+        .set({ views: views + 1 })
+        .where(eq(page.slug, slug));
 
       return res.status(200).json({
         total: (views + 1).toString() || '1'

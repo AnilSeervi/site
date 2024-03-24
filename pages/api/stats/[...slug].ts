@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { queryBuilder } from 'lib/planetscale';
 import { z } from 'zod';
+import { db } from 'lib/db';
+import { page } from 'drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,16 +12,15 @@ export default async function handler(
     const slug = z.string().array().parse(req.query.slug).join('/');
 
     if (req.method === 'GET') {
-      const [post] = await queryBuilder
-        .selectFrom('page')
-        .where('slug', '=', slug)
-        .select(['views', 'likes'])
-        .execute();
+      const stats = await db
+        .select({
+          views: page.views,
+          likes: page.likes
+        })
+        .from(page)
+        .where(eq(page.slug, slug));
 
-      return res.status(200).json({
-        views: post.views.toString() || '1',
-        likes: post.likes.toString() || '0'
-      });
+      return res.status(200).json(stats[0] || { views: 0, likes: 0 });
     }
     res.setHeader('Allow', ['GET']);
     return res.status(405).send('Method Not Allowed');
