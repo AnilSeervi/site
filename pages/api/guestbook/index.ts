@@ -14,7 +14,6 @@ export default async function handler(
         .select()
         .from(guestbook)
         .orderBy(desc(guestbook.updated_at));
-      console.log(entries[0]);
 
       return res.json(
         entries[0]?.map((entry) => ({
