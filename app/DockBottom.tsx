@@ -203,10 +203,14 @@ function DockBottom() {
           >
             {item.route ? (
               <a href={item.route} target="_blank" rel="noopener noreferrer">
+                <span className="sr-only">{item.label}</span>
                 {item.icon}
               </a>
             ) : item.path ? (
-              <Link href={item.path}>{item.icon}</Link>
+              <Link href={item.path}>
+                <span className="sr-only">{item.label}</span>
+                {item.icon}
+              </Link>
             ) : (
               item.icon
             )}

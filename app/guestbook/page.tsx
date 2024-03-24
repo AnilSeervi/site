@@ -1,18 +1,22 @@
 import Guestbook from 'components/Guestbook';
-import { queryBuilder } from 'lib/planetscale';
+import { desc } from 'drizzle-orm';
+import { guestbook } from 'drizzle/schema';
+import { db } from 'lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from 'pages/api/auth/[...nextauth]';
 import { getOG } from 'utils/og';
 
 async function getGuestbookData() {
-  const entries = await queryBuilder
-    .selectFrom('guestbook')
-    .select(['id', 'body', 'created_by', 'updated_at'])
-    .orderBy('updated_at', 'desc')
-    .limit(100)
-    .execute();
-
-  return entries;
+  return db
+    .select({
+      id: guestbook.id,
+      body: guestbook.body,
+      created_by: guestbook.created_by,
+      updated_at: guestbook.updated_at
+    })
+    .from(guestbook)
+    .orderBy(desc(guestbook.updated_at))
+    .limit(100);
 }
 
 export const dynamic = 'force-dynamic';
@@ -69,8 +73,8 @@ async function GuestBook() {
       entries = data?.value.map((entry) => ({
         id: entry.id.toString(),
         body: entry.body,
-        created_by: entry.created_by.toString(),
-        updated_at: entry.updated_at.toString()
+        created_by: entry.created_by,
+        updated_at: entry.updated_at
       }));
     } else {
       console.error(data);

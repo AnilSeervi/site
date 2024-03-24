@@ -1,26 +1,20 @@
-import { queryBuilder } from 'lib/planetscale';
+import { sum } from 'drizzle-orm';
+import { page } from 'drizzle/schema';
+import { db } from 'lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-export default async function handler(
-  _: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(_: NextApiRequest, res: NextApiResponse) {
   try {
-    const total = await queryBuilder
-      .selectFrom('page')
-      .select(['likes'])
-      .execute();
-
-    const totalLikes = total.reduce((acc, curr) => {
-      acc.likes += +curr.likes;
-      return acc;
-    }, { likes: 0 });
-
+    const total = await db
+      .select({
+        total: sum(page.likes)
+      })
+      .from(page);
 
     res.setHeader('Allow', ['GET']);
-    return res.status(200).json({ total: totalLikes.likes.toString() });
+    return res.status(200).json(total[0]);
   } catch (e) {
-    console.error(e)
+    console.error(e);
     return res.status(500).json({ message: e.message });
   }
 }

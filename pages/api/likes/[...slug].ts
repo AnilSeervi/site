@@ -2,7 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { createHash } from 'crypto';
 import { getSlug } from 'utils';
-import { queryBuilder } from 'lib/planetscale';
+import { db } from 'lib/db';
+import { page, session } from 'drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,9 +30,15 @@ export default async function handler(
     const sessionId = slug + '___' + currentUserId;
 
     const [[post], [user]] = await Promise.all([
-      await queryBuilder.selectFrom('page').where('slug', '=', slug).select(['likes']).execute(),
-      await queryBuilder.selectFrom('session').where('id', '=', sessionId).select(['likes']).execute()
-    ])
+      await db
+        .select({ likes: page.likes })
+        .from(page)
+        .where(eq(page.slug, slug)),
+      await db
+        .select({ likes: session.likes })
+        .from(session)
+        .where(eq(session.id, sessionId))
+    ]);
 
     let currentUserLikes = 0;
     if (user?.likes) {
@@ -40,21 +48,24 @@ export default async function handler(
     if (req.method === 'POST') {
       const count = z.number().min(1).max(3).parse(req.body.count);
 
-      await Promise.all([
-        await queryBuilder.insertInto('page').values({
-          slug, likes: count
-        })
-          .onDuplicateKeyUpdate({
-            likes: +post.likes + count,
-          }).execute(),
+      const sessionQuery = user?.likes
+        ? db
+            .update(session)
+            .set({ likes: currentUserLikes + count })
+            .where(eq(session.id, sessionId))
+        : db.insert(session).values({ id: sessionId, likes: count });
 
-        await queryBuilder.insertInto('session').values({
-          id: sessionId, likes: count
-        })
-          .onDuplicateKeyUpdate({
-            likes: currentUserLikes + count,
-          }).execute()
-      ])
+      const [[pageLikes], [sessionLikes]] = await Promise.all([
+        await db
+          .update(page)
+          .set({
+            likes: +post.likes + count
+          })
+          .where(eq(page.slug, slug))
+          .returning({ likes: page.likes }),
+
+        await sessionQuery.returning()
+      ]);
 
       return res.status(200).json({
         likes: (+post.likes + count).toString() || '0',

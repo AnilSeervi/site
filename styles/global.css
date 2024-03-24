@@ -10,7 +10,7 @@
 html {
   min-width: 360px;
   scroll-behavior: smooth;
-  word-break:  break-word;
+  word-break: break-word;
 }
 
 #__next {
@@ -20,12 +20,13 @@ html {
   min-height: 100vh;
 }
 
-pre, code{
-font-family: var(--font-jetbrains-mono);
+pre,
+code {
+  font-family: var(--font-geist-mono);
 }
 
 .font-mono {
-  font-family: var(--font-jetbrains-mono);
+  font-family: var(--font-geist-mono);
 }
 
 /* https://seek-oss.github.io/capsize/ */
