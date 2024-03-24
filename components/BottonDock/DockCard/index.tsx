@@ -105,17 +105,16 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
       isAnimating.current = true;
       opacity.start(0.5);
 
-
       y.start(-(INITIAL_WIDTH + 10) / 2, {
         loop: () => {
-            timeoutRef.current = window.setTimeout(() => {
-              opacity.start(0);
-              y.set(0);
-              isAnimating.current = false;
-              timeoutRef.current = undefined;
-            }, 0);
+          timeoutRef.current = window.setTimeout(() => {
+            opacity.start(0);
+            y.set(0);
+            isAnimating.current = false;
+            timeoutRef.current = undefined;
+          }, 0);
 
-            y.stop();
+          y.stop();
 
           return {
             reverse: true,
@@ -150,6 +149,7 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
       position={centered}
     >
       <animated.button
+        aria-label={label}
         ref={cardRef}
         className={'dock-card'}
         onClick={handleClick}
