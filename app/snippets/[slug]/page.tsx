@@ -31,6 +31,9 @@ export const generateMetadata = async ({ params }) => {
     description:
       'A collection of code snippets – including serverless functions, Node.js scripts, and CSS tricks.',
     url: `${websiteURL}/snippets/${slug}`,
+    alternates: {
+      canonical: `${websiteURL}/snippets/${slug}`
+    },
     openGraph: {
       title,
       description:

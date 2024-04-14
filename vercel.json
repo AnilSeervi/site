@@ -30,6 +30,10 @@
     {
       "source": "/insta",
       "destination": "https://www.instagram.com/linaseervi/"
+    },
+    {
+      "source": "/blog/hof-in-js",
+      "destination": "/blog/higher-order-functions-in-javascript"
     }
   ]
 }
