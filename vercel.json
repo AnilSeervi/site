@@ -34,6 +34,10 @@
     {
       "source": "/blog/hof-in-js",
       "destination": "/blog/higher-order-functions-in-javascript"
+    },
+    {
+      "source": "/cv",
+      "destination": "https://cv-anil.vercel.app/"
     }
   ]
 }
