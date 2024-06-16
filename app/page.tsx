@@ -43,6 +43,11 @@ function HomePage() {
       </h3>
       <section className="flex w-full flex-col gap-6 md:flex-row">
         <BlogPostCard
+          title="The Beauty of Stateless Components"
+          slug="the-beauty-of-stateless-components"
+          gradient="from-[#FDE68A] via-[#FCA5A5] to-[#FECACA]"
+        />
+        <BlogPostCard
           title="Deep cloning nested objects natively without using lodash"
           slug="deepclone-without-lodash"
           gradient="from-[#6EE7B7] via-[#3B82F6] to-[#9333EA]"
@@ -51,11 +56,6 @@ function HomePage() {
           title="Reduce Arrays like a pro"
           slug="reduce-arrays-like-a-pro"
           gradient="from-[#D8B4FE] to-[#818CF8]"
-        />
-        <BlogPostCard
-          title="Higher Order Array functions forEach, map and filter"
-          slug="hof-map-filter-foreach"
-          gradient="from-[#FDE68A] via-[#FCA5A5] to-[#FECACA]"
         />
       </section>
       <Link

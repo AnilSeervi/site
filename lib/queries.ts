@@ -7,6 +7,7 @@ const postFields = `
   excerpt,
   coverImage,
   coverURL,
+  draft,
   "slug": slug.current,
 `;
 

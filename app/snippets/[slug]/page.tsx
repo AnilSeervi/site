@@ -5,7 +5,7 @@ import { mdxToHtml } from 'lib/mdx';
 import { snippetSlugsQuery, snippetsQuery } from 'lib/queries';
 import { urlForImage } from 'lib/sanity';
 import { sanityClient } from 'lib/sanity-server';
-import { Snippet } from 'lib/types';
+import { type Snippet } from 'lib/types';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';

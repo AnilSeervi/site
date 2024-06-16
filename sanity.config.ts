@@ -21,6 +21,11 @@ export default defineConfig({
             type: 'string'
           },
           {
+            name: 'draft',
+            title: 'Draft',
+            type: 'boolean'
+          },
+          {
             name: 'slug',
             title: 'Slug',
             type: 'slug',
