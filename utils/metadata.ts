@@ -37,7 +37,7 @@ const defaultMetadata: Metadata = {
     description: 'Front-end developer, Open Source enthusiast.',
     locale: 'en_US',
     type: 'website',
-    url: 'https://anil.vercel.app',
+    url: websiteURL,
     siteName: 'Anil Seervi',
     images: [
       {
@@ -51,8 +51,8 @@ const defaultMetadata: Metadata = {
     title: 'Anil Seervi',
     description: 'Front-end developer, Open Source enthusiast.',
     card: 'summary_large_image',
-    site: '@anil_seervi',
-    creator: '@anil_seervi',
+    site: '@linASeervi',
+    creator: '@linASeervi',
     images: {
       url: ogURL,
       alt: 'Anil Seervi – Developer, Designer, Open Sourcerer'

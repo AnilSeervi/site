@@ -10,6 +10,7 @@ export type Post = {
   coverImage: string;
   readingTime: string;
   tweets: any[];
+  draft: boolean | null;
   coverURL: string;
   _createdAt: string;
   _updatedAt: string;

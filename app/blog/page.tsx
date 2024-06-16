@@ -52,7 +52,8 @@ export const metadata = {
 async function BlogIndex() {
   let posts: Post[] = [];
   try {
-    posts = await getClient(false).fetch(indexQuery);
+    const allPosts = await getClient(false).fetch(indexQuery);
+    posts = allPosts?.filter((post: Post) => post.draft !== true) || [];
   } catch (e) {
     console.log(e);
   }

@@ -20,7 +20,7 @@ export async function generateStaticParams() {
 export const generateMetadata = async ({ params }) => {
   const { slug } = params;
   const {
-    post: { title, excerpt, date, coverURL, _updatedAt }
+    post: { title, excerpt, date, coverURL, _updatedAt, draft }
   } = await sanityClient.fetch(postQuery, {
     slug
   });
@@ -70,6 +70,11 @@ export const generateMetadata = async ({ params }) => {
         height: 720,
         width: 1280
       }
+    },
+    robots: {
+      index: !draft,
+      follow: !draft,
+      nocache: draft
     }
   };
 };
