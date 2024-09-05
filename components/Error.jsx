@@ -7,7 +7,7 @@ function Error() {
       <div>
         <Button
           onClick={() => {
-            undefined.crash();
+            a.b = undefined.crash();
           }}
         >
           🔥 Crash this page{' '}
