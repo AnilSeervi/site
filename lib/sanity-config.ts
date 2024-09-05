@@ -3,5 +3,5 @@ export const sanityConfig = {
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   useCdn: process.env.NODE_ENV === 'production',
   apiVersion: '2022-03-25',
-  token: process.env.SANITY_API_TOKEN
+  token: process.env.SANITY_API_WRITE_TOKEN
 };
