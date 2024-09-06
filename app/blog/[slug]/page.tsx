@@ -11,7 +11,6 @@ import { Suspense } from 'react';
 import { getOG } from 'utils/og';
 import MdxWrapper from './MdxWrapper';
 import Metrics from './Metrics';
-import { a } from '@react-spring/web';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(postSlugsQuery);
@@ -78,6 +77,10 @@ export const generateMetadata = async ({ params }) => {
       nocache: draft
     }
   };
+};
+
+const crash = () => {
+  throw Error('crash is not defined');
 };
 
 async function Blog({ params, searchParams }) {
@@ -164,7 +167,7 @@ async function Blog({ params, searchParams }) {
       </div>
       <GiscusWrapper />
 
-      {searchParams?.crash && <Suspense fallback={null}>{crash}</Suspense>}
+      {searchParams?.crash && <Suspense fallback={null}>{crash()}</Suspense>}
     </>
   );
 }
