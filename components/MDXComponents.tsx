@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import Image from 'next/image';
 import { components } from './ProseComponents';
-
 import ProsCard from 'components/ProsCard';
 import ConsCard from 'components/ConsCard';
 import Step from 'components/Step';

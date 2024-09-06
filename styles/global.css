@@ -3,10 +3,6 @@
 @tailwind utilities;
 @import url(./theme-toggle.css);
 
-::selection {
-  @apply bg-emerald-400 text-gray-800;
-}
-
 html {
   min-width: 360px;
   scroll-behavior: smooth;

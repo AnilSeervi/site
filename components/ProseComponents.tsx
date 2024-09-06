@@ -3,6 +3,7 @@ import type { ImageProps } from 'next/image';
 import clsx from 'clsx';
 import { BlurImage } from './BlurImage';
 import Step from './Step';
+import Error from './Error';
 
 export const LINK_STYLES = `text-gray-900/80 dark:text-gray-100/80 underline decoration-gray-900/30 dark:decoration-gray-200/30 underline-offset-2 transition-all hover:text-gray-900 hover:dark:text-gray-100 hover:dark:decoration-gray-100/50 hover:decoration-gray-900/50`;
 export const FOCUS_VISIBLE_OUTLINE = `focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70`;
@@ -63,7 +64,7 @@ export const components = {
   },
   ul: (props: any) => (
     <ul
-      className="space-y-3 [li>&]:mt-3 [&>li]:relative [&>li]:pl-7 before:[&>li]:absolute before:[&>li]:left-1 before:[&>li]:top-3 before:[&>li]:h-1.5 before:[&>li]:w-1.5 before:[&>li]:rounded-full before:[&>li]:bg-rose-100/20"
+      className="space-y-3 [&>li]:relative [&>li]:pl-7 before:[&>li]:absolute before:[&>li]:left-1 before:[&>li]:top-3 before:[&>li]:h-1.5 before:[&>li]:w-1.5 before:[&>li]:rounded-full before:[&>li]:bg-rose-100/20 [li>&]:mt-3"
       {...props}
     />
   ),
@@ -99,7 +100,7 @@ export const components = {
   blockquote: (props: any) => (
     <span className="relative xl:!col-start-2 xl:!col-end-3">
       <blockquote
-        className="relative border-l-2 border-gray-700/10 pl-4 text-lg italic dark:border-gray-200/10 xl:absolute xl:right-0 xl:top-0 xl:left-0"
+        className="relative border-l-2 border-gray-700/10 pl-4 text-lg italic dark:border-gray-200/10 xl:absolute xl:left-0 xl:right-0 xl:top-0"
         {...props}
       />
     </span>
@@ -110,5 +111,6 @@ export const components = {
       {...props}
     />
   ),
-  Step: (props: any) => <Step {...props} />
+  Step: (props: any) => <Step {...props} />,
+  Error: Error
 };

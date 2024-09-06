@@ -1,8 +1,6 @@
 import { type Options } from 'rehype-pretty-code';
 import { visit } from 'unist-util-visit';
-import { GeistMono } from 'geist/font/mono'
-
-
+import { GeistMono } from 'geist/font/mono';
 
 // div.BLOCK > pre.PRE > code.CODE
 const BLOCK =
@@ -11,7 +9,7 @@ const TITLE =
   'mb-0.5 rounded-md bg-gray-100/10 dark:bg-rose-100/10 px-3 py-1 font-mono text-xs dark:text-rose-100/70 text-gray-700 shadow-sm ' +
   GeistMono.variable;
 const PRE =
-  'overflow-x-auto py-2 text-[0.875em] leading-6 [color-scheme:dark] bg-transparent m-0 px-0 ' +
+  'dark:!bg-inherit overflow-x-auto py-2 text-[0.875em] leading-6 [color-scheme:dark] bg-transparent m-0 px-0 ' +
   GeistMono.variable;
 const CODE =
   'grid [&>span]:border-l-4 [&>span]:border-l-transparent [&>span]:pl-2 [&>span]:pr-3';

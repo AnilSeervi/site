@@ -15,7 +15,14 @@ function About() {
       <div>
         <components.h3>Job Title</components.h3>
         <p className="mt-2">
-          Anil Seervi, Software Development Engineer at Zenduty
+          Anil Seervi, Software Development Engineer II at{' '}
+          <components.a
+            href="https://www.zenduty.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Zenduty
+          </components.a>
         </p>
       </div>
       <components.h2>Links</components.h2>
