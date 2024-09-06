@@ -11,6 +11,7 @@ import { Suspense } from 'react';
 import { getOG } from 'utils/og';
 import MdxWrapper from './MdxWrapper';
 import Metrics from './Metrics';
+import { a } from '@react-spring/web';
 
 export async function generateStaticParams() {
   const paths = await sanityClient.fetch(postSlugsQuery);
@@ -79,17 +80,8 @@ export const generateMetadata = async ({ params }) => {
   };
 };
 
-function throwError() {
-  throw Error('in-app-error');
-}
-
 async function Blog({ params, searchParams }) {
   let post: Post;
-
-  if (searchParams?.crash) {
-    console.error('Crashing');
-    throwError();
-  }
 
   const { post: fetchPost } = await sanityClient.fetch(postQuery, {
     slug: params.slug
@@ -171,6 +163,8 @@ async function Blog({ params, searchParams }) {
         </a>
       </div>
       <GiscusWrapper />
+
+      {searchParams?.crash && <Suspense fallback={null}>{crash}</Suspense>}
     </>
   );
 }

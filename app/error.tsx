@@ -6,7 +6,7 @@ import { track } from '@vercel/analytics';
 function Error(props) {
   const message = props?.error?.message;
 
-  if (message === 'in-app-error') {
+  if (message === 'crash is not defined') {
     return (
       <div>
         <p>
