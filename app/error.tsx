@@ -4,7 +4,7 @@ import { Button } from 'components/ui/Button';
 import { track } from '@vercel/analytics';
 import { useSearchParams } from 'next/navigation';
 
-function Error(props) {
+function Error() {
   const internalCrash = useSearchParams().get('crash');
 
   if (internalCrash) {

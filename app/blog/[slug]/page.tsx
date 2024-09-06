@@ -79,7 +79,7 @@ export const generateMetadata = async ({ params }) => {
   };
 };
 
-async function Blog({ params, searchParams }) {
+async function Blog({ params }) {
   let post: Post;
 
   const { post: fetchPost } = await sanityClient.fetch(postQuery, {
@@ -97,8 +97,6 @@ async function Blog({ params, searchParams }) {
     content: html,
     readingTime
   };
-
-  if (searchParams?.crash) post = undefined;
 
   return (
     <>
