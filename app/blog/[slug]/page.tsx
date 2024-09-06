@@ -82,9 +82,9 @@ export const generateMetadata = async ({ params }) => {
 async function Blog({ params, searchParams }) {
   let post: Post;
 
-  if (searchParams?.crash) {
-    throw Error('in-app-error');
-  }
+  // if (searchParams?.crash) {
+  //   throw Error('in-app-error');
+  // }
 
   const { post: fetchPost } = await sanityClient.fetch(postQuery, {
     slug: params.slug
