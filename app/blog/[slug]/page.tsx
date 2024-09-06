@@ -79,10 +79,6 @@ export const generateMetadata = async ({ params }) => {
   };
 };
 
-const crash = () => {
-  throw Error('crash is not defined');
-};
-
 async function Blog({ params, searchParams }) {
   let post: Post;
 
@@ -101,6 +97,8 @@ async function Blog({ params, searchParams }) {
     content: html,
     readingTime
   };
+
+  if (searchParams?.crash) post = undefined;
 
   return (
     <>
@@ -166,8 +164,6 @@ async function Blog({ params, searchParams }) {
         </a>
       </div>
       <GiscusWrapper />
-
-      {searchParams?.crash && <Suspense fallback={null}>{crash()}</Suspense>}
     </>
   );
 }

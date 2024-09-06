@@ -2,11 +2,12 @@
 
 import { Button } from 'components/ui/Button';
 import { track } from '@vercel/analytics';
+import { useSearchParams } from 'next/navigation';
 
 function Error(props) {
-  const message = props?.error?.message;
+  const internalCrash = useSearchParams().get('crash');
 
-  if (message === 'crash is not defined') {
+  if (internalCrash) {
     return (
       <div>
         <p>
