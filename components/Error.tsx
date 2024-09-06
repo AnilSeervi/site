@@ -24,7 +24,14 @@ function Error() {
             . Time to patch things up!
           </p>
           <div className="mt-4 flex items-center justify-center">
-            <Button onClick={() => setCrash(false)}>Continue Reading</Button>
+            <Button
+              onClick={() => {
+                setCrash(false);
+                track('continue_reading_button_clicked');
+              }}
+            >
+              Continue Reading
+            </Button>
           </div>
         </div>
       ) : (
