@@ -2,7 +2,6 @@ import React from 'react';
 import { Button } from './ui/Button';
 import { track } from '@vercel/analytics';
 import { useRouter } from 'next/navigation';
-import ErrorBoundary from './ErrorBoundary';
 
 function Error() {
   const router = useRouter();
