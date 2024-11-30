@@ -43,6 +43,11 @@ function HomePage() {
       </h3>
       <section className="flex w-full flex-col gap-6 md:flex-row">
         <BlogPostCard
+          title="The Event Loop in JavaScript: Mastering Asynchronous Magic"
+          slug="event-loop-in-javascript"
+          gradient="from-[#D8B4FE] to-[#818CF8]"
+        />
+        <BlogPostCard
           title="How to Crash in Production: The Art of Unexpected Drama"
           slug="how-to-crash-in-production-error-boundary"
           gradient="from-[#6EE7B7] via-[#3B82F6] to-[#9333EA]"
@@ -51,12 +56,6 @@ function HomePage() {
           title="The Beauty of Stateless Components"
           slug="the-beauty-of-stateless-components"
           gradient="from-[#FDE68A] via-[#FCA5A5] to-[#FECACA]"
-        />
-
-        <BlogPostCard
-          title="Reduce Arrays like a pro"
-          slug="reduce-arrays-like-a-pro"
-          gradient="from-[#D8B4FE] to-[#818CF8]"
         />
       </section>
       <Link
