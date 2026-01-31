@@ -14,12 +14,29 @@ pre {
   /* Firefox */
 }
 
+/* Dual theme support - hide opposite theme based on mode */
+[data-theme='dark'],
+html.light [data-theme='dark'] {
+  display: none;
+}
+
 html.dark [data-theme='light'] {
   display: none;
 }
 
-html.light [data-theme='dark'] {
-  display: none;
+html.dark [data-theme='dark'] {
+  display: block;
+}
+
+/* Apply shiki CSS variables for syntax highlighting */
+[data-rehype-pretty-code-figure] code span,
+[data-rehype-pretty-code-fragment] code span {
+  color: var(--shiki-light);
+}
+
+html.dark [data-rehype-pretty-code-figure] code span,
+html.dark [data-rehype-pretty-code-fragment] code span {
+  color: var(--shiki-dark);
 }
 
 body :where(code):not(:where(pre code)) {

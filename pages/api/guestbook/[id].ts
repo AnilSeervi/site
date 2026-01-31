@@ -46,12 +46,12 @@ export default async function handler(
   if (req.method === 'PUT') {
     const body = (req.body.body || '').slice(0, 500);
 
-    const [entry] = await db
+    const [updatedEntry] = await db
       .update(guestbook)
       .set({
         body,
         updated_at: new Date().getTime()
-      })
+      } as Partial<typeof guestbook.$inferInsert>)
       .where(eq(guestbook.id, Number(id)))
       .returning({
         id: guestbook.id,
@@ -61,7 +61,7 @@ export default async function handler(
       });
 
     return res.status(201).json({
-      ...entry,
+      ...updatedEntry,
       body
     });
   }

@@ -1,7 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { animated, useSpring, useSpringValue } from '@react-spring/web';
+import { animated, useSpringValue } from '@react-spring/web';
+
+// Workaround for @react-spring/web not having React 19 types yet
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnimatedDiv = animated.div as any;
 
 export const clamp = (min: number, max: number, v: number) =>
   Math.min(Math.max(v, min), max);
@@ -20,7 +24,7 @@ export const Dock = ({ children, showDot }: DockProps) => {
   const [hovered, setHovered] = React.useState(false);
   const [width, setWidth] = React.useState(0);
   const isZooming = React.useRef(false);
-  const dockRef = React.useRef<HTMLDivElement>(null!);
+  const dockRef = React.useRef<HTMLDivElement>(null);
 
   const setIsZooming = React.useCallback((value: boolean) => {
     isZooming.current = value;
@@ -29,17 +33,21 @@ export const Dock = ({ children, showDot }: DockProps) => {
 
   const zoomLevel = useSpringValue(1, {
     onChange: () => {
-      setWidth(dockRef.current.clientWidth);
+      if (dockRef.current) {
+        setWidth(dockRef.current.clientWidth);
+      }
     }
   });
 
   useWindowResize(() => {
-    setWidth(dockRef.current.clientWidth);
+    if (dockRef.current) {
+      setWidth(dockRef.current.clientWidth);
+    }
   });
 
   return (
     <DockContext.Provider value={{ hovered, setIsZooming, width, zoomLevel }}>
-      <animated.div
+      <AnimatedDiv
         ref={dockRef}
         className={cn(
           'dock',
@@ -79,7 +87,7 @@ export const Dock = ({ children, showDot }: DockProps) => {
         <div className="dock-inner flex w-full items-end gap-2 py-2">
           {children}
         </div>
-      </animated.div>
+      </AnimatedDiv>
     </DockContext.Provider>
   );
 };

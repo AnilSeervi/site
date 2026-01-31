@@ -1,14 +1,7 @@
-'use client';
+import type { ReactNode } from 'react';
 
-import { components } from 'components/ProseComponents';
-import { MDXRemote } from 'next-mdx-remote';
-
-function MdxWrapper({ snippet }) {
-  return (
-    <>
-      <MDXRemote {...snippet.content} components={components} />
-    </>
-  );
+function MdxWrapper({ snippet }: { snippet: { content: ReactNode } }) {
+  return <>{snippet.content}</>;
 }
 
 export default MdxWrapper;

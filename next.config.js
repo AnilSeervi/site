@@ -2,22 +2,30 @@
  * @type {import('next').NextConfig}
  */
 module.exports = {
-  swcMinify: true,
   reactStrictMode: true,
+  turbopack: {
+    root: __dirname,
+  },
   images: {
-    domains: [
-      'pbs.twimg.com', // Twitter Profile Picture
-      'cdn.sanity.io',
-    ]
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pbs.twimg.com', // Twitter Profile Picture
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+      },
+    ],
   },
   async headers() {
     return [
       {
         source: '/(.*)',
-        headers: securityHeaders
-      }
+        headers: securityHeaders,
+      },
     ];
-  }
+  },
 };
 
 // https://nextjs.org/docs/advanced-features/security-headers

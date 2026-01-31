@@ -42,12 +42,13 @@ export function rehypePrettyCodeClasses() {
       }
     );
 
+    // v0.14+ uses 'data-rehype-pretty-code-figure', older versions use 'data-rehype-pretty-code-fragment'
     visit(
       tree,
       (node: any) =>
         Boolean(
-          typeof node?.properties?.['data-rehype-pretty-code-fragment'] !==
-            'undefined'
+          typeof node?.properties?.['data-rehype-pretty-code-figure'] !== 'undefined' ||
+          typeof node?.properties?.['data-rehype-pretty-code-fragment'] !== 'undefined'
         ),
       (node: any) => {
         if (node.tagName === 'span') {
@@ -55,47 +56,52 @@ export function rehypePrettyCodeClasses() {
             ...(node.properties.className || []),
             INLINE_BLOCK
           ];
-          node.children[0].properties.className = [
-            ...(node.children[0].properties.className || []),
-            INLINE_CODE
-          ];
+          if (node.children[0]?.properties) {
+            node.children[0].properties.className = [
+              ...(node.children[0].properties.className || []),
+              INLINE_CODE
+            ];
+          }
 
           return node;
         }
 
-        if (node.tagName === 'div') {
+        // v0.14+ uses 'figure', older versions use 'div'
+        if (node.tagName === 'figure' || node.tagName === 'div') {
           node.properties.className = [
             ...(node.properties.className || []),
             BLOCK
           ];
-          node.children = node.children.map((node: any) => {
+          node.children = node.children.map((childNode: any) => {
+            // v0.14+ uses 'figcaption' for title, older versions use 'div'
             if (
-              node.tagName === 'div' &&
-              typeof node.properties?.['data-rehype-pretty-code-title'] !==
-                'undefined'
+              (childNode.tagName === 'figcaption' || childNode.tagName === 'div') &&
+              typeof childNode.properties?.['data-rehype-pretty-code-title'] !== 'undefined'
             ) {
-              node.properties.className = [
-                ...(node.properties.className || []),
+              childNode.properties.className = [
+                ...(childNode.properties.className || []),
                 TITLE
               ];
             }
-            if (node.tagName === 'pre') {
-              node.properties.className = [PRE];
-              if (node.children[0].tagName === 'code') {
-                node.children[0].properties.className = [
-                  ...(node.children[0].properties.className || []),
+            if (childNode.tagName === 'pre') {
+              childNode.properties.className = [
+                ...(childNode.properties.className || []),
+                PRE
+              ];
+              if (childNode.children[0]?.tagName === 'code') {
+                childNode.children[0].properties.className = [
+                  ...(childNode.children[0].properties.className || []),
                   CODE
                 ];
                 if (
-                  typeof node.children[0].properties['data-line-numbers'] !==
-                  'undefined'
+                  typeof childNode.children[0].properties['data-line-numbers'] !== 'undefined'
                 ) {
-                  node.children[0].properties.className.push(NUMBERED_LINES);
+                  childNode.children[0].properties.className.push(NUMBERED_LINES);
                 }
               }
             }
 
-            return node;
+            return childNode;
           });
 
           return node;

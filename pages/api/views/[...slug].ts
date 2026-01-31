@@ -25,12 +25,12 @@ export default async function handler(
         await db.insert(page).values({
           slug,
           views: 1
-        });
+        } as typeof page.$inferInsert);
       }
 
       await db
         .update(page)
-        .set({ views: views + 1 })
+        .set({ views: views + 1 } as Partial<typeof page.$inferInsert>)
         .where(eq(page.slug, slug));
 
       return res.status(200).json({
