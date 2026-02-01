@@ -1,9 +1,9 @@
 'use client';
 
-import { Tooltip } from '@reach/tooltip';
+import { Tooltip } from 'components/BottonDock/Tooltip';
 import { Artist } from 'lib/types';
 
-const formatNumberToIntl = (number) =>
+const formatNumberToIntl = (number: number) =>
   new Intl.NumberFormat('en-US').format(number);
 
 export default function TopArtistsIcons({ data }: { data: Artist[] }) {

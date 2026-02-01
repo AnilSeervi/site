@@ -1,19 +1,7 @@
-'use client';
+import type { ReactNode } from 'react';
 
-import { components } from 'components/ProseComponents';
-import { MDXRemote } from 'next-mdx-remote';
-
-function MdxWrapper({ post }) {
-  return (
-    <>
-      <MDXRemote
-        {...post.content}
-        components={{
-          ...components
-        }}
-      />
-    </>
-  );
+function MdxWrapper({ post }: { post: { content: ReactNode } }) {
+  return <>{post.content}</>;
 }
 
 export default MdxWrapper;

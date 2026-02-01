@@ -6,9 +6,12 @@ function MangaList({
   mangaList,
   error
 }: {
-  mangaList: MangaListNode[];
-  error: GenericError;
+  mangaList: MangaListNode[] | null;
+  error: GenericError | null;
 }) {
+  if (error) return <div className="text-center">Error: {error.message}</div>;
+  if (!mangaList) return <div className="text-center">Loading manga list...</div>;
+
   const reading = mangaList.filter(
     (manga) => manga.node.my_list_status.status === 'reading'
   );
@@ -28,8 +31,6 @@ function MangaList({
   const planToRead = mangaList.filter(
     (manga) => manga.node.my_list_status.status === 'plan_to_read'
   );
-
-  if (error) return <div className="text-center">Error: {error.message}</div>;
 
   return (
     <>

@@ -1,7 +1,9 @@
+@import url(./theme-toggle.css);
+@import url("./shiki.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url(./theme-toggle.css);
 
 html {
   min-width: 360px;
@@ -76,7 +78,7 @@ table {
   white-space: nowrap;
 }
 
-[data-reach-tooltip] {
+.reach-tooltip {
   --border-color: hsl(0 0% 88.7%);
   --text-color: hsl(0 0% 43.5%);
   padding: 4px 8px;
@@ -103,11 +105,8 @@ table {
   word-break: break-word;
 }
 
-.dark [data-reach-tooltip] {
+.dark .reach-tooltip {
   --border-color: hsl(0 0% 20.5%);
   --text-color: hsl(0 0% 62.8%);
   background: hsl(0 0% 11.0%);
 }
-
-@import url("./shiki.css");
-@import url("@reach/tooltip/styles.css");

@@ -5,9 +5,12 @@ export default function AnimeList({
   animeList,
   error
 }: {
-  animeList: AnimeListNode[];
-  error: GenericError;
+  animeList: AnimeListNode[] | null;
+  error: GenericError | null;
 }) {
+  if (error) return <div className="text-center">Error: {error.message}</div>;
+  if (!animeList) return <div className="text-center">Loading anime list...</div>;
+
   const watching = animeList.filter(
     (anime) => anime.node.my_list_status.status === 'watching'
   );
@@ -23,8 +26,6 @@ export default function AnimeList({
   const planToWatch = animeList.filter(
     (anime) => anime.node.my_list_status.status === 'plan_to_watch'
   );
-
-  if (error) return <div className="text-center">Error: {error.message}</div>;
 
   return (
     <>

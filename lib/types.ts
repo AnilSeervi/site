@@ -1,9 +1,9 @@
-import { MDXRemoteSerializeResult } from 'next-mdx-remote';
+import type { ReactNode } from 'react';
 
 export type Post = {
   _id: string;
   slug: string;
-  content: MDXRemoteSerializeResult;
+  content: ReactNode;
   title: string;
   date: string;
   excerpt: string;
@@ -136,7 +136,7 @@ export type Snippet = {
   _createdAt: string;
   _updatedAt: string;
   slug: string;
-  content: MDXRemoteSerializeResult;
+  content: ReactNode;
   title: string;
   description: string;
   logo: string;

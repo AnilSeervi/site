@@ -51,7 +51,7 @@ export default async function handler(
       const sessionQuery = user?.likes
         ? db
             .update(session)
-            .set({ likes: currentUserLikes + count })
+            .set({ likes: currentUserLikes + count } as Partial<typeof session.$inferInsert>)
             .where(eq(session.id, sessionId))
         : db.insert(session).values({ id: sessionId, likes: count });
 
@@ -60,7 +60,7 @@ export default async function handler(
           .update(page)
           .set({
             likes: +post.likes + count
-          })
+          } as Partial<typeof page.$inferInsert>)
           .where(eq(page.slug, slug))
           .returning({ likes: page.likes }),
 

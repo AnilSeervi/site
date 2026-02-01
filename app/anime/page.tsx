@@ -13,7 +13,7 @@ import {
 } from 'lib/types';
 import { getOG } from 'utils/og';
 
-export const revalidate = 60 * 5;
+export const revalidate = 300;
 
 export const metadata = {
   title: 'Anime Dashboard',
@@ -91,37 +91,38 @@ async function Anime() {
     const mangaListRes = await getMALManga();
     mangaList = (await mangaListRes.json())?.data;
 
-    mangaStats = mangaList.reduce(
-      (acc, manga) => {
-        if (manga.node.my_list_status.status === 'reading') {
-          acc.reading += 1;
-        } else if (manga.node.my_list_status.status === 'plan_to_read') {
-          acc.plan_to_read += 1;
-        } else if (manga.node.my_list_status.status === 'completed') {
-          acc.completed += 1;
-        } else if (manga.node.my_list_status.status === 'on_hold') {
-          acc.on_hold += 1;
-        } else if (manga.node.my_list_status.status === 'dropped') {
-          acc.dropped += 1;
+    if (mangaList && mangaList.length > 0) {
+      const scoredManga = mangaList.filter((manga) => manga.node.my_list_status.score);
+      mangaStats = mangaList.reduce(
+        (acc, manga) => {
+          if (manga.node.my_list_status.status === 'reading') {
+            acc.reading += 1;
+          } else if (manga.node.my_list_status.status === 'plan_to_read') {
+            acc.plan_to_read += 1;
+          } else if (manga.node.my_list_status.status === 'completed') {
+            acc.completed += 1;
+          } else if (manga.node.my_list_status.status === 'on_hold') {
+            acc.on_hold += 1;
+          } else if (manga.node.my_list_status.status === 'dropped') {
+            acc.dropped += 1;
+          }
+          acc.read += manga.node.my_list_status.num_chapters_read;
+          return acc;
+        },
+        {
+          total: mangaList.length,
+          read: 0,
+          mean_score: scoredManga.length > 0
+            ? scoredManga.reduce((acc, manga) => acc + manga.node.my_list_status.score, 0) / scoredManga.length
+            : 0,
+          reading: 0,
+          plan_to_read: 0,
+          completed: 0,
+          on_hold: 0,
+          dropped: 0
         }
-        acc.read += manga.node.my_list_status.num_chapters_read;
-        return acc;
-      },
-      {
-        total: mangaList.length,
-        read: 0,
-        mean_score:
-          mangaList
-            .filter((manga) => manga.node.my_list_status.score)
-            .reduce((acc, manga) => acc + manga.node.my_list_status.score, 0) /
-          mangaList.filter((manga) => manga.node.my_list_status.score).length,
-        reading: 0,
-        plan_to_read: 0,
-        completed: 0,
-        on_hold: 0,
-        dropped: 0
-      }
-    );
+      );
+    }
   } catch (err: any) {
     console.log(err);
     mangaListErr = {
@@ -153,7 +154,7 @@ async function Anime() {
           <ExternalLink />
         </a>{' '}
         account. Currently I've watched{' '}
-        {animeStats.anime_statistics.num_days ?? '--'} days of anime.
+        {animeStats?.anime_statistics?.num_days ?? '--'} days of anime.
       </p>
 
       <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4">
@@ -176,7 +177,7 @@ async function Anime() {
           MyAnimeList
           <ExternalLink />
         </a>{' '}
-        account. Currently I've read {mangaStats.total ?? '--'} mangas.
+        account. Currently I've read {mangaStats?.total ?? '--'} mangas.
       </p>
 
       <section>

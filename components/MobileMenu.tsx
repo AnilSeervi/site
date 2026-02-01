@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import clsx from 'clsx';
 import Link from 'next/link';
 import useDelayedRender from 'use-delayed-render';
@@ -134,7 +135,7 @@ export default function MobileMenu() {
   );
 }
 
-function MenuIcon(props: JSX.IntrinsicElements['svg']) {
+function MenuIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       className="absolute h-5 w-5 text-gray-900 dark:text-gray-100"
@@ -162,7 +163,7 @@ function MenuIcon(props: JSX.IntrinsicElements['svg']) {
   );
 }
 
-function CrossIcon(props: JSX.IntrinsicElements['svg']) {
+function CrossIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       className="absolute h-5 w-5 text-gray-900 dark:text-gray-100"

@@ -21,8 +21,6 @@ async function getGuestbookData() {
 
 export const dynamic = 'force-dynamic';
 
-export const revalidate = 1800;
-
 export const metadata = {
   title: 'Guestbook',
   description: 'My personal guestbook, built with Next.js API routes.',

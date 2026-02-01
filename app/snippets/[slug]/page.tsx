@@ -17,8 +17,12 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-export const generateMetadata = async ({ params }) => {
-  const { slug } = params;
+export const generateMetadata = async ({
+  params
+}: {
+  params: Promise<{ slug: string }>;
+}) => {
+  const { slug } = await params;
 
   const {
     snippet: { title, _createdAt, _updatedAt }
@@ -71,11 +75,16 @@ export const generateMetadata = async ({ params }) => {
   };
 };
 
-async function Snippet({ params }) {
+async function Snippet({
+  params
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   let snippet: Snippet;
 
   const { snippet: fetchSnippet } = await sanityClient.fetch(snippetsQuery, {
-    slug: params.slug
+    slug
   });
 
   if (!fetchSnippet) {

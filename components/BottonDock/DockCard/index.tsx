@@ -11,7 +11,11 @@ import { useWindowResize } from 'hooks/useWindowResize';
 import { useMousePosition } from 'hooks/useMousePosition';
 import { useDock } from '../Dock/DockContext';
 import { cn } from 'utils';
-import { Tooltip } from '@reach/tooltip';
+import { Tooltip } from '../Tooltip';
+
+// Workaround for @react-spring/web not having React 19 types yet
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnimatedButton = animated.button as any;
 
 interface DockCardProps {
   children: React.ReactNode;
@@ -32,7 +36,7 @@ const centered = (triggerRect, tooltipRect) => {
 };
 
 export const DockCard = ({ children, showDot, label }: DockCardProps) => {
-  const cardRef = React.useRef<HTMLButtonElement>(null!);
+  const cardRef = React.useRef<HTMLButtonElement>(null);
   /**
    * This doesn't need to be real time, think of it as a static
    * value of where the card should go to at the end.
@@ -92,12 +96,12 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
   }, [dock.hovered]);
 
   useWindowResize(() => {
+    if (!cardRef.current) return;
     const { x } = cardRef.current.getBoundingClientRect();
-
     setElCenterX(x + INITIAL_WIDTH / 2);
   });
 
-  const timeoutRef = React.useRef<number>();
+  const timeoutRef = React.useRef<number | undefined>(undefined);
   const isAnimating = React.useRef(false);
 
   const handleClick = () => {
@@ -148,12 +152,12 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
       className="dock-card-tooltip reach-tooltip"
       position={centered}
     >
-      <animated.button
+      <AnimatedButton
         aria-label={label}
         ref={cardRef}
         className={'dock-card'}
         onClick={handleClick}
-        onMouseDown={(e) => {
+        onMouseDown={() => {
           y.start(5, {
             config: {
               friction: 28,
@@ -176,7 +180,7 @@ export const DockCard = ({ children, showDot, label }: DockCardProps) => {
             showDot && 'opacity-100'
           )}
         ></div>
-      </animated.button>
+      </AnimatedButton>
     </Tooltip>
   );
 };

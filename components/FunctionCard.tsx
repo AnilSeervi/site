@@ -22,6 +22,8 @@ export default function FunctionCard({
   [key: string]: any;
 }) {
   const { enabled, intersectionRef } = useEnabledOnFirstIntersection();
+  const logoUrl = logo ? urlForImage(logo) : null;
+  
   return (
     <Link
       href={`/snippets/${slug}`}
@@ -32,13 +34,16 @@ export default function FunctionCard({
         className="flex flex-row-reverse items-center justify-between"
         ref={intersectionRef}
       >
-        <Image
-          alt={title}
-          height={32}
-          width={32}
-          src={urlForImage(logo)}
-          className="rounded-full"
-        />
+        {logoUrl && (
+          <Image
+            alt={title}
+            height={32}
+            width={32}
+            src={logoUrl}
+            className="rounded-full"
+            unoptimized
+          />
+        )}
         <h3 className="text-left text-lg font-bold text-gray-900 dark:text-gray-100">
           {title}
         </h3>

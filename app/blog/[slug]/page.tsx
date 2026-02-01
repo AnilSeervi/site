@@ -17,8 +17,12 @@ export async function generateStaticParams() {
   return paths.map((slug) => ({ slug }));
 }
 
-export const generateMetadata = async ({ params }) => {
-  const { slug } = params;
+export const generateMetadata = async ({
+  params
+}: {
+  params: Promise<{ slug: string }>;
+}) => {
+  const { slug } = await params;
   const {
     post: { title, excerpt, date, coverURL, _updatedAt, draft }
   } = await sanityClient.fetch(postQuery, {
@@ -79,11 +83,16 @@ export const generateMetadata = async ({ params }) => {
   };
 };
 
-async function Blog({ params }) {
+async function Blog({
+  params
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   let post: Post;
 
   const { post: fetchPost } = await sanityClient.fetch(postQuery, {
-    slug: params.slug
+    slug
   });
 
   if (!fetchPost) {

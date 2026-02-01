@@ -1,7 +1,17 @@
 import React from 'react';
 import MetricCard from './metrics/Card';
+import { MyMangaStats, GenericError } from 'lib/types';
 
-function MangaMetrics({ mangaStats, error }) {
+function MangaMetrics({
+  mangaStats,
+  error
+}: {
+  mangaStats: MyMangaStats | null;
+  error: GenericError | null;
+}) {
+  if (error) return <div className="text-center">Error: {error.message} </div>;
+  if (!mangaStats) return <div className="text-center">Loading stats...</div>;
+
   const {
     read,
     mean_score,
@@ -13,18 +23,16 @@ function MangaMetrics({ mangaStats, error }) {
     dropped
   } = mangaStats;
 
-  if (error) return <div className="text-center">Error: {error.message} </div>;
-
   return (
     <div className="my-2 grid w-full grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-4">
-      <MetricCard header="Total" metric={total} />
-      <MetricCard header="Reading" metric={reading} />
-      <MetricCard header="Completed" metric={completed} />
-      <MetricCard header="Plan to Read" metric={plan_to_read} />
-      <MetricCard header="On Hold" metric={on_hold} />
-      <MetricCard header="Dropped" metric={dropped} />
-      <MetricCard header="Chapters Read" metric={read} />
-      <MetricCard header="Mean Score" metric={mean_score} />
+      <MetricCard header="Total" metric={String(total)} />
+      <MetricCard header="Reading" metric={String(reading)} />
+      <MetricCard header="Completed" metric={String(completed)} />
+      <MetricCard header="Plan to Read" metric={String(plan_to_read)} />
+      <MetricCard header="On Hold" metric={String(on_hold)} />
+      <MetricCard header="Dropped" metric={String(dropped)} />
+      <MetricCard header="Chapters Read" metric={String(read)} />
+      <MetricCard header="Mean Score" metric={mean_score?.toFixed(2) ?? '0'} />
     </div>
   );
 }
