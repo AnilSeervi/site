@@ -1,0 +1,98 @@
+---
+/**
+ * Interactive demo for the error-boundary article (`<Error/>` in MDX).
+ * Port of the old site's components/Error.tsx — same copy, new skin.
+ */
+---
+
+<as-crash-demo>
+  <div class="card" data-state="idle">
+    <div class="idle">
+      <button class="btn" data-crash>🔥 Crash this page 🔥</button>
+    </div>
+    <div class="crashed">
+      <p>
+        Uh oh, looks like you tried to break the page—intentionally! but your guardian Error
+        Boundary caught it just in time. Meanwhile the error is being reported to Sentry, and the
+        blog author will get a heads-up on <a href="https://www.zenduty.com" target="_blank" rel="noopener noreferrer">Zenduty</a>. Time to patch
+        things up!
+      </p>
+      <div class="again">
+        <button class="btn" data-reset>Continue Reading</button>
+      </div>
+    </div>
+  </div>
+</as-crash-demo>
+
+<style>
+  .card {
+    display: grid;
+    place-items: center;
+    min-height: 200px;
+    border: 1px dashed var(--hair-input);
+    border-radius: 5px;
+    background: var(--surface);
+    padding: 28px;
+  }
+
+  .card[data-state='idle'] .crashed {
+    display: none;
+  }
+  .card[data-state='crashed'] .idle {
+    display: none;
+  }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.5px;
+    color: var(--text-hi);
+    background: none;
+    border: 1px solid var(--hair-input);
+    border-radius: 5px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+  .btn:hover {
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+
+  .crashed p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-soft);
+  }
+  .crashed a {
+    color: var(--as-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .crashed a:hover {
+    color: var(--text-hi);
+  }
+
+  .again {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+  }
+</style>
+
+<script>
+  class AsCrashDemo extends HTMLElement {
+    connectedCallback() {
+      const card = this.querySelector<HTMLElement>('.card');
+      this.querySelector('[data-crash]')?.addEventListener('click', () =>
+        card?.setAttribute('data-state', 'crashed')
+      );
+      this.querySelector('[data-reset]')?.addEventListener('click', () =>
+        card?.setAttribute('data-state', 'idle')
+      );
+    }
+  }
+  if (!customElements.get('as-crash-demo')) customElements.define('as-crash-demo', AsCrashDemo);
+</script>

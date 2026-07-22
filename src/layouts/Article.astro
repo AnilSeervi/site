@@ -1,0 +1,335 @@
+---
+import Base from '~/layouts/Base.astro';
+
+interface Cell {
+  kicker: string;
+  title: string;
+  href: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  slug: string;
+  /** mono meta line parts, joined with ` · ` — read% appended automatically */
+  metaParts: string[];
+  prev?: Cell;
+  next?: Cell;
+}
+
+const { title, description, slug, metaParts, prev, next } = Astro.props;
+---
+
+<Base title={`${title} — Anil Seervi`} description={description} column={640} noDots>
+  <as-progress></as-progress>
+  <a class="crumb" href="/writing">← ~/writing</a>
+  <h1 transition:name={`title-${slug}`}>{title}</h1>
+  <div class="meta">
+    {metaParts.join(' · ')}
+    <span class="views" data-views={slug}></span>
+     · <span class="read" data-read-pct>0% read</span>
+  </div>
+  <div class="prose">
+    <slot />
+  </div>
+  <div class="pager">
+    {
+      prev ? (
+        <a href={prev.href}>
+          <span class="kicker">{prev.kicker}</span>
+          <span class="ptitle">{prev.title}</span>
+        </a>
+      ) : (
+        <span />
+      )
+    }
+    {
+      next && (
+        <a class="right" href={next.href}>
+          <span class="kicker">{next.kicker}</span>
+          <span class="ptitle">{next.title}</span>
+        </a>
+      )
+    }
+  </div>
+</Base>
+
+<style>
+  as-progress {
+    display: block;
+  }
+  as-progress :global(.track),
+  as-progress :global(.fill) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    z-index: 50;
+  }
+  as-progress :global(.track) {
+    right: 0;
+    background: rgba(237, 230, 218, 0.06);
+  }
+  as-progress :global(.fill) {
+    width: 0%;
+    background: var(--as-accent);
+  }
+
+  .crumb {
+    display: inline-block;
+    align-self: flex-start;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+    margin-bottom: 28px;
+  }
+  .crumb:hover {
+    color: var(--text-hi);
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 38px;
+    line-height: 1.15;
+    margin: 0 0 18px;
+    color: var(--text-hi);
+    text-wrap: pretty;
+  }
+
+  .meta {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--meta);
+    margin-bottom: 44px;
+  }
+  .meta .read {
+    color: var(--as-accent);
+  }
+  .meta .views:empty {
+    display: none;
+  }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    border-top: 1px solid var(--hair-rule);
+    margin-top: 52px;
+    padding-top: 22px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  .pager a {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--meta);
+  }
+  .pager a.right {
+    text-align: right;
+  }
+  .pager .kicker {
+    color: var(--faint);
+  }
+  .pager .ptitle {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--text-soft);
+    transition: color 180ms ease;
+  }
+  .pager a:hover .ptitle {
+    color: var(--text-hi);
+  }
+</style>
+
+<style is:global>
+  /* ---- article prose (frame 6f) ---- */
+  .prose {
+    font-size: 17px;
+    line-height: 1.85;
+    color: var(--text-soft);
+  }
+
+  .prose > * {
+    margin: 0 0 24px;
+  }
+
+  .prose p {
+    text-wrap: pretty;
+  }
+
+  /* serif lede — first paragraph's leading <em> */
+  .prose > p:first-child > em:first-child {
+    font-size: 19px;
+    color: var(--text-hi);
+  }
+
+  .prose em {
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  .prose strong {
+    color: var(--text-hi);
+    font-weight: 600;
+  }
+
+  .prose a {
+    color: var(--as-accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(217, 165, 74, 0.4);
+    text-underline-offset: 3px;
+  }
+  .prose a:hover {
+    color: var(--text-hi);
+  }
+
+  .prose h2,
+  .prose h3,
+  .prose h4 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    color: var(--text-hi);
+    line-height: 1.3;
+    margin: 40px 0 16px;
+  }
+  .prose h2 {
+    font-size: 26px;
+  }
+  .prose h3 {
+    font-size: 20px;
+  }
+  .prose h4 {
+    font-size: 18px;
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 24px;
+  }
+  .prose li {
+    margin-bottom: 8px;
+  }
+  .prose li::marker {
+    color: var(--meta);
+  }
+
+  .prose blockquote {
+    border-left: 2px solid var(--as-accent);
+    padding: 4px 0 4px 22px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--quote);
+  }
+  .prose blockquote p {
+    margin: 0;
+  }
+
+  .prose img {
+    max-width: 100%;
+    border-radius: 5px;
+    border: 1px solid var(--hair-card);
+  }
+
+  .prose hr {
+    border: 0;
+    border-top: 1px solid var(--hair-rule);
+    margin: 40px 0;
+  }
+
+  .prose table {
+    border-collapse: collapse;
+    font-size: 14px;
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
+  .prose th,
+  .prose td {
+    border: 1px solid var(--hair-card);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .prose th {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--meta);
+  }
+
+  .prose code:not(pre code) {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--surface);
+    border: 1px solid var(--hair-card);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text);
+  }
+
+  /* code blocks — whole block is click-to-copy */
+  .prose pre {
+    position: relative;
+    cursor: pointer;
+    border: 1px solid var(--hair-card);
+    border-radius: 5px;
+    background: var(--surface) !important;
+    padding: 20px 24px;
+    font-size: 13.5px;
+    line-height: 1.9;
+    overflow-x: auto;
+    transition: border-color 180ms ease;
+  }
+  .prose pre:hover {
+    border-color: rgba(237, 230, 218, 0.32);
+  }
+  .prose pre::after {
+    content: 'copy';
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--faint);
+  }
+  .prose pre[data-copied]::after {
+    content: 'copied ✓';
+    color: var(--live-green);
+  }
+  .prose pre[data-title]::before {
+    content: attr(data-title);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--faint);
+    margin-bottom: 10px;
+  }
+  .prose pre code {
+    font-family: var(--font-mono);
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+</style>
+
+<script>
+  import '~/islands/progress';
+
+  // click-to-copy on code blocks — document-level delegation, added once
+  document.addEventListener('click', (e) => {
+    const pre = (e.target as HTMLElement).closest<HTMLElement>('.prose pre');
+    if (!pre) return;
+    const code = pre.querySelector('code');
+    if (!code) return;
+    navigator.clipboard?.writeText(code.innerText);
+    pre.setAttribute('data-copied', '');
+    const t = (pre as any)._copyTimer;
+    if (t) clearTimeout(t);
+    (pre as any)._copyTimer = setTimeout(() => pre.removeAttribute('data-copied'), 1600);
+  });
+</script>

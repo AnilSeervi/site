@@ -1,0 +1,256 @@
+---
+title: Reduce Arrays like a pro in JavaScript
+date: 2022-04-16
+excerpt: "Understanding how to work with arrays in JavaScript using the reduce() method."
+firstLine: "Reduce is just a loop with a suitcase."
+tag: javascript
+coverURL: unsplash/photo-1604187351574-c75ca79f5807
+---
+
+Hello folks! It's been a while since I published an article. I was working on
+this very own <a href="/blog">Blog site</a> itself.
+
+To continue with the _Higher-Order Functions_ series, I'll be explaining Array
+`reduce()` method in this article.
+
+`Array.reduce()` is a bit hard to grasp at the beginning as compared to other
+Higher-Order Array methods like `map()`, `forEach()`, `filter()`, etc.
+
+`reduce()` is just another HOF like the above mentioned methods, but what makes
+it difficult to understand is that it's _signature/syntax_ and working logic is
+a bit different from the others.
+
+```js
+reduce(callbackFn, initialValue);
+```
+
+## What does the `Array.reduce()` method do?
+
+`reduce()` method executes the user-supplied "reducer" `callbackFn` on each
+Array element, in order, passing the return value from the callback as the
+_first parameter_ to the next iteration. And the result of the method is a
+single value returned by the last iteration.
+
+### Syntax
+
+```js
+reduce(callbackFn, initialValue);
+reduce((previousValue, currentValue, currentIndex, array) => {
+  /* ... */
+}, initialValue);
+```
+
+#### Parameters
+
+`callbackFn`  
+A reducer function that executes on each element. It accepts one to four
+arguments :
+
+- `previousValue` : The value returned from the previous `callbackFn`. On the
+  first call, `intialValue` if specified, otherwise the value of `array[0]`.
+- `currentValue` : The value of current element. On the first call, the value of
+  `array[0]` if an `intialValue` is specified, otherwise the value of
+  `array[1]`.
+- `currentIndex` : The index position of `currentValue` in the array. On the
+  first call, `0` if `initialValue` is specified, otherwise `1`.
+- `array` : The array itself that is traversed over.
+
+`initialValue` (_optional_)  
+A value to which `previousValue` is initialized on the first call. If
+`initialValue` is specified, it causes the `currentValue` to be initialized with
+the first element in the array(`array[0]`). If `initialValue` is not specified,
+`previousValue` is initialized to the first element in the array(`array[0]`) and
+the `currentValue` is initialized to the second element in the
+array(`array[1]`).
+
+> Note: Sometimes`previousValue` is also referred to as `accumulator` as in
+> _horse racing accumulator bets_.
+
+#### Return Value
+
+A single return value that results on running the "reducer" `callbackFn` to
+completion over the entire array. The return value from the last iteration of
+the `callbackFn` is the **Return value** of the entire method.
+
+### Simple Examples
+
+<Step number="1" title="Sum of Array elements is a good example to start with to understand `reduce()`"/>
+
+```js {3}
+const arr = [5, 3, 6, 1];
+
+const sum = arr.reduce((prev, item) => prev + item);
+// sum -> 15
+```
+
+In the above snippet there's no `initialValue` defined, so the reducer starts
+with `arr[0]` being the `prev`(`previousValue`) and `arr[1]` as the value of
+`item`(`currentValue`) in the first iteration.
+
+So the iterations for the reducer would look something like this without the
+`initialValue`.
+
+| callbackFn iteration | previousValue | currentValue | currentIndex | Return Value |
+| -------------------- | ------------- | ------------ | ------------ | ------------ |
+| first call           | 5             | 3            | 1            | 8            |
+| second call          | 8             | 6            | 2            | 14           |
+| third call           | 14            | 1            | 3            | 15           |
+
+For the _first call_, the value of `previousValue` is `arr[0]` and of
+`currentValue` is `arr[1]` as the `initialValue` wasn't specified. You can see
+that the `previousValue` for _second call_ is initialized with the **return
+value** of the _first call_. This pattern goes on until the last iteration is
+made and the return value from the last call is the **Return Value** for the
+method.
+
+```js {1}
+[5, 3, 6, 1].reduce((prev, item) => prev + item, 7); // 22
+```
+
+The iterations looks something like this when the `initialValue` is passed to
+the method.
+
+| callbackFn iteration | previousValue | currentValue | currentIndex | Return Value |
+| -------------------- | ------------- | ------------ | ------------ | ------------ |
+| first call           | 7             | 5            | 0            | 12           |
+| second call          | 12            | 3            | 1            | 15           |
+| third call           | 15            | 6            | 2            | 21           |
+| fourth call          | 21            | 1            | 3            | 22           |
+
+The _first call_ starts with `initialValue` initialized to `previousValue` and
+the value of `arr[0]` initialized to `currentValue`.
+
+✨ Fun little tip that I used to do before I learnt reduce was to use `eval()`.
+
+```js
+eval([1, 2, 3, 4, 5].join`+`); // 15
+```
+
+Use at your own risk !!
+
+<Step number="2" title="Grand total of a grocery list"/>
+
+Let's say you were given an array of objects, of which objects contain
+
+- `name` as _string_
+- `quantity` as _number_ in **KGs** and
+- `price` as _number_ in **$Dollars** per `quantity`
+
+and you are needed to produce the grand total of the items. How would you go
+about finding it using `reduce()`?
+
+```js {19-22}
+const groceries = [
+  {
+    name: 'Tomatoes🍅',
+    price: 3.0,
+    quantity: 3
+  },
+  {
+    name: 'EggPlant🍆',
+    price: 4.5,
+    quantity: 5.1
+  },
+  {
+    name: 'Broccoli🥦',
+    price: 2.3,
+    quantity: 0.6
+  }
+];
+
+const grandTotal = groceries.reduce((prev, item) => {
+  const total = item.price * item.quantity;
+  return prev + total;
+}, 0);
+// 33.33
+```
+
+An `initialValue` is provided to the `reduce()` method so the `currentValue` is
+going to start with `groceries[0]`. For the _first call_, the `total` will
+evaluate to `3.0*3`=`9` which is then summed with the `previousValue` a
+returned. The same pattern is followed until the last(_third call_) is made and
+the `grandTotal` results to `33.33`.
+
+### More examples
+
+Let's have a look at a bit complex examples with `reduce()`.
+
+<Step number="1" title="Count items in an Array"/>
+
+Q. Given an array of string, count the number of occurrences of an item in the
+array ?
+
+```js {3-6}
+const arr = ['foo', 'bar', 'foo'];
+
+const counts = arr.reduce((acc, item) => {
+  if (acc.has(item)) return acc.set(item, acc.get(item) + 1);
+  else return acc.set(item, 1);
+}, new Map());
+// counts -> {'foo' => 2, 'bar' => 1}
+```
+
+The output would have much sense if it would be in some form of object with the
+array items being the keys and the corresponding values being the number of
+occurrences of the item. I used a `Map()` because of the helpful methods that it
+has to check and set items.
+
+In the _first call_ the reducer is set with an `initialValue` of an empty
+`Map()` which is initialized to `acc` and the `item` is initialized with
+`arr[0]`. The _map_ is checked if it contains the `item`, if it does, the value
+of the key is incremented. Otherwise in the else part, the map is set with
+`item` as the key with value of count to `1`.
+
+<Step number="2" title="Maximum by field"/>
+
+Q. Given an array of objects with some numerical property, find the object with
+the maximum value ?
+
+```js {7-10}
+const objects = [
+  { name: 'foo', value: 123 },
+  { name: 'bar', value: 100 },
+  { name: 'baz', value: 150 }
+];
+
+const maxValueObject = objects.reduce((acc, object) => {
+  if (acc.value > object.value) return acc;
+  else return object;
+});
+// maxValueObject -> { name : 'baz', value: 150 }
+```
+
+There is no `initialValue` defined for the reducer because all we need to do is
+compare the field of the object with the `acc` and return the object with
+maximum value to the `acc`, through which only the object with the maximum value
+stays in the `acc` getting compared with other objects until a maximum field
+value replaces it.
+
+<Step number="3" title="Grouping by similar value"/>
+
+Q. Given an array of objects with type and value keys, group the array according
+to the type with values.
+
+```js {7,9-14}
+const obj = [
+  { type: 'a', value: 123 },
+  { type: 'a', value: 100 },
+  { type: 'b', value: 150 }
+];
+
+const group = obj.reduce((acc, item) => {
+  // check if the key exists
+  if (!acc[item.type]) {
+    acc[item.type] = []; // if not create the key initialized with empty array
+  }
+  acc[item.type].push(item.value); // push the value to the existing array of the key
+  return acc; // return the who object to next iteration
+}, {});
+// group -> { a: [123, 100], b: [150] }
+```
+
+---
+
+#### Is this the End of the <u>Higher-Order Function</u> Series ?
+
+Probably :)

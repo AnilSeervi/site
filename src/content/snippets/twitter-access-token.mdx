@@ -1,0 +1,162 @@
+---
+title: Twitter Access Token
+description: 'Generate access_token and refresh_token'
+tag: serverless
+---
+
+Twitter OAuth 2.0 Authorization Code Flow with PKCE
+
+```js
+const access_token = process.env.TWITTER_OAUTH_ACCESS_TOKEN;
+
+const BOOKMARKS_ENDPOINT = `https://api.twitter.com/2/users/${2496313362}/bookmarks`;
+
+export const getBookmarkedTweets = async () => {
+  const queryParams = new URLSearchParams({
+    expansions:
+      'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id',
+    'tweet.fields':
+      'attachments,author_id,public_metrics,created_at,id,in_reply_to_user_id,referenced_tweets,text',
+    'user.fields': 'id,name,profile_image_url,protected,url,username,verified',
+    'media.fields':
+      'duration_ms,height,media_key,preview_image_url,type,url,width,public_metrics,alt_text'
+  });
+  const response = await fetch(`${BOOKMARKS_ENDPOINT}?${queryParams}`, {
+    headers: {
+      Authorization: `Bearer ${access_token}`
+    }
+  });
+
+  const tweets = await response.json();
+
+  const getAuthorInfo = (author_id) => {
+    return tweets.includes.users.find((user) => user.id === author_id);
+  };
+
+  const getReferencedTweets = (mainTweet) => {
+    return (
+      mainTweet?.referenced_tweets?.map((referencedTweet) => {
+        const fullReferencedTweet = tweets.includes.tweets.find(
+          (tweet) => tweet.id === referencedTweet.id
+        );
+
+        return {
+          type: referencedTweet.type,
+          author: getAuthorInfo(fullReferencedTweet.author_id),
+          ...fullReferencedTweet
+        };
+      }) || []
+    );
+  };
+
+  return (
+    tweets.data?.reduce((allTweets, tweet) => {
+      const tweetWithAuthor = {
+        ...tweet,
+        media:
+          tweet?.attachments?.media_keys.map((key) =>
+            tweets.includes.media.find((media) => media.media_key === key)
+          ) || [],
+        referenced_tweets: getReferencedTweets(tweet),
+        author: getAuthorInfo(tweet.author_id)
+      };
+
+      return [tweetWithAuthor, ...allTweets];
+    }, []) || [] // If the Twitter API key isn't set, don't break the build
+  );
+};
+```
+
+## Usage
+
+<Step number={1} title="Create OAuth 2.0 Twitter Application" />
+
+First, we need to create a Twitter application to give us credentials to
+authenticate with the API.
+
+- Go to your [Twitter Developer Portal](https://developer.twitter.com/) and log
+  in
+- Create a basic **project**
+- In project _Settings_, find **User authentication settings** and click on "Set
+  up".
+- Select the _Type of App_ as **Web App, Automated App or Bot**
+- Under _App Info_, add `http://localhost:3000` as the **Callback URI / Redirect
+  URL** and your the URL of your website for **Website URL**
+- Click on "Save"
+
+Once you successfully save the form, you'll get **OAuth 2.0 `client_id` and
+`client_secret`**. Make sure to **write these values down**, since you can't
+reveal the secret later, only regenerate it.
+
+<Step number={2} title="Authentication" />
+
+#### Step 1: Construct an Authorize URL
+
+You'll need to set the following query params according to your credentials to
+construct the URL:
+
+- `response_type` : `code`
+- `client_id` : **Your `client_id` generated in previous Step**
+- `redirect_uri` : `http://localhost:3000` ( The _Callback URI / Redirect URL_
+  set while creating the application ).
+- `scope` : URL encoded scopes needed for your project.
+  [Reference here](https://developer.twitter.com/en/docs/authentication/guides/v2-authentication-mapping).
+  - Example : `tweet.read%20users.read%20follows.read%20offline.access`
+- `state` : `state`
+- `code_challenge` : `challenge` ( any random string )
+- `code_challenge_method` : `plain`
+
+#### Step 2: `GET` oauth2/authorize
+
+After you've constructed your authorize URL, it should look something like given
+below :
+
+```bash
+https://twitter.com/i/oauth2/authorize?response_type=code&client_id=M1M5R3BMVy13QmpScXkzTUt5OE46MTpjaQ&redirect_uri=http://localhost:3000&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
+```
+
+Open your authorize URL in the browser and authorize your application. Upon
+successful authentication, the `redirect_uri`  you would receive a request
+containing the `code` parameter.
+
+An example request from client’s redirect would be:
+
+```bash
+http://locahost:3000?state=state&code=VGNibzFWSWREZm01bjN1N3dicWlNUG1oa2xRRVNNdmVHelJGY2hPWGxNd2dxOjE2MjIxNjA4MjU4MjU6MToxOmFjOjE
+```
+
+#### Step 3: `POST` oauth2/token - Access Token
+
+Using the auth `code` returned in the previous step and the _Bearer_ token, you
+can make a `POST` call to get your `access_token` and `refresh_token`.
+
+Create your Basic token using your `client_id` and `client_secret` generated
+while creating the application.
+
+```js
+const basic_token = Buffer.from(`${client_id}:${client_secret}`).toString(
+  'base64'
+);
+```
+
+Open your terminal and make a curl `POST` request with your credentials of the
+following :
+
+```bash
+curl --location --request POST 'https://api.twitter.com/2/oauth2/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'Authorization: Basic <your_basic_token>'\
+--data-urlencode 'code=VGNibzFWSWREZm01bjN1N3dicWlNUG1oa2xRRVNNdmVHelJGY2hPWGxNd2dxOjE2MjIxNjA4MjU4MjU6MToxOmFjOjE' \
+--data-urlencode 'grant_type=authorization_code' \
+--data-urlencode 'redirect_uri=http://localhost:3000' \
+--data-urlencode 'code_verifier=challenge'
+```
+
+Add your `basic_token` in the `Authorization` header and you auth code in `code`
+param and hit <kbd>Enter</kbd>.
+
+You must receive a JSON containing an `access_token` and a `refresh_token`.
+
+<Step number={3} title="Add to environment" />
+
+To securely access the API, add the `access_token` to `env`.
