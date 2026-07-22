@@ -1,0 +1,57 @@
+---
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import { site } from '~/config/site';
+---
+
+<Base>
+  <div class="whoami">
+    <span><span class="tilde">~</span> <span class="chev">❯</span> whoami</span>
+    <span class="greeting">good evening, from bengaluru</span>
+  </div>
+  <h1>Anil <em>Seervi</em></h1>
+  <p class="role">staff software engineer · zenduty · bangalore</p>
+  <!-- Phase 3: full hero, proof strip, work/writing/live sections -->
+  <Footer left="astro · vercel ▲ · view transitions on">
+    <a href={site.socials.github}>github</a>
+    <a href={site.socials.twitter}>twitter</a>
+    <a href="/rss.xml">rss</a>
+  </Footer>
+</Base>
+
+<style>
+  .whoami {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+    margin-bottom: 18px;
+  }
+  .tilde,
+  .chev {
+    color: var(--as-accent);
+  }
+  .greeting {
+    color: var(--faint);
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 52px;
+    color: var(--text-hi);
+    margin: 0 0 16px;
+    line-height: 1.05;
+  }
+  h1 em {
+    font-weight: 400;
+  }
+
+  .role {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--meta);
+    margin: 0;
+  }
+</style>

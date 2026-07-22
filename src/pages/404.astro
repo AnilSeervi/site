@@ -1,0 +1,82 @@
+---
+import Base from '~/layouts/Base.astro';
+---
+
+<Base title="404 — Anil Seervi" description="Nothing lives at this path.">
+  <div class="transcript">
+    <div><span class="prompt">❯</span> <span class="cmd">cd ~/thoughts</span></div>
+    <div class="error">zsh: no such file or directory: ~/thoughts</div>
+    <div class="gap"><span class="prompt">❯</span> <span class="cmd">ls ~</span></div>
+    <div class="ls">
+      <a href="/work">work/</a>
+      <a href="/writing">writing/</a>
+      <a href="/live">live/</a>
+      <a href="/about">about/</a>
+    </div>
+    <div class="gap">
+      <span class="prompt">❯</span>{' '}<a class="home" href="/">cd ~</a><span
+        class="caret"
+        aria-hidden="true"></span>
+    </div>
+  </div>
+  <p class="closing">Nothing lives at this path. It may have been moved, unpublished, or never written at all.</p>
+</Base>
+
+<style>
+  .transcript {
+    margin-top: 32px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 2.2;
+    margin-bottom: 56px;
+  }
+
+  .prompt {
+    color: var(--as-accent);
+  }
+  .cmd {
+    color: var(--text);
+  }
+  .error {
+    color: var(--error);
+  }
+  .gap {
+    margin-top: 18px;
+  }
+
+  .ls {
+    display: flex;
+    gap: 28px;
+  }
+  .ls a,
+  .home {
+    color: var(--meta);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .ls a:hover,
+  .home:hover {
+    color: var(--text-hi);
+  }
+  .home {
+    color: var(--text);
+  }
+
+  .caret {
+    width: 8px;
+    height: 15px;
+    background: var(--as-accent);
+    display: inline-block;
+    vertical-align: -2px;
+    margin-left: 8px;
+    animation: as-caret 1.1s steps(1) infinite;
+  }
+
+  .closing {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--meta);
+    margin: 0;
+  }
+</style>

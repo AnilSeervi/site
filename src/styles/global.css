@@ -1,0 +1,166 @@
+/* ---------------------------------------------------------------------------
+   The Complete Minimal — global tokens & base
+   Source of truth: design_handoff_portfolio_redesign (README + prototype)
+--------------------------------------------------------------------------- */
+
+:root {
+  /* color tokens */
+  --bg: #0f0d0b;
+  --surface: #141110;
+  --ascii-bg: #100e0c;
+  --text-hi: #ede6da;
+  --text: #d8d0c2;
+  --text-soft: #c9c0af;
+  --text-muted: #a99f8c;
+  --meta: #8a8171;
+  --faint: #5e5749;
+  --sep-strong: #3e382e;
+  --sep-strong-2: #4a443c;
+  --live-green: #92c78c;
+  --quote: #cfc6b6;
+  --error: #ce7b5b;
+  --as-accent: #d9a54a;
+
+  /* hairlines */
+  --hair-row: rgba(237, 230, 218, 0.07);
+  --hair-card: rgba(237, 230, 218, 0.1);
+  --hair-rule: rgba(237, 230, 218, 0.12);
+  --hair-input: rgba(237, 230, 218, 0.18);
+
+  /* type */
+  --font-serif: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(217, 165, 74, 0.35);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+:focus-visible {
+  outline: 1px solid var(--as-accent);
+  outline-offset: 3px;
+}
+
+/* dot-grid background layer — lives on a transition:persist element in Base */
+.dot-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(237, 230, 218, 0.05) 1px, transparent 1.2px);
+  background-size: 26px 26px;
+}
+
+/* ---- keyframes (verbatim from prototype) ---- */
+@keyframes as-eq {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes as-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(146, 199, 140, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(146, 199, 140, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(146, 199, 140, 0);
+  }
+}
+@keyframes as-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes as-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes as-run {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+@keyframes as-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes as-beat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  8% {
+    transform: scale(1.5);
+  }
+  16% {
+    transform: scale(1);
+  }
+  24% {
+    transform: scale(1.3);
+  }
+}
+
+/* staggered entrance (6a) — applied via .as-enter + inline animation-delay */
+.as-enter {
+  animation: as-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

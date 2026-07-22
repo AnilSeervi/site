@@ -1,0 +1,147 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { site } from '~/config/site';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
+import '@fontsource/spline-sans-mono/400.css';
+import '@fontsource/spline-sans-mono/500.css';
+import '~/styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** content column width — article pages use 640 */
+  column?: number;
+  /** hide the CSS dot grid (writing page uses its own canvas) */
+  noDots?: boolean;
+}
+
+const {
+  title = site.title,
+  description = site.description,
+  column = 768,
+  noDots = false
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0F0D0B" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, site.url)} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
+    <script is:inline>
+      (function () {
+        try {
+          var a = localStorage.getItem('as-accent');
+          if (a) document.documentElement.style.setProperty('--as-accent', a);
+        } catch (e) {}
+      })();
+      document.addEventListener('astro:after-swap', function () {
+        try {
+          var a = localStorage.getItem('as-accent');
+          if (a) document.documentElement.style.setProperty('--as-accent', a);
+        } catch (e) {}
+      });
+    </script>
+    <ClientRouter />
+  </head>
+  <body>
+    {!noDots && <div class="dot-grid" transition:persist="dot-grid" aria-hidden="true" />}
+    <div class="page" style={`--column: ${column}px`}>
+      <header class="site-header" transition:persist="site-header">
+        <a class="brand" href="/">{site.handle}</a>
+        <nav aria-label="Main">
+          {site.nav.map((item) => (
+            <a href={item.href} data-navlink>
+              {item.label}
+            </a>
+          ))}
+          <button class="cmdk" aria-label="Open command palette" data-palette-open>⌘K</button>
+        </nav>
+      </header>
+      <main>
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: calc(var(--column) + 48px);
+    margin: 0 auto;
+    padding: 70px 24px 60px;
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 64px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .brand {
+    color: var(--as-accent);
+  }
+  .brand:hover {
+    color: var(--text-hi);
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  nav a {
+    color: var(--meta);
+  }
+  nav a:hover {
+    color: var(--text-hi);
+  }
+  nav a[data-active] {
+    color: var(--text-hi);
+  }
+
+  .cmdk {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    background: none;
+    border: 1px solid var(--hair-input);
+    border-radius: 5px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+  .cmdk:hover {
+    color: var(--text-hi);
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+</style>
+
+<script>
+  function markActive() {
+    const path = location.pathname;
+    document.querySelectorAll<HTMLAnchorElement>('[data-navlink]').forEach((a) => {
+      const href = a.getAttribute('href') ?? '';
+      const active = path === href || path.startsWith(href + '/');
+      if (active) a.setAttribute('data-active', '');
+      else a.removeAttribute('data-active');
+    });
+  }
+  markActive();
+  document.addEventListener('astro:page-load', markActive);
+</script>

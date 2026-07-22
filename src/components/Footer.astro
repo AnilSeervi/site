@@ -1,0 +1,51 @@
+---
+interface Props {
+  left: string;
+}
+const { left } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer>
+  <span class="left">© {year} anil seervi{left && ` — ${left}`}</span>
+  <span class="right"><slot /></span>
+</footer>
+
+<style>
+  footer {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 96px;
+    border-top: 1px solid var(--hair-rule);
+    padding-top: 22px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+
+  .right {
+    display: flex;
+    gap: 18px;
+  }
+
+  .right :global(a) {
+    color: var(--meta);
+  }
+  .right :global(a:hover) {
+    color: var(--text-hi);
+  }
+
+  /* forward-arrow chain link: `next — ~/writing →` */
+  .right :global(a.chain) {
+    display: inline-block;
+    transition:
+      transform 180ms ease,
+      color 180ms ease;
+  }
+  .right :global(a.chain:hover) {
+    transform: translateX(4px);
+  }
+</style>

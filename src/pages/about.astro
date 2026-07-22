@@ -1,0 +1,17 @@
+---
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import PageTitle from '~/components/PageTitle.astro';
+import { site } from '~/config/site';
+---
+
+<Base title="About — Anil Seervi" description="Who I am, how I got here, and what this site runs on.">
+  <PageTitle title="about" sub="Who I am, how I got here, and what this site runs on." />
+  <!-- Phase 3: facts + career calendar + colophon; Phase 4: ascii portrait -->
+  <Footer left="">
+    <a href={site.socials.github}>github</a>
+    <a href={site.socials.twitter}>twitter</a>
+    <a href={site.socials.linkedin}>linkedin</a>
+    <a href={site.socials.mail}>mail</a>
+  </Footer>
+</Base>

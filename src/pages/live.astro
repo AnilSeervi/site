@@ -1,0 +1,19 @@
+---
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import PageTitle from '~/components/PageTitle.astro';
+---
+
+<Base
+  title="Live — Anil Seervi"
+  description="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
+>
+  <PageTitle
+    title="live"
+    sub="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
+  />
+  <!-- Phase 5/6: right-now rows, globe, listening, shipping, moving, watching, guestbook -->
+  <Footer left="/api/spotify · /api/github · /api/strava · /api/mal">
+    <a class="chain" href="/about">next — ~/about →</a>
+  </Footer>
+</Base>
