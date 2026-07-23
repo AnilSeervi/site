@@ -1,7 +1,29 @@
 ---
+import { getCollection } from 'astro:content';
 import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
+import Section from '~/components/Section.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+const snippets = await getCollection('snippets');
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const dateLabel = (d: Date) => `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate()).padStart(2, '0')}`;
+
+/** newest post overall reads `latest`; the rest `sep 06` style */
+const labels = new Map(posts.map((p, i) => [p.id, i === 0 ? 'latest' : dateLabel(p.data.date)]));
+
+const years = [...new Set(posts.map((p) => p.data.date.getUTCFullYear()))];
+const groups = years.map((year) => ({
+  year,
+  posts: posts.filter((p) => p.data.date.getUTCFullYear() === year)
+}));
+
+/** jar rows read lowercase, `&` for `and` — display style only */
+const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(/\band\b/g, '&');
 ---
 
 <Base
@@ -9,12 +31,315 @@ import PageTitle from '~/components/PageTitle.astro';
   description="JavaScript and React, explained properly. Eight articles since 2021."
   noDots
 >
-  <PageTitle
-    title="writing"
-    sub="JavaScript and React, explained properly. Eight articles since 2021."
-  />
-  <!-- Phase 3: search, year groups + ghost numerals, snippet jar; Phase 4: dot-field canvas -->
-  <Footer left="rss available">
-    <a class="chain" href="/live">next — ~/live →</a>
-  </Footer>
+  <canvas class="dot-field" aria-hidden="true"></canvas>
+  <as-search class="wrap">
+    <div class="head">
+      <div class="head-left">
+        <PageTitle
+          title="writing"
+          sub="JavaScript and React, explained properly. Eight articles since 2021."
+        />
+      </div>
+      <label class="search">
+        <input
+          type="text"
+          placeholder="search…"
+          aria-label="Search articles"
+          autocomplete="off"
+          data-search-input
+        />
+        <span class="key" aria-hidden="true">/</span>
+      </label>
+    </div>
+
+    <p class="preview" data-preview aria-live="polite">
+      — hover an article; its opening line appears here
+    </p>
+
+    {
+      groups.map((group) => (
+        <section class="group" data-group>
+          <span class="ghost" aria-hidden="true">{group.year}</span>
+          <div class="year-head">
+            <span class="year">{group.year}</span>
+            <span class="rule" aria-hidden="true" />
+          </div>
+          <div class="rows">
+            {group.posts.map((post) => (
+              <a
+                class="row"
+                href={`/writing/${post.id}`}
+                data-row
+                data-title={post.data.title.toLowerCase()}
+                data-line={post.data.firstLine}
+              >
+                <span class="title" transition:name={`title-${post.id}`}>
+                  {post.data.title}
+                </span>
+                <span class="date">{labels.get(post.id)}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    <div class="jar">
+      <Section label="SNIPPET JAR" meta="css, js & serverless tricks" mb={14} />
+      <div class="jar-rows">
+        {
+          snippets.map((s) => (
+            <a class="row" href={`/writing/${s.id}`}>
+              <span class="snip">{`${s.data.title} — ${jarDesc(s.data.description)}`}</span>
+              <span class="date">{s.data.tag}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <Footer left="rss available">
+      <a class="chain" href="/live">next — ~/live →</a>
+    </Footer>
+  </as-search>
 </Base>
+
+<style>
+  /* cursor-reactive dot field — drawn in Phase 4 */
+  .dot-field {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .wrap {
+    display: block;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---- header: title + search ---- */
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+    margin-bottom: 20px;
+  }
+  .head-left :global(.sub) {
+    margin: 0;
+    max-width: 32em;
+  }
+
+  .search {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex: 0 0 auto;
+    width: 250px; /* frame's 220px is content-box; we're border-box (220 + 28 padding + 2 border) */
+    padding: 9px 14px;
+    border: 1px solid rgba(237, 230, 218, 0.15);
+    border-radius: 5px;
+    background: rgba(15, 13, 11, 0.7);
+    cursor: text;
+    transition: border-color 180ms ease;
+  }
+  .search:hover,
+  .search:focus-within {
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+  .search input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-hi);
+  }
+  .search input::placeholder {
+    color: var(--faint);
+  }
+  .search input:focus-visible {
+    outline: none; /* focus shown on the box border via :focus-within */
+  }
+  .key {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    border: 1px solid rgba(237, 230, 218, 0.15);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  /* ---- opening-line preview slot ---- */
+  .preview {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15.5px;
+    color: #cfc6b6;
+    min-height: 26px;
+    margin: 0 0 30px;
+  }
+
+  /* ---- year groups + ghost numerals ---- */
+  .group {
+    position: relative;
+  }
+  .ghost {
+    position: absolute;
+    right: -8px;
+    top: -52px;
+    font-family: var(--font-serif);
+    font-size: 130px;
+    line-height: 1;
+    color: rgba(237, 230, 218, 0.04);
+    pointer-events: none;
+  }
+  .year-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .year {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--as-accent);
+  }
+  .rule {
+    flex: 1;
+    border-bottom: 1px solid var(--hair-rule);
+  }
+  .rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 44px;
+  }
+  .group:last-of-type .rows {
+    margin-bottom: 52px;
+  }
+
+  /* ---- article + snippet rows ---- */
+  .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+    color: var(--text);
+    transition:
+      background 180ms ease,
+      color 180ms ease;
+  }
+  .rows .row:last-child,
+  .jar-rows .row:last-child {
+    border-bottom: none;
+  }
+  .row:hover {
+    color: var(--text-hi);
+    background: rgba(237, 230, 218, 0.035);
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-size: 20px;
+  }
+  .date {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  /* ---- snippet jar ---- */
+  .jar :global(.section-head .meta) {
+    color: var(--faint);
+  }
+  .jar-rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 56px;
+  }
+  .jar-rows .row {
+    padding: 12px 0;
+  }
+  .snip {
+    font-size: 16px;
+  }
+
+  /* frame 6c spaces the footer 56px under the jar (via .jar-rows margin) */
+  .wrap :global(footer) {
+    margin-top: 0;
+  }
+</style>
+
+<script>
+  class ASSearch extends HTMLElement {
+    #input: HTMLInputElement | null = null;
+
+    #onSlash = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      this.#input?.focus();
+    };
+
+    connectedCallback() {
+      this.#input = this.querySelector<HTMLInputElement>('[data-search-input]');
+      const preview = this.querySelector<HTMLElement>('[data-preview]');
+      const fallback = preview?.textContent?.trim() ?? '';
+
+      this.querySelectorAll<HTMLElement>('[data-row]').forEach((row) => {
+        row.addEventListener('mouseenter', () => {
+          if (preview) preview.textContent = `“${row.dataset.line ?? ''}”`;
+        });
+        row.addEventListener('mouseleave', () => {
+          if (preview) preview.textContent = fallback;
+        });
+      });
+
+      this.#input?.addEventListener('input', () => this.#filter());
+      this.#input?.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (this.#input) this.#input.value = '';
+          this.#filter();
+          this.#input?.blur();
+        }
+      });
+
+      document.addEventListener('keydown', this.#onSlash);
+    }
+
+    disconnectedCallback() {
+      document.removeEventListener('keydown', this.#onSlash);
+    }
+
+    #filter() {
+      const q = (this.#input?.value ?? '').trim().toLowerCase();
+      this.querySelectorAll<HTMLElement>('[data-group]').forEach((group) => {
+        let lastShown: HTMLElement | null = null;
+        let shown = 0;
+        group.querySelectorAll<HTMLElement>('[data-row]').forEach((row) => {
+          const match = !q || (row.dataset.title ?? '').includes(q);
+          row.style.display = match ? '' : 'none';
+          row.style.borderBottom = ''; // reset — the last *visible* row goes borderless
+          if (match) {
+            shown++;
+            lastShown = row;
+          }
+        });
+        if (lastShown) (lastShown as HTMLElement).style.borderBottom = 'none';
+        group.style.display = shown ? '' : 'none';
+      });
+    }
+  }
+
+  if (!customElements.get('as-search')) customElements.define('as-search', ASSearch);
+</script>

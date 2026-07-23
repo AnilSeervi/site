@@ -2,12 +2,127 @@
 import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
-import { site } from '~/config/site';
+import Section from '~/components/Section.astro';
+import { site, facts, calendar } from '~/config/site';
+
+/** year → 1-indexed grid row (years run 2026 → 2018, top to bottom) */
+const yearRow = (y: number) => calendar.years.indexOf(y) + 1;
+const details = Object.entries(calendar.details);
 ---
 
 <Base title="About — Anil Seervi" description="Who I am, how I got here, and what this site runs on.">
   <PageTitle title="about" sub="Who I am, how I got here, and what this site runs on." />
-  <!-- Phase 3: facts + career calendar + colophon; Phase 4: ascii portrait -->
+
+  <!-- halftone portrait + click-to-reveal facts -->
+  <div class="portrait-grid">
+    <div class="portrait">
+      <canvas
+        class="ascii-portrait"
+        data-cells="60x75"
+        width="480"
+        height="600"
+        style="width:240px;height:300px;background:var(--ascii-bg);border-radius:5px"></canvas>
+    </div>
+    <as-facts class="facts">
+      <div class="facts-hint">click a row — nothing here is precious</div>
+      {
+        facts.map((f) => (
+          <button class="fact" type="button" aria-pressed="false">
+            <span class="fact-key">{f.key}</span>
+            <span class="fact-value">{f.value}</span>
+          </button>
+        ))
+      }
+    </as-facts>
+  </div>
+
+  <!-- career calendar -->
+  <div class="cal-head">
+    <Section label="CAREER CALENDAR" meta="2018 → now" mb={24} />
+  </div>
+  <as-calendar>
+    <div class="cal-grid">
+      {
+        calendar.years.map((y, i) => (
+          <span class="cal-year" style={`grid-row:${i + 1}`}>
+            {y}
+          </span>
+        ))
+      }
+      <button
+        class="cal-lane"
+        type="button"
+        data-cal="oss"
+        aria-expanded="false"
+        style={`grid-row:1/${calendar.years.length + 1}`}
+      >
+        <span class="cal-lane-label">side projects &amp; oss</span>
+      </button>
+      {
+        calendar.cards.map((c) => (
+          <button
+            class:list={['cal-card', { accent: c.accent }]}
+            type="button"
+            data-cal={c.key}
+            aria-expanded="false"
+            style={`grid-row:${yearRow(c.fromYear)}/${yearRow(c.toYear) + 1}`}
+          >
+            <span class="card-kicker">{c.kicker}</span>
+            <span class="card-title">{c.title}</span>
+            <span class="card-dates">{c.dates}</span>
+          </button>
+        ))
+      }
+      {
+        calendar.milestones.map((m) => (
+          <span class="cal-milestone" style={`grid-row:${yearRow(m.year)}`}>
+            <span class="dot" aria-hidden="true" />
+            {m.label}
+          </span>
+        ))
+      }
+    </div>
+    <div class="cal-panel">
+      <div class="cal-hint" data-cal-hint>
+        — click a card or the striped lane; what shipped there drops in here
+      </div>
+      {
+        details.map(([key, d]) => (
+          <div class="cal-detail" data-cal-detail={key} hidden>
+            <div class="detail-head">
+              <span class="detail-title">{d.title}</span>
+              <span class="detail-meta">{d.meta}</span>
+            </div>
+            <div class="detail-body">
+              <span class="detail-label">STUFF THAT SHIPPED</span>
+              {d.bullets.map((b) => (
+                <div class="detail-bullet">
+                  <span class="bullet-dot" aria-hidden="true">
+                    ·
+                  </span>
+                  <span>{b}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </as-calendar>
+
+  <!-- colophon -->
+  <Section label="COLOPHON" />
+  <div class="colophon">
+    Set in <em>Newsreader</em> and <span class="mono">Spline Sans Mono</span>. Built with Astro —
+    islands for the live feeds, view transitions between every page. Deployed on Vercel ▲, <span
+      data-deploy>last deploy 2h ago</span
+    >. Live data from Spotify, GitHub and MyAnimeList. Source at <a
+      href={site.repo}
+      target="_blank"
+      rel="noopener noreferrer">github.com/AnilSeervi/site</a
+    >.
+  </div>
+
   <Footer left="">
     <a href={site.socials.github}>github</a>
     <a href={site.socials.twitter}>twitter</a>
@@ -15,3 +130,369 @@ import { site } from '~/config/site';
     <a href={site.socials.mail}>mail</a>
   </Footer>
 </Base>
+
+<style>
+  /* ---- portrait + facts ---- */
+  .portrait-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 44px;
+    margin-bottom: 56px;
+    align-items: start;
+  }
+
+  .portrait {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ascii-portrait {
+    display: block;
+    border: 1px solid var(--hair-card);
+    cursor: crosshair;
+  }
+
+  as-facts {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .facts-hint {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    padding-bottom: 8px;
+  }
+
+  .fact {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 16px;
+    padding: 11px 0;
+    border: 0;
+    border-top: 1px solid var(--hair-row);
+    align-items: baseline;
+    cursor: pointer;
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    width: 100%;
+  }
+  .fact:last-of-type {
+    border-bottom: 1px solid var(--hair-row);
+  }
+
+  .fact-key {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  .fact-value {
+    font-size: 15.5px;
+    color: var(--text-hi);
+    filter: blur(7px);
+    transition: filter 0.4s ease;
+  }
+  .fact.revealed .fact-value {
+    filter: none;
+  }
+
+  /* ---- career calendar ---- */
+  /* prototype 6e uses --faint for this section's plain-text meta (`2018 → now`) */
+  .cal-head :global(.meta) {
+    color: var(--faint);
+  }
+
+  as-calendar {
+    display: block;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: 56px 40px 300px 1fr;
+    grid-auto-rows: 48px;
+    column-gap: 22px;
+  }
+
+  .cal-year {
+    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+    border-top: 1px solid rgba(237, 230, 218, 0.05);
+    padding-top: 10px;
+    pointer-events: none;
+  }
+  .cal-year:first-child {
+    color: var(--meta);
+    border-top-color: rgba(237, 230, 218, 0.09);
+  }
+
+  .cal-lane {
+    grid-column: 2;
+    margin: 10px 0 4px;
+    padding: 0;
+    border: 1px solid var(--hair-card);
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(237, 230, 218, 0.09) 0 3px,
+      transparent 3px 9px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 180ms ease;
+  }
+  .cal-lane:hover {
+    border-color: rgba(237, 230, 218, 0.3);
+  }
+
+  .cal-lane-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--meta);
+    background: var(--bg);
+    padding: 8px 1px;
+  }
+
+  .cal-card {
+    grid-column: 3;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 3px;
+    padding: 16px 18px;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease;
+  }
+  .cal-card.accent {
+    margin: 10px 0 22px;
+    border: 1px solid color-mix(in srgb, var(--as-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--as-accent) 7%, transparent);
+  }
+  .cal-card.accent:hover {
+    background: color-mix(in srgb, var(--as-accent) 13%, transparent);
+    border-color: color-mix(in srgb, var(--as-accent) 65%, transparent);
+  }
+  .cal-card:not(.accent) {
+    margin: 2px 0 4px;
+    border: 1px solid rgba(237, 230, 218, 0.14);
+    background: rgba(237, 230, 218, 0.025);
+  }
+  .cal-card:not(.accent):hover {
+    background: rgba(237, 230, 218, 0.05);
+    border-color: rgba(237, 230, 218, 0.3);
+  }
+
+  .card-kicker {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--meta);
+  }
+  .cal-card.accent .card-kicker {
+    color: var(--as-accent);
+  }
+
+  .card-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .cal-card.accent .card-title {
+    color: var(--text-hi);
+  }
+
+  .card-dates {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--meta);
+  }
+
+  .cal-milestone {
+    grid-column: 4;
+    padding-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .cal-milestone .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--as-accent);
+    display: inline-block;
+    margin-top: 5px;
+    flex: none;
+  }
+
+  /* ---- detail panel (space reserved — no reflow on open) ---- */
+  .cal-panel {
+    min-height: 150px;
+    margin-bottom: 44px;
+  }
+
+  .cal-hint {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    padding-top: 16px;
+  }
+
+  .cal-detail {
+    border-top: 1px solid var(--hair-rule);
+    margin-top: 14px;
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .cal-detail[hidden] {
+    display: none;
+  }
+
+  .detail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+  }
+
+  .detail-title {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    color: var(--text-hi);
+  }
+
+  .detail-meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--meta);
+    white-space: nowrap;
+  }
+
+  .detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--faint);
+  }
+
+  .detail-bullet {
+    display: flex;
+    gap: 12px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  .detail-bullet .bullet-dot {
+    color: var(--as-accent);
+  }
+
+  /* ---- colophon ---- */
+  .colophon {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text-muted);
+  }
+  .colophon em {
+    font-family: var(--font-serif);
+    color: var(--text-hi);
+  }
+  .colophon .mono {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--text-hi);
+  }
+  .colophon a {
+    color: var(--text-soft);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .colophon a:hover {
+    color: var(--text-hi);
+  }
+
+  /* prototype puts the footer 56px below the colophon (Footer defaults to 96px) */
+  .colophon + :global(footer) {
+    margin-top: 56px;
+  }
+</style>
+
+<script>
+  if (!customElements.get('as-facts')) {
+    customElements.define(
+      'as-facts',
+      class extends HTMLElement {
+        #onClick = (e: Event) => {
+          const row = (e.target as HTMLElement).closest<HTMLElement>('.fact');
+          if (!row || !this.contains(row)) return;
+          const revealed = row.classList.toggle('revealed');
+          row.setAttribute('aria-pressed', String(revealed));
+        };
+        connectedCallback() {
+          this.addEventListener('click', this.#onClick);
+        }
+        disconnectedCallback() {
+          this.removeEventListener('click', this.#onClick);
+        }
+      }
+    );
+  }
+
+  if (!customElements.get('as-calendar')) {
+    customElements.define(
+      'as-calendar',
+      class extends HTMLElement {
+        #open: string | null = null;
+        #onClick = (e: Event) => {
+          const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-cal]');
+          if (!trigger || !this.contains(trigger)) return;
+          const key = trigger.dataset.cal ?? null;
+          this.#setOpen(this.#open === key ? null : key);
+        };
+        #setOpen(key: string | null) {
+          this.#open = key;
+          const hint = this.querySelector<HTMLElement>('[data-cal-hint]');
+          if (hint) hint.hidden = key !== null;
+          this.querySelectorAll<HTMLElement>('[data-cal-detail]').forEach((d) => {
+            d.hidden = d.dataset.calDetail !== key;
+          });
+          this.querySelectorAll<HTMLElement>('[data-cal]').forEach((t) => {
+            t.setAttribute('aria-expanded', String(t.dataset.cal === key));
+          });
+        }
+        connectedCallback() {
+          this.addEventListener('click', this.#onClick);
+        }
+        disconnectedCallback() {
+          this.removeEventListener('click', this.#onClick);
+        }
+      }
+    );
+  }
+</script>

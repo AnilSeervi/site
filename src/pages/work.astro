@@ -2,12 +2,231 @@
 import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
+import Section from '~/components/Section.astro';
+import { experience, projects } from '~/config/site';
 ---
 
 <Base title="Work — Anil Seervi" description="The day job, and the open source that got me here.">
   <PageTitle title="work" sub="The day job, and the open source that got me here." />
-  <!-- Phase 3: EXPERIENCE + OPEN SOURCE sections -->
+
+  <Section label="EXPERIENCE" />
+  <div class="xp-list">
+    {
+      experience.map((job) => (
+        <div class="xp-row">
+          <span>
+            <span class="xp-name">{job.name}</span>
+            <span class="xp-desc">{job.desc}</span>
+          </span>
+          <span class="xp-meta">{job.meta}</span>
+        </div>
+      ))
+    }
+  </div>
+
+  <as-whyslot>
+    <Section
+      label="OPEN SOURCE"
+      meta="118 repos on github ↗"
+      metaHref="https://github.com/AnilSeervi?tab=repositories"
+      external
+      mb={12}
+    />
+    <p class="why-slot" data-why-slot>— hover a project for the why</p>
+    <div class="os-list" data-why-list>
+      {
+        projects.map((project) => (
+          <div class="os-row" data-why={project.why}>
+            <a class="os-name" href={project.href} target="_blank" rel="noopener noreferrer">
+              {project.name}
+            </a>
+            <span class="os-desc">{project.work}</span>
+            <canvas
+              class="spark"
+              width="144"
+              height="36"
+              style="width:72px;height:18px"
+              data-repo={project.repo}
+              data-status={project.status}
+            />
+            <span class:list={['status', `status--${project.status}`]}>
+              <span class="dot" aria-hidden="true" />
+              {project.status}
+            </span>
+          </div>
+        ))
+      }
+    </div>
+  </as-whyslot>
+
   <Footer left="astro · vercel ▲">
     <a class="chain" href="/writing">next — ~/writing →</a>
   </Footer>
 </Base>
+
+<style>
+  /* ---- EXPERIENCE (frame 6b) ---- */
+  .xp-list {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 52px;
+  }
+
+  .xp-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 15px 0;
+    align-items: baseline;
+  }
+  .xp-row + .xp-row {
+    border-top: 1px solid var(--hair-row);
+  }
+
+  .xp-name {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--text-hi);
+  }
+
+  .xp-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  .xp-meta {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--meta);
+    white-space: nowrap;
+  }
+
+  /* ---- OPEN SOURCE ---- */
+  as-whyslot {
+    display: block;
+  }
+
+  .why-slot {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15.5px;
+    color: var(--quote);
+    min-height: 24px;
+    margin: 0 0 16px;
+  }
+
+  .os-list {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 64px;
+  }
+
+  .os-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 76px auto;
+    gap: 20px;
+    padding: 15px 0;
+    align-items: center;
+    transition: background 180ms ease;
+  }
+  .os-row:not(:last-child) {
+    border-bottom: 1px solid var(--hair-row);
+  }
+  .os-row:hover {
+    background: rgba(237, 230, 218, 0.035);
+  }
+
+  .os-name {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--text-hi);
+    transition: color 180ms ease;
+  }
+  .os-row:hover .os-name {
+    color: var(--as-accent);
+  }
+
+  .os-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .spark {
+    display: block;
+    opacity: 0.75;
+  }
+  .spark[data-status='archived'] {
+    opacity: 0.6;
+  }
+
+  .status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+  }
+  .status--active {
+    color: var(--live-green);
+  }
+  .status--maintained {
+    color: var(--as-accent);
+  }
+  .status--archived {
+    color: var(--faint);
+  }
+
+  /* frame 6b: footer rule sits 64px below the last row. Footer's default is
+     96px via the scoped `footer[data-astro-cid]` rule (0,1,1) — :last-child
+     lifts this override to (0,1,2) so it wins. */
+  :global(main > footer:last-child) {
+    margin-top: 64px;
+  }
+</style>
+
+<script>
+  if (!customElements.get('as-whyslot')) {
+    class AsWhyslot extends HTMLElement {
+      #slot: HTMLElement | null = null;
+      #list: HTMLElement | null = null;
+      #rows: HTMLElement[] = [];
+      #defaultText = '';
+
+      #enter = (event: Event) => {
+        const why = (event.currentTarget as HTMLElement).dataset.why;
+        if (this.#slot && why) this.#slot.textContent = why;
+      };
+
+      #reset = () => {
+        if (this.#slot) this.#slot.textContent = this.#defaultText;
+      };
+
+      connectedCallback() {
+        this.#slot = this.querySelector('[data-why-slot]');
+        this.#defaultText = this.#slot?.textContent ?? '';
+        this.#list = this.querySelector('[data-why-list]');
+        this.#rows = Array.from(this.querySelectorAll<HTMLElement>('[data-why]'));
+        this.#rows.forEach((row) => row.addEventListener('mouseenter', this.#enter));
+        this.#list?.addEventListener('mouseleave', this.#reset);
+      }
+
+      disconnectedCallback() {
+        this.#rows.forEach((row) => row.removeEventListener('mouseenter', this.#enter));
+        this.#list?.removeEventListener('mouseleave', this.#reset);
+        this.#rows = [];
+        this.#slot = null;
+        this.#list = null;
+      }
+    }
+    customElements.define('as-whyslot', AsWhyslot);
+  }
+</script>

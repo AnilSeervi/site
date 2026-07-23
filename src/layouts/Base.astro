@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Palette from '~/components/Palette.astro';
 import { site } from '~/config/site';
 import '@fontsource-variable/newsreader/opsz.css';
 import '@fontsource-variable/newsreader/opsz-italic.css';
@@ -68,6 +69,7 @@ const {
       <main>
         <slot />
       </main>
+      <Palette />
     </div>
   </body>
 </html>
