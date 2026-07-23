@@ -1,0 +1,232 @@
+---
+/**
+ * MOVING · GARMIN + STRAVA (frame 6d) — route etching + vitals + 90-day
+ * consistency strip. Self-contained: mount <Moving /> and import
+ * '~/islands/moving' — the <as-moving> island fetches /api/strava +
+ * /api/fitness, fills the pre-rendered fragments and reveals the section.
+ *
+ * Degradation (README rule): the section ships `hidden` and is revealed only
+ * when Strava data lands. Strava disabled/down → the section never shows.
+ * Missing vitals (fitness nulls) → those rows are dropped, the rest stays.
+ *
+ * SSR copy below is the design placeholder — it is never visible (the island
+ * always overwrites before un-hiding); it keeps the markup honest to the
+ * prototype and gives the island styled fragments (data-part) to fill, so
+ * scoped classes survive the swap.
+ */
+import Section from '~/components/Section.astro';
+
+// TODO(owner): point at the real athlete profile when the account is linked
+const STRAVA_URL = 'https://www.strava.com';
+---
+
+<as-moving hidden data-section="strava">
+  <Section label="MOVING · GARMIN + STRAVA" meta="strava ↗" metaHref={STRAVA_URL} external />
+
+  <div class="mgrid" data-mgrid>
+    <!-- route etching: latest run/ride polyline, no map tiles -->
+    <div class="etch" data-etch>
+      <svg
+        class="route"
+        viewBox="0 0 230 150"
+        role="img"
+        aria-label="route shape of the latest activity"
+      >
+        <path
+          data-route-base
+          d=""
+          fill="none"
+          stroke="var(--as-accent)"
+          stroke-width="1.6"
+          stroke-linejoin="round"
+          stroke-opacity=".35"></path>
+        <path
+          class="runner"
+          data-route-runner
+          d=""
+          pathLength="1"
+          fill="none"
+          stroke="var(--text-hi)"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-dasharray="0.07 0.93"></path>
+        <circle data-route-start cx="0" cy="0" r="3" fill="var(--as-accent)"></circle>
+      </svg>
+      <span class="etch-cap" data-live="etch-cap">the shape of saturday — cubbon park loop</span>
+    </div>
+
+    <!-- vitals rows -->
+    <div class="vitals">
+      <div class="vrow" data-row="lastrun">
+        <span class="vlabel" data-live="lastrun-label">last run</span>
+        <span class="vval hi" data-live="lastrun"><span data-part="head"
+            >12.4 km · 58:12 · 4:41/km </span><span class="dim" data-part="tail"
+            >— saturday, before the heat</span></span>
+      </div>
+      <div class="vrow" data-row="month">
+        <span class="vlabel">this month</span>
+        <span class="vval" data-live="month">84 km on foot · 18 active days of 22</span>
+      </div>
+      <div class="vrow" data-row="vo2max">
+        <span class="vlabel">vo2max</span>
+        <span class="vval" data-live="vo2max"><span class="accent" data-part="num">52</span><span
+            data-part="tail"> — garmin calls it “superior”; the legs disagree</span></span>
+      </div>
+      <div class="vrow" data-row="rhr">
+        <span class="vlabel">resting hr</span>
+        <span class="vval beatrow" data-live="rhr"><span class="beat" data-rhr-dot aria-hidden="true"
+          ></span><span data-part="text">52 bpm — the dot keeps time</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 90-day consistency strip — bars injected by the island -->
+  <div class="strip" data-strip role="img" aria-label="daily activity, last 90 days"></div>
+  <div class="strip-meta">
+    <span
+      ><span class="k-run">run</span> · <span class="k-lift">lift</span> · <span class="k-racquet"
+        >racquet</span
+      > — anything that moved counts</span>
+    <span>last 90 days</span>
+  </div>
+</as-moving>
+
+<style>
+  as-moving {
+    display: block;
+  }
+  /* our display:block would out-cascade the UA [hidden] rule — restate it */
+  as-moving[hidden] {
+    display: none;
+  }
+
+  .mgrid {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 40px;
+    align-items: start;
+    margin-bottom: 26px;
+  }
+  /* no decodable route → the vitals take the full width */
+  .mgrid.no-etch {
+    grid-template-columns: 1fr;
+  }
+
+  .etch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .route {
+    width: 230px;
+    height: 150px;
+    display: block;
+  }
+  .runner {
+    animation: as-run 7s linear infinite;
+  }
+  .etch-cap {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .vitals {
+    display: flex;
+    flex-direction: column;
+  }
+  .vrow {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+  }
+  .vrow:last-child {
+    border-bottom: none;
+  }
+  .vlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+  .vval {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .vval.hi {
+    color: var(--text-hi);
+  }
+  .vval .dim {
+    color: var(--faint);
+  }
+  .vval .accent {
+    color: var(--as-accent);
+  }
+  .beatrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  /* the beat/pulse animation (duration = 60/RHR s) is set inline by the island */
+  .beat {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--live-green);
+  }
+
+  /* consistency strip — 90 island-built spans (:global — they carry no scope attr) */
+  .strip {
+    display: flex;
+    align-items: flex-end;
+    gap: 2.5px;
+    height: 30px;
+    margin-bottom: 10px;
+  }
+  .strip :global(span) {
+    flex: 1;
+    border-radius: 1px;
+    transform-origin: bottom;
+  }
+  /* bars stay down until the IntersectionObserver fires the rise */
+  .strip:not(.rise) :global(span) {
+    transform: scaleY(0);
+  }
+  .strip.rise :global(span) {
+    /* per-bar animation-delay (index × 16ms) is inline; `both` keeps
+       un-delayed bars hidden until their turn */
+    animation: as-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+
+  .strip-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin-bottom: 48px;
+  }
+  .k-run {
+    color: var(--as-accent);
+  }
+  .k-lift {
+    color: var(--live-green);
+  }
+  .k-racquet {
+    color: var(--quote);
+  }
+
+  /* reduced motion: hide the runner lap, keep the etched base path.
+     (Bars + RHR dot go static via the global 0.01ms override.) */
+  @media (prefers-reduced-motion: reduce) {
+    .runner {
+      display: none;
+    }
+  }
+</style>

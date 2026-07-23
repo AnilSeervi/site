@@ -1,0 +1,29 @@
+---
+/**
+ * Globe.astro — cobe globe for the live hero (frame 6d).
+ * Drop-in replacement for the 280×280 .globe-ph placeholder: same box, so
+ * .globe-col layout in live.astro is untouched. The <as-globe> island lazily
+ * boots cobe when the canvas enters the viewport (src/islands/globe.ts).
+ */
+---
+
+<as-globe>
+  <canvas width="560" height="560" style="width:280px;height:280px" aria-hidden="true"></canvas>
+</as-globe>
+
+<style>
+  as-globe {
+    display: block;
+    width: 280px;
+    height: 280px;
+  }
+  /* cobe v2 re-parents the canvas into a runtime wrapper div at init, so the
+     descendant selector (not child) is load-bearing here */
+  as-globe canvas {
+    display: block;
+  }
+</style>
+
+<script>
+  import '~/islands/globe';
+</script>

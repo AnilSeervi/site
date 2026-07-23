@@ -3,6 +3,9 @@ import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
 import Section from '~/components/Section.astro';
+import Globe from '~/components/live/Globe.astro';
+import Moving from '~/components/live/Moving.astro';
+import Guestbook from '~/components/live/Guestbook.astro';
 ---
 
 <Base
@@ -38,8 +41,7 @@ import Section from '~/components/Section.astro';
         </div>
       </div>
       <div class="globe-col">
-        <!-- Phase 6: cobe globe -->
-        <div class="globe-ph" aria-hidden="true"></div>
+        <Globe />
         <span class="globe-cap">the brass dot is bengaluru — home</span>
       </div>
     </div>
@@ -84,7 +86,7 @@ import Section from '~/components/Section.astro';
       </div>
     </section>
 
-    <!-- Phase 6: MOVING · GARMIN + STRAVA -->
+    <Moving />
 
     <section class="watching-sec" data-section="mal">
       <Section label="WATCHING · MYANIMELIST" meta="weeb stats, worn proudly" />
@@ -104,7 +106,7 @@ import Section from '~/components/Section.astro';
       </div>
     </section>
 
-    <!-- Phase 6: GUESTBOOK -->
+    <Guestbook />
   </as-live-data>
 
   <div class="foot">
@@ -177,10 +179,6 @@ import Section from '~/components/Section.astro';
     flex-direction: column;
     align-items: center;
     gap: 10px;
-  }
-  .globe-ph {
-    width: 280px;
-    height: 280px;
   }
   .globe-cap {
     font-family: var(--font-mono);
@@ -303,4 +301,5 @@ import Section from '~/components/Section.astro';
   import '~/islands/clock';
   import '~/islands/contrib';
   import '~/islands/live-data';
+  import '~/islands/moving';
 </script>

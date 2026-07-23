@@ -5,8 +5,8 @@
  * /Users/anil/Projects/site/drizzle/schema.ts). This is production data —
  * do not run migrations or alter these definitions casually.
  *
- * TODO(Phase 6): add the guestbook `doodle` column and the `kv` table here
- * (with an accompanying migration). Nothing else changes before then.
+ * Phase 6 (migration already ran — scripts/migrate-phase6.mjs):
+ * guestbook.doodle TEXT NULL + the kv table.
  */
 import { sql } from 'drizzle-orm';
 import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
@@ -20,6 +20,17 @@ export const guestbook = sqliteTable('guestbook', {
     .default(sql`strftime('%s', 'now') * 1000`)
     .notNull(),
   updated_at: integer('updated_at')
+    .default(sql`strftime('%s', 'now') * 1000`)
+    .notNull(),
+  /** doodle-signature PNG data URL (data:image/png;base64,…) — null for text entries */
+  doodle: text('doodle')
+});
+
+/** generic key/value store (Garmin OAuth tokens etc.) */
+export const kv = sqliteTable('kv', {
+  k: text('k').primaryKey().notNull(),
+  v: text('v').notNull(),
+  updatedAt: integer('updatedAt')
     .default(sql`strftime('%s', 'now') * 1000`)
     .notNull()
 });

@@ -5,8 +5,8 @@
  * attribute.
  *
  * With the `data-live` attribute present, it also fetches /api/spotify,
- * /api/github and /api/mal (allSettled — one dead feed never blocks the rest)
- * and builds live items. The placeholders keep rotating while the fetches are
+ * /api/github, /api/strava and /api/mal (allSettled — one dead feed never
+ * blocks the rest) and builds live items. The placeholders keep rotating while the fetches are
  * in flight; once ≥2 live items resolve, the rotation swaps to them at the
  * next opacity dip (index reset to 0 inside the dip, so there's no visual
  * jump). If fewer than 2 live items resolve, the placeholders stay — better
@@ -16,6 +16,41 @@
 type Item = [string, string];
 
 const FRESH_MS = 48 * 3600 * 1000; // "recent enough to brag about" window
+const IST_OFFSET_MIN = 330; // relative-time buckets keep the author's clock
+
+/** Strava sport types that read as distance efforts (show the km prefix) */
+const KM_SPORTS = new Set([
+  'Run',
+  'TrailRun',
+  'VirtualRun',
+  'Ride',
+  'VirtualRide',
+  'EBikeRide',
+  'EMountainBikeRide',
+  'GravelRide',
+  'MountainBikeRide',
+  'Handcycle',
+  'Velomobile'
+]);
+
+/**
+ * 'this morning' / 'yesterday evening' style bucket, IST wall clock.
+ * null when the activity is older than yesterday (the 48h check upstream
+ * already guards staleness; this guards the copy).
+ */
+function relativeBucket(startedAt: string): string | null {
+  const t = Date.parse(startedAt);
+  if (Number.isNaN(t)) return null;
+  const then = new Date(t + IST_OFFSET_MIN * 60000);
+  const now = new Date(Date.now() + IST_OFFSET_MIN * 60000);
+  const dayDiff =
+    Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000) -
+    Math.floor(Date.UTC(then.getUTCFullYear(), then.getUTCMonth(), then.getUTCDate()) / 86400000);
+  if (dayDiff > 1 || dayDiff < 0) return null;
+  const h = then.getUTCHours();
+  const slot = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  return dayDiff === 0 ? `this ${slot}` : `yesterday ${slot}`;
+}
 
 async function json(url: string): Promise<Record<string, any>> {
   const res = await fetch(url);
@@ -79,8 +114,13 @@ class AsTicker extends HTMLElement {
   }
 
   async #loadLive() {
-    const [spotify, github, mal] = (
-      await Promise.allSettled([json('/api/spotify'), json('/api/github'), json('/api/mal')])
+    const [spotify, github, strava, mal] = (
+      await Promise.allSettled([
+        json('/api/spotify'),
+        json('/api/github'),
+        json('/api/strava'),
+        json('/api/mal')
+      ])
     ).map(settled);
 
     const items: Item[] = [];
@@ -99,7 +139,23 @@ class AsTicker extends HTMLElement {
       items.push(['shipping', `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`]);
     }
 
-    // moving — SKIP always for now: Phase 6 wires /api/strava here.
+    // moving — latest Strava activity of any kind, skipped past 48h (or when
+    // the feed is disabled). Runs/rides lead with km; gym/racquet by name.
+    const act = strava?.disabled ? null : strava?.latestAny;
+    if (
+      act?.name &&
+      act.startedAt &&
+      Date.now() - Date.parse(act.startedAt) <= FRESH_MS
+    ) {
+      const rel = relativeBucket(act.startedAt);
+      if (rel) {
+        const name = String(act.name).toLowerCase();
+        const value = KM_SPORTS.has(act.sportType)
+          ? `${act.distanceKm}km ${name}, ${rel}`
+          : `${name}, ${rel}`;
+        items.push(['moving', value]);
+      }
+    }
 
     // watching — same 48h freshness rule: a months-old "episode 5" isn't live
     const w = mal?.watching;
