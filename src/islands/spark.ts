@@ -4,10 +4,11 @@
  * Row: 72×18 (2× 144×36), colored by project status —
  *   maintained → accent brass · active → #92C78C · archived → #5E5749.
  *
- * Data: `data-values` JSON array of non-negative numbers (Phase 5 wires the
- * GitHub API). Until then, falls back to the prototype's deterministic
- * synthetic series (mulberry32 seed 7 + sin wave) so the visual matches the
- * design reference exactly.
+ * Data: `data-values` JSON array of non-negative numbers — <as-home-data>
+ * sets it from /api/github after mount, and attributeChangedCallback redraws.
+ * Without (or with invalid) data-values it falls back to the prototype's
+ * deterministic synthetic series (mulberry32 seed 7 + sin wave) so the visual
+ * matches the design reference exactly.
  */
 
 function mulberry(a: number) {
@@ -44,7 +45,25 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 class AsSpark extends HTMLElement {
+  static observedAttributes = ['data-values'];
+
+  /** set after the first paint — attribute changes before then are handled by connectedCallback */
+  #drawn = false;
+
   connectedCallback() {
+    this.#draw();
+    this.#drawn = true;
+  }
+
+  attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null) {
+    // Redraw only for a real post-mount change: the custom-element upgrade
+    // replays pre-existing attributes before connectedCallback (guarded by
+    // #drawn), and no-op writes of the same JSON shouldn't repaint.
+    if (!this.isConnected || !this.#drawn || oldValue === newValue) return;
+    this.#draw();
+  }
+
+  #draw() {
     const cv = this.querySelector('canvas');
     if (!cv) return;
 

@@ -2,39 +2,134 @@
  * <as-ticker> — home live ticker (frame 6a, `03 · LIVE`).
  * Cycles label/value pairs every 3.4s with a .26s opacity dip (the spans carry
  * `transition: opacity .25s ease`). Items come from the data-items JSON
- * attribute — Phase 5 replaces the placeholders with live feed values and
- * skips items whose feed is stale or missing.
+ * attribute.
+ *
+ * With the `data-live` attribute present, it also fetches /api/spotify,
+ * /api/github and /api/mal (allSettled — one dead feed never blocks the rest)
+ * and builds live items. The placeholders keep rotating while the fetches are
+ * in flight; once ≥2 live items resolve, the rotation swaps to them at the
+ * next opacity dip (index reset to 0 inside the dip, so there's no visual
+ * jump). If fewer than 2 live items resolve, the placeholders stay — better
+ * a plausible lie than a broken one-item ticker.
  */
+
+type Item = [string, string];
+
+const FRESH_MS = 48 * 3600 * 1000; // "recent enough to brag about" window
+
+async function json(url: string): Promise<Record<string, any>> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+function settled<T>(r: PromiseSettledResult<T>): T | null {
+  return r.status === 'fulfilled' ? r.value : null;
+}
+
 class AsTicker extends HTMLElement {
   #iv: ReturnType<typeof setInterval> | null = null;
   #dip: ReturnType<typeof setTimeout> | null = null;
   #idx = 0;
+  #items: Item[] = [];
+  /** live items waiting to be swapped in at the next dip */
+  #pending: Item[] | null = null;
+  #label: HTMLElement | null = null;
+  #value: HTMLElement | null = null;
 
   connectedCallback() {
-    let items: [string, string][] = [];
     try {
-      items = JSON.parse(this.dataset.items ?? '[]');
+      this.#items = JSON.parse(this.dataset.items ?? '[]');
     } catch {
-      /* leave empty */
+      this.#items = [];
     }
-    if (items.length < 2) return; // nothing to rotate
+    this.#label = this.querySelector<HTMLElement>('[data-ticker-label]');
+    this.#value = this.querySelector<HTMLElement>('[data-ticker-value]');
+    if (!this.#label || !this.#value) return;
 
-    const label = this.querySelector<HTMLElement>('[data-ticker-label]');
-    const value = this.querySelector<HTMLElement>('[data-ticker-value]');
-    if (!label || !value) return;
+    if ('live' in this.dataset) {
+      this.#loadLive().catch(() => {
+        /* placeholders keep rotating */
+      });
+    }
+    this.#start();
+  }
 
+  #start() {
+    if (this.#iv || this.#items.length < 2) return; // nothing to rotate (yet)
     this.#iv = setInterval(() => {
-      label.style.opacity = '0';
-      value.style.opacity = '0';
+      this.#label!.style.opacity = '0';
+      this.#value!.style.opacity = '0';
       this.#dip = setTimeout(() => {
-        this.#idx = (this.#idx + 1) % items.length;
-        const [l, v] = items[this.#idx]!;
-        label.textContent = l;
-        value.textContent = v;
-        label.style.opacity = '1';
-        value.style.opacity = '1';
+        if (this.#pending) {
+          // live feed landed — swap the whole rotation while faded out
+          this.#items = this.#pending;
+          this.#pending = null;
+          this.#idx = 0;
+        } else {
+          this.#idx = (this.#idx + 1) % this.#items.length;
+        }
+        const [l, v] = this.#items[this.#idx]!;
+        this.#label!.textContent = l;
+        this.#value!.textContent = v;
+        this.#label!.style.opacity = '1';
+        this.#value!.style.opacity = '1';
       }, 260);
     }, 3400);
+  }
+
+  async #loadLive() {
+    const [spotify, github, mal] = (
+      await Promise.allSettled([json('/api/spotify'), json('/api/github'), json('/api/mal')])
+    ).map(settled);
+
+    const items: Item[] = [];
+
+    // listening — now playing, else last played, else skip
+    const track = spotify?.now ?? spotify?.last;
+    if (track?.title && track?.artist) {
+      items.push(['listening', `${track.title} — ${track.artist}`]);
+    }
+
+    // shipping — only a fresh push (the API's ≤48h-ish `ago` buckets)
+    const push = github?.lastPush;
+    if (push?.repo && (push.ago === 'earlier today' || push.ago === 'yesterday')) {
+      const short = String(push.repo).split('/').pop()!.toLowerCase();
+      const n = Number(push.commits) || 0;
+      items.push(['shipping', `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`]);
+    }
+
+    // moving — SKIP always for now: Phase 6 wires /api/strava here.
+
+    // watching — same 48h freshness rule: a months-old "episode 5" isn't live
+    const w = mal?.watching;
+    if (w?.title && w.updatedAt && Date.now() - Date.parse(w.updatedAt) <= FRESH_MS) {
+      const ep = w.epTotal ? `episode ${w.ep} of ${w.epTotal}` : `episode ${w.ep}`;
+      items.push(['watching', `${w.title} — ${ep}`]);
+    }
+
+    // reading — Berserk earns its epithet; anything else is just the title
+    const r = mal?.reading;
+    if (r?.title) {
+      items.push(['reading', r.title === 'Berserk' ? `${r.title} — the long haul` : r.title]);
+    }
+
+    // <2 live items → keep the placeholders. A believable static rotation
+    // beats a single frozen line or an empty strip.
+    if (items.length < 2 || !this.isConnected) return;
+    if (this.#iv) {
+      this.#pending = items; // swapped in at the next dip
+    } else {
+      // placeholders were too few to rotate — start straight on live items
+      this.#items = items;
+      this.#idx = 0;
+      const [l, v] = items[0]!;
+      if (this.#label && this.#value) {
+        this.#label.textContent = l;
+        this.#value.textContent = v;
+      }
+      this.#start();
+    }
   }
 
   disconnectedCallback() {
@@ -42,6 +137,7 @@ class AsTicker extends HTMLElement {
     if (this.#dip) clearTimeout(this.#dip);
     this.#iv = null;
     this.#dip = null;
+    this.#pending = null;
   }
 }
 

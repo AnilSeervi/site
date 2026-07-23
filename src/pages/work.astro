@@ -24,6 +24,8 @@ import { experience, projects } from '~/config/site';
     }
   </div>
 
+  <!-- reuses the home fetcher: fills any <as-spark data-repo> in this page's main -->
+  <as-home-data aria-hidden="true"></as-home-data>
   <as-whyslot>
     <Section
       label="OPEN SOURCE"
@@ -200,6 +202,7 @@ import { experience, projects } from '~/config/site';
 
 <script>
   import '~/islands/spark';
+  import '~/islands/home-data';
 
   if (!customElements.get('as-whyslot')) {
     class AsWhyslot extends HTMLElement {

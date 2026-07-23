@@ -71,6 +71,7 @@ const {
       </main>
       <Palette />
     </div>
+    <as-views data-slug={Astro.url.pathname} aria-hidden="true"></as-views>
   </body>
 </html>
 
@@ -135,6 +136,8 @@ const {
 </style>
 
 <script>
+  import '~/islands/views';
+
   function markActive() {
     const path = location.pathname;
     document.querySelectorAll<HTMLAnchorElement>('[data-navlink]').forEach((a) => {

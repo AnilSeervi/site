@@ -58,6 +58,7 @@ export const projects: Project[] = [
     work: "PWA hoarding previous years' question papers — searchable, offline-first.",
     why: "Why: exam week, papers scattered across WhatsApp groups. Now they're one search away, offline.",
     status: 'active',
+    repo: 'AnilSeervi/QP-Hoard',
     href: 'https://qp.pages.dev'
   },
   {

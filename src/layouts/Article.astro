@@ -24,10 +24,13 @@ const { title, description, slug, metaParts, prev, next } = Astro.props;
   <as-progress></as-progress>
   <a class="crumb" href="/writing">← ~/writing</a>
   <h1 transition:name={`title-${slug}`}>{title}</h1>
+  {/* .views is filled client-side (' · 1.2k views' — separator included, so
+      nothing stray shows while the span is empty and hidden via :empty). */}
   <div class="meta">
-    {metaParts.join(' · ')}
-    <span class="views" data-views={slug}></span>
-     · <span class="read" data-read-pct>0% read</span>
+    {metaParts.join(' · ')}<span class="views" data-views={slug}></span> · <span
+      class="read"
+      data-read-pct>0% read</span
+    >
   </div>
   <div class="prose">
     <slot />
@@ -319,6 +322,31 @@ const { title, description, slug, metaParts, prev, next } = Astro.props;
 
 <script>
   import '~/islands/progress';
+
+  // view count in the meta line — GET /api/views + current path (normalized
+  // the same way as the tracking island). 0 / disabled / error → span stays
+  // empty, so `.views:empty { display: none }` keeps the meta separator-clean.
+  const compact = new Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  });
+
+  async function loadViews() {
+    const el = document.querySelector<HTMLElement>('.meta .views[data-views]');
+    if (!el) return; // not an article page
+    const path = location.pathname.replace(/\/+$/, '');
+    const slug = path === '' || path === '/home' ? '/home' : path;
+    try {
+      const res = await fetch(`/api/views${slug}`);
+      const data = (await res.json()) as { views?: number | null };
+      const n = typeof data.views === 'number' ? data.views : 0;
+      if (n > 0) el.textContent = ` · ${compact.format(n).toLowerCase()} views`;
+    } catch {
+      /* leave the span empty — it stays hidden */
+    }
+  }
+
+  document.addEventListener('astro:page-load', loadViews);
 
   // click-to-copy on code blocks — document-level delegation, added once
   document.addEventListener('click', (e) => {

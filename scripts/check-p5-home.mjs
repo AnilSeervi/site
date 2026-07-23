@@ -1,0 +1,221 @@
+/**
+ * Phase 5 — home wiring verification.
+ * Gates /api/github at the network layer so the SSR placeholder state can be
+ * measured before <as-home-data> fills it, then asserts:
+ *   1. proof strip spans change to the real /api/github values (repos === repoCount)
+ *   2. hero spark canvas pixels change after data-values lands
+ *   3. no layout shift: .proof and h1 bounding boxes identical before/after
+ *   4. ticker swaps to a live item (text matches an /api response field) within ~8s
+ * Screenshots the finished page for the record.
+ */
+import { chromium } from 'playwright';
+
+const BASE = 'http://localhost:4321';
+const SHOT =
+  process.argv[2] ??
+  '/private/tmp/claude-501/-Users-anil-Projects-anils-website/a4aa2ed4-8f26-4cd1-9d32-8cf1a7981e97/scratchpad/p5-home-live.png';
+
+const results = [];
+const check = (name, ok, detail) => {
+  results.push({ name, ok, detail });
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
+};
+
+// ---- expected values straight from the APIs ----
+const [github, spotify, mal] = await Promise.all(
+  ['github', 'spotify', 'mal'].map((k) => fetch(`${BASE}/api/${k}`).then((r) => r.json()))
+);
+
+// mirror ticker.ts's item-building rules
+const FRESH = 48 * 3600 * 1000;
+const liveValues = [];
+const track = spotify.now ?? spotify.last;
+if (track?.title && track?.artist) liveValues.push(`${track.title} — ${track.artist}`);
+const push = github.lastPush;
+if (push?.repo && (push.ago === 'earlier today' || push.ago === 'yesterday')) {
+  const short = String(push.repo).split('/').pop().toLowerCase();
+  const n = Number(push.commits) || 0;
+  liveValues.push(`${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`);
+}
+const w = mal.watching;
+if (w?.title && w.updatedAt && Date.now() - Date.parse(w.updatedAt) <= FRESH) {
+  liveValues.push(`${w.title} — ${w.epTotal ? `episode ${w.ep} of ${w.epTotal}` : `episode ${w.ep}`}`);
+}
+const r = mal.reading;
+if (r?.title) liveValues.push(r.title === 'Berserk' ? `${r.title} — the long haul` : r.title);
+console.log('expected live ticker values:', JSON.stringify(liveValues));
+
+// ---- browser ----
+const browser = await chromium.launch();
+const page = await browser.newContext({ viewport: { width: 1400, height: 900 } }).then((c) => c.newPage());
+
+let release;
+const gate = new Promise((res) => (release = res));
+await page.route('**/api/github', async (route) => {
+  await gate;
+  await route.continue();
+});
+
+await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+// let entrance animations + initial synthetic spark paint settle
+await page.waitForFunction(() => {
+  const cv = document.querySelector('as-spark[data-kind="hero"] canvas');
+  if (!cv) return false;
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 20) return true;
+  return false;
+});
+// the typeon hero animation resizes the h1 while typing — wait for it to finish
+// so the before/after geometry comparison isolates the data fill
+await page.waitForFunction(
+  () => document.querySelector('[data-typeon]')?.textContent === 'Anil Seervi',
+  { timeout: 5000 }
+);
+await page.waitForTimeout(400);
+
+const snap = () =>
+  page.evaluate(() => {
+    const box = (sel) => {
+      const b = document.querySelector(sel)?.getBoundingClientRect();
+      return b ? { x: b.x, y: b.y, w: b.width, h: b.height } : null;
+    };
+    const txt = (k) => document.querySelector(`[data-proof=${k}]`)?.textContent ?? null;
+    return {
+      proofBox: box('.proof'),
+      h1Box: box('h1'),
+      stars: txt('stars'),
+      repos: txt('repos'),
+      followers: txt('followers'),
+      shark: txt('shark'),
+      pushed: txt('pushed'),
+      pushedVisibility: getComputedStyle(
+        document.querySelector('[data-proof=pushed]').parentElement
+      ).visibility,
+      heroPixels: document.querySelector('as-spark[data-kind="hero"] canvas').toDataURL(),
+      heroValuesAttr: document
+        .querySelector('as-spark[data-kind="hero"]')
+        ?.getAttribute('data-values'),
+      rowValueAttrs: [...document.querySelectorAll('as-spark[data-repo]')].map((el) => [
+        el.dataset.repo,
+        el.getAttribute('data-values') ? JSON.parse(el.getAttribute('data-values')).length : null
+      ])
+    };
+  });
+
+const before = await snap();
+check(
+  'before release: SSR placeholders intact',
+  before.repos === '118' && before.heroValuesAttr === null,
+  `repos="${before.repos}" heroValues=${before.heroValuesAttr}`
+);
+
+release();
+
+// 1 · proof strip fills with real values
+await page.waitForFunction(
+  (expected) => document.querySelector('[data-proof=repos]')?.textContent === expected,
+  String(github.repoCount),
+  { timeout: 10000 }
+);
+const after = await snap();
+
+check(
+  'repos span equals /api/github repoCount',
+  after.repos === String(github.repoCount),
+  `"${before.repos}" -> "${after.repos}" (api ${github.repoCount})`
+);
+check(
+  'stars span equals ★devfolioStars',
+  after.stars === `★${github.devfolioStars}`,
+  `"${before.stars}" -> "${after.stars}"`
+);
+check(
+  'followers span equals api followers',
+  after.followers === String(github.followers),
+  `"${before.followers}" -> "${after.followers}"`
+);
+check('pull shark stays static', after.shark === before.shark, `"${after.shark}"`);
+if (github.lastPush) {
+  check(
+    'pushed span shows live ago',
+    after.pushed === `pushed ${github.lastPush.ago}` && after.pushedVisibility === 'visible',
+    `"${after.pushed}" visibility=${after.pushedVisibility}`
+  );
+} else {
+  check(
+    'pushed chip hidden when lastPush null',
+    after.pushedVisibility === 'hidden',
+    `visibility: ${before.pushedVisibility} -> ${after.pushedVisibility}`
+  );
+}
+
+// 2 · hero spark redrew from data-values
+check(
+  'hero spark got data-values (52 weeks)',
+  !!after.heroValuesAttr && JSON.parse(after.heroValuesAttr).length === 52,
+  `len=${after.heroValuesAttr ? JSON.parse(after.heroValuesAttr).length : 'none'}`
+);
+check(
+  'hero spark canvas pixels changed',
+  after.heroPixels !== before.heroPixels,
+  `dataURL ${before.heroPixels.length}ch -> ${after.heroPixels.length}ch, differ=${after.heroPixels !== before.heroPixels}`
+);
+const expectedRepos = Object.keys(github.sparks ?? {});
+check(
+  'row sparks got data-values for repos present in sparks',
+  after.rowValueAttrs
+    .filter(([repo]) => expectedRepos.includes(repo))
+    .every(([, len]) => len === 52),
+  JSON.stringify(after.rowValueAttrs)
+);
+
+// 3 · zero layout shift
+const same = (a, b) =>
+  a && b && ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) < 0.01);
+check(
+  'proof strip geometry unchanged',
+  same(before.proofBox, after.proofBox),
+  `${JSON.stringify(before.proofBox)} -> ${JSON.stringify(after.proofBox)}`
+);
+check(
+  'h1 geometry unchanged',
+  same(before.h1Box, after.h1Box),
+  `${JSON.stringify(before.h1Box)} -> ${JSON.stringify(after.h1Box)}`
+);
+
+// 4 · ticker swaps to live items at a dip
+if (liveValues.length >= 2) {
+  await page.waitForFunction(
+    (vals) => vals.includes(document.querySelector('[data-ticker-value]')?.textContent),
+    liveValues,
+    { timeout: 12000 }
+  );
+  const tick = await page.evaluate(() => ({
+    label: document.querySelector('[data-ticker-label]')?.textContent,
+    value: document.querySelector('[data-ticker-value]')?.textContent
+  }));
+  check('ticker shows a live item', liveValues.includes(tick.value), JSON.stringify(tick));
+  // watch one more rotation to prove it cycles through live items only
+  await page.waitForTimeout(3700);
+  const tick2 = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
+  check(
+    'ticker keeps rotating within live set',
+    liveValues.includes(tick2) && tick2 !== tick.value,
+    JSON.stringify(tick2)
+  );
+} else {
+  const val = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
+  check(
+    '<2 live items: placeholders kept',
+    !liveValues.includes(val),
+    `showing "${val}" (live set ${JSON.stringify(liveValues)})`
+  );
+}
+
+await page.screenshot({ path: SHOT, fullPage: true });
+console.log('screenshot:', SHOT);
+
+await browser.close();
+const failed = results.filter((x) => !x.ok);
+console.log(failed.length ? `\n${failed.length} FAILURE(S)` : '\nALL CHECKS PASSED');
+process.exit(failed.length ? 1 : 0);

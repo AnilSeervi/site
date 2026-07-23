@@ -36,7 +36,8 @@ const shortDate = (d: Date) =>
 
 const homeProjects = projects.filter((p) => p.home);
 
-/** placeholder ticker items (prototype TICK) — Phase 5 swaps in live feed values */
+/** placeholder ticker items (prototype TICK) — shown while the live feeds load;
+ *  <as-ticker data-live> swaps in real /api/spotify+github+mal items once ≥2 resolve */
 const tickerItems: [string, string][] = [
   ['listening', 'One More Time — Daft Punk'],
   ['shipping', '3 commits to devfolio, earlier today'],
@@ -47,6 +48,10 @@ const tickerItems: [string, string][] = [
 ---
 
 <Base>
+  <!-- invisible island: fetches /api/github on mount and fills the proof strip
+       + sparkline data-values in place (queries scoped to this page's <main>) -->
+  <as-home-data aria-hidden="true"></as-home-data>
+
   <div class="whoami as-enter" style="animation-delay:0s">
     <span class="cmd"><span class="accent">~ ❯</span> whoami</span>
     <as-clock data-format="greeting" data-greeting>09:06 ist · good morning, from bengaluru</as-clock>
@@ -152,7 +157,7 @@ const tickerItems: [string, string][] = [
     <div class="live-head">
       <Section label="03 · LIVE" meta="all feeds →" metaHref="/live" />
     </div>
-    <as-ticker class="ticker" data-ticker data-items={JSON.stringify(tickerItems)}>
+    <as-ticker class="ticker" data-ticker data-live data-items={JSON.stringify(tickerItems)}>
       <span class="pulse" aria-hidden="true"></span>
       <span class="tlabel" data-ticker-label>listening</span>
       <span class="tvalue" data-ticker-value>One More Time — Daft Punk</span>
@@ -503,5 +508,6 @@ const tickerItems: [string, string][] = [
   import '~/islands/ticker';
   import '~/islands/spark';
   import '~/islands/ascii-portrait';
+  import '~/islands/home-data';
 </script>
 

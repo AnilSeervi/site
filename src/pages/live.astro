@@ -2,18 +2,305 @@
 import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
+import Section from '~/components/Section.astro';
 ---
 
 <Base
   title="Live — Anil Seervi"
   description="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
 >
-  <PageTitle
-    title="live"
-    sub="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
-  />
-  <!-- Phase 5/6: right-now rows, globe, listening, shipping, moving, watching, guestbook -->
-  <Footer left="/api/spotify · /api/github · /api/strava · /api/mal">
-    <a class="chain" href="/about">next — ~/about →</a>
-  </Footer>
+  <as-live-data>
+    <!-- hero: title + right-now rows beside the 280px globe column -->
+    <div class="hero">
+      <div class="hero-left">
+        <PageTitle
+          title="live"
+          sub="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
+        />
+        <div class="now-rows">
+          <div class="nrow" data-row="clock">
+            <span class="nlabel">clock</span>
+            <as-clock class="nval hi" data-format="time">09:06 ist · bengaluru</as-clock>
+          </div>
+          <div class="nrow" data-row="weather">
+            <span class="nlabel">weather</span>
+            <span class="nval" data-live="weather">28° · monsoon clouds</span>
+          </div>
+          <div class="nrow" data-row="coords">
+            <span class="nlabel">coords</span>
+            <span class="nval">12.97° N · 77.59° E</span>
+          </div>
+          <div class="nrow" data-row="reading">
+            <span class="nlabel">reading</span>
+            <span class="reading" data-live="reading"><em data-part="title">Berserk</em><span
+                data-part="tail"> — the long haul</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="globe-col">
+        <!-- Phase 6: cobe globe -->
+        <div class="globe-ph" aria-hidden="true"></div>
+        <span class="globe-cap">the brass dot is bengaluru — home</span>
+      </div>
+    </div>
+
+    <section data-section="spotify">
+      <Section label="LISTENING · SPOTIFY" />
+      <div class="rows">
+        <div class="lrow" data-row="now">
+          <span class="rlabel eq-label"
+            ><span class="eq playing" data-eq aria-hidden="true"><span></span><span></span><span
+              ></span></span>now</span>
+          <span class="track hi" data-live="now"><em data-part="title">One More Time</em><span
+              data-part="tail"> — Daft Punk · </span><span class="ctx" data-part="ctx"
+              >discovery weekly</span></span>
+        </div>
+        <div class="lrow" data-row="last">
+          <span class="rlabel">last played</span>
+          <span class="track muted" data-live="last"><em data-part="title"
+              >Harder, Better, Faster, Stronger</em><span data-part="tail"> — Daft Punk</span
+            ></span>
+        </div>
+      </div>
+    </section>
+
+    <section data-section="github">
+      <Section
+        label="SHIPPING · GITHUB"
+        meta="@AnilSeervi ↗"
+        metaHref="https://github.com/AnilSeervi"
+        external
+      />
+      <div class="contrib-wrap">
+        <as-contrib>
+          <canvas width="1404" height="182" style="width:702px;height:91px" aria-hidden="true"
+          ></canvas>
+        </as-contrib>
+      </div>
+      <div class="contrib-meta">
+        <span data-live="contrib-total"
+          >2,437 contributions in the last year — brass runs hotter where the weeks did</span>
+        <span>52 weeks</span>
+      </div>
+    </section>
+
+    <!-- Phase 6: MOVING · GARMIN + STRAVA -->
+
+    <section class="watching-sec" data-section="mal">
+      <Section label="WATCHING · MYANIMELIST" meta="weeb stats, worn proudly" />
+      <div class="rows">
+        <div class="lrow" data-row="watching">
+          <span class="rlabel">airing now</span>
+          <span class="track hi" data-live="watching"><em data-part="title">Sousou no Frieren</em
+            ><span data-part="tail"> 2nd season — episode 5 of 10</span></span>
+        </div>
+        <div class="lrow" data-row="shelf">
+          <span class="rlabel">the shelf</span>
+          <span class="shelf" data-live="shelf"><span data-part="head"
+              >112 anime · 2,940 episodes · 49.6 days · mean </span><span
+              class="accent"
+              data-part="mean">9.21</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase 6: GUESTBOOK -->
+  </as-live-data>
+
+  <div class="foot">
+    <Footer left="/api/spotify · /api/github · /api/strava · /api/mal">
+      <a class="chain" href="/about">next — ~/about →</a>
+    </Footer>
+  </div>
 </Base>
+
+<style>
+  as-live-data,
+  as-contrib {
+    display: block;
+  }
+
+  /* hero — title + right-now rows left, globe column right (prototype 6d) */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 48px;
+    align-items: center;
+    margin-bottom: 56px;
+  }
+  /* live's sub sits tighter than the PageTitle default (prototype: 28px / 30em) */
+  .hero-left :global(.sub) {
+    margin-bottom: 28px;
+    max-width: 30em;
+  }
+
+  .now-rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .nrow {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+  }
+  .nrow:last-child {
+    border-bottom: none;
+  }
+  .nlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+  .nval {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .nval.hi {
+    color: var(--text-hi);
+  }
+  .reading {
+    font-size: 14.5px;
+    color: var(--text-muted);
+  }
+  .reading em {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .globe-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .globe-ph {
+    width: 280px;
+    height: 280px;
+  }
+  .globe-cap {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  /* section data rows (listening / watching) */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 52px;
+  }
+  .lrow {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+  }
+  .lrow:last-child {
+    border-bottom: none;
+  }
+  .rlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  /* equalizer — 3 bars, staggered as-eq; runs only while isPlaying */
+  .eq-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eq {
+    display: inline-flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 11px;
+  }
+  .eq span {
+    width: 2.5px;
+    height: 11px;
+    background: var(--live-green);
+    transform-origin: bottom;
+    animation: as-eq 1s ease-in-out infinite;
+    animation-play-state: paused;
+  }
+  .eq span:nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  .eq span:nth-child(3) {
+    animation-delay: 0.5s;
+  }
+  .eq.playing span {
+    animation-play-state: running;
+  }
+
+  .track {
+    font-size: 15.5px;
+  }
+  .track em {
+    font-family: var(--font-serif);
+    font-size: 17px;
+  }
+  .track.hi em {
+    color: var(--text-hi);
+  }
+  .track.muted {
+    color: var(--text-muted);
+  }
+  .ctx {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+
+  /* contribution field */
+  .contrib-wrap {
+    margin-bottom: 14px;
+    /* canvas keeps the design's fixed 702px; scroll instead of breaking layout on narrow */
+    overflow-x: auto;
+  }
+  as-contrib canvas {
+    display: block;
+  }
+  .contrib-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin-bottom: 48px;
+  }
+
+  /* watching */
+  .shelf {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .shelf .accent {
+    color: var(--as-accent);
+  }
+  /* frame 6d: 'weeb stats, worn proudly' reads --faint, not the Section default */
+  .watching-sec :global(.section-head .meta) {
+    color: var(--faint);
+  }
+
+  /* footer gap is owned by the last section's margin (prototype) */
+  .foot :global(footer) {
+    margin-top: 0;
+  }
+</style>
+
+<script>
+  import '~/islands/clock';
+  import '~/islands/contrib';
+  import '~/islands/live-data';
+</script>
