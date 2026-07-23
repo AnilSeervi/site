@@ -88,11 +88,18 @@ const tickerItems: [string, string][] = [
         <span class="accent">❯</span> now — {site.now}
       </div>
     </div>
-    <as-ascii-portrait data-cells="50x62" class="as-enter" style="animation-delay:.1s">
+    <as-ascii-portrait
+      data-cells="50x62"
+      class="as-enter"
+      style="animation-delay:.1s"
+      role="img"
+      aria-label="ASCII-art portrait of Anil Seervi"
+    >
       <canvas
         class="ascii-portrait"
         width="400"
         height="500"
+        aria-hidden="true"
         style="width:200px;height:250px;background:var(--ascii-bg);border-radius:5px"></canvas>
     </as-ascii-portrait>
   </div>

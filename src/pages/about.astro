@@ -10,17 +10,22 @@ const yearRow = (y: number) => calendar.years.indexOf(y) + 1;
 const details = Object.entries(calendar.details);
 ---
 
-<Base title="About — Anil Seervi" description="Who I am, how I got here, and what this site runs on.">
+<Base
+  title="About — Anil Seervi"
+  description="Who I am, how I got here, and what this site runs on."
+  ogImage="/og/about.png"
+>
   <PageTitle title="about" sub="Who I am, how I got here, and what this site runs on." />
 
   <!-- halftone portrait + click-to-reveal facts -->
   <div class="portrait-grid">
     <div class="portrait">
-      <as-ascii-portrait data-cells="60x75">
+      <as-ascii-portrait data-cells="60x75" role="img" aria-label="ASCII-art portrait of Anil Seervi">
         <canvas
           class="ascii-portrait"
           width="480"
           height="600"
+          aria-hidden="true"
           style="width:240px;height:300px;background:var(--ascii-bg);border-radius:5px"></canvas>
       </as-ascii-portrait>
     </div>

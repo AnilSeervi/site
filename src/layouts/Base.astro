@@ -1,5 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
 import Palette from '~/components/Palette.astro';
 import { site } from '~/config/site';
 import '@fontsource-variable/newsreader/opsz.css';
@@ -15,14 +17,20 @@ interface Props {
   column?: number;
   /** hide the CSS dot grid (writing page uses its own canvas) */
   noDots?: boolean;
+  /** site-relative path of the build-time OG card (see src/pages/og) */
+  ogImage?: string;
 }
 
 const {
   title = site.title,
   description = site.description,
   column = 768,
-  noDots = false
+  noDots = false,
+  ogImage = '/og/site.png'
 } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, site.url);
+const ogImageURL = new URL(ogImage, site.url);
 ---
 
 <!doctype html>
@@ -33,8 +41,23 @@ const {
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#0F0D0B" />
-    <link rel="canonical" href={new URL(Astro.url.pathname, site.url)} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon_32x32.png" />
+    <link rel="manifest" href="/static/favicons/site.webmanifest" />
+    <link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg" color="#D9A54A" />
+    <meta name="msapplication-TileColor" content="#ffffff" />
+    <meta name="msapplication-config" content="/static/favicons/browserconfig.xml" />
     <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
     <script is:inline>
       (function () {
@@ -72,6 +95,8 @@ const {
       <Palette />
     </div>
     <as-views data-slug={Astro.url.pathname} aria-hidden="true"></as-views>
+    <Analytics />
+    <SpeedInsights />
   </body>
 </html>
 

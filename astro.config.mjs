@@ -100,6 +100,29 @@ const codeTitleTransformer = {
 export default defineConfig({
   site: 'https://anil.vercel.app',
   adapter: vercel(),
+  redirects: {
+    // Old site structure → new structure (301s by default)
+    '/blog': '/writing',
+    '/blog/hof-in-js': '/writing/higher-order-functions-in-javascript',
+    '/blog/[slug]': '/writing/[slug]',
+    '/snippets': '/writing',
+    '/snippets/[slug]': '/writing/[slug]',
+    '/anime': '/live',
+    '/spotify': '/live',
+    '/dashboard': '/live',
+    '/guestbook': '/live',
+    '/uses': '/about',
+    '/projects': '/work',
+    '/feed.xml': '/rss.xml',
+    // External shortlinks carried over from the old site's vercel.json
+    '/newsletter': 'https://anilseervi.substack.com/',
+    '/linkedin': 'https://www.linkedin.com/in/anilseervi/',
+    '/twitter': 'https://twitter.com/linaseervi',
+    '/github': 'https://github.com/anilseervi',
+    '/insta': 'https://www.instagram.com/linaseervi/',
+    '/cv': 'https://cv-anil.vercel.app/',
+    '/hentai': 'https://youtu.be/dQw4w9WgXcQ'
+  },
   integrations: [mdx(), sitemap()],
   devToolbar: { enabled: false },
   markdown: {

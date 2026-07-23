@@ -15,12 +15,21 @@ interface Props {
   metaParts: string[];
   prev?: Cell;
   next?: Cell;
+  /** OG card path, passed through to Base — defaults to this article's card */
+  ogImage?: string;
 }
 
 const { title, description, slug, metaParts, prev, next } = Astro.props;
+const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
 ---
 
-<Base title={`${title} — Anil Seervi`} description={description} column={640} noDots>
+<Base
+  title={`${title} — Anil Seervi`}
+  description={description}
+  column={640}
+  noDots
+  ogImage={ogImage}
+>
   <as-progress></as-progress>
   <a class="crumb" href="/writing">← ~/writing</a>
   <h1 transition:name={`title-${slug}`}>{title}</h1>

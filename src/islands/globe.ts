@@ -85,7 +85,12 @@ class AsGlobe extends HTMLElement {
       baseColor: [0.24, 0.22, 0.19],
       markerColor: accentRgb(),
       glowColor: [0.07, 0.06, 0.055],
-      markers: [{ location: BENGALURU, size: 0.09 }]
+      // cobe v2: markerElevation defaults high enough to float the dot off the
+      // sphere near the limb (pin near the surface), and marker size renders
+      // ~2× larger than the v0.6 scale the prototype was specced against —
+      // 0.045 here reads like the reference's 0.09
+      markerElevation: 0.01,
+      markers: [{ location: BENGALURU, size: 0.045 }]
     });
     this.#globe = globe;
 

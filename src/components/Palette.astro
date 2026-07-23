@@ -514,6 +514,11 @@ const payload = {
       if (e.key === 'Escape') {
         e.preventDefault();
         p.close();
+      } else if (e.key === 'Tab') {
+        // aria-modal dialog: keep focus inside — the input is the only
+        // focusable control (rows are pointer/arrow-driven)
+        e.preventDefault();
+        p.querySelector<HTMLInputElement>('.pal-input')?.focus();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         p.move(1);

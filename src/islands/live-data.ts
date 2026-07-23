@@ -166,7 +166,13 @@ class AsLiveData extends HTMLElement {
 
     if (m?.watching) {
       const { title, ep, epTotal } = m.watching;
-      this.#setParts('watching', title, epTotal == null ? ` — episode ${ep}` : ` — episode ${ep} of ${epTotal}`);
+      // frame 6d italicizes only the base title — a trailing season/part
+      // suffix stays upright and lowercase ('Sousou no Frieren 2nd season')
+      const split = title.match(/^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i);
+      const base = split ? split[1]! : title;
+      const suffix = split ? ` ${split[2]!.toLowerCase()}` : '';
+      const eps = epTotal == null ? ` — episode ${ep}` : ` — episode ${ep} of ${epTotal}`;
+      this.#setParts('watching', base, `${suffix}${eps}`);
     } else {
       this.#hideRow('watching');
     }
