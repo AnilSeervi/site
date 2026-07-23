@@ -35,26 +35,35 @@ const shortDate = (d: Date) =>
   `${d.toLocaleString('en-US', { month: 'short' }).toLowerCase()} ’${String(d.getFullYear()).slice(2)}`;
 
 const homeProjects = projects.filter((p) => p.home);
+
+/** placeholder ticker items (prototype TICK) — Phase 5 swaps in live feed values */
+const tickerItems: [string, string][] = [
+  ['listening', 'One More Time — Daft Punk'],
+  ['shipping', '3 commits to devfolio, earlier today'],
+  ['moving', '8.2km around cubbon park, this morning'],
+  ['watching', 'Sousou no Frieren s2 — episode 5 of 10'],
+  ['reading', 'Berserk — the long haul']
+];
 ---
 
 <Base>
   <div class="whoami as-enter" style="animation-delay:0s">
     <span class="cmd"><span class="accent">~ ❯</span> whoami</span>
-    <span data-greeting>09:06 ist · good morning, from bengaluru</span>
+    <as-clock data-format="greeting" data-greeting>09:06 ist · good morning, from bengaluru</as-clock>
   </div>
 
   <div class="hero">
     <div class="hero-left">
       <h1 class="as-enter" style="animation-delay:.06s">
-        <span data-typeon>Anil <em>Seervi</em></span><span class="caret" aria-hidden="true"
-        ></span>
+        <as-typeon
+          ><span data-typeon>Anil <em>Seervi</em></span><span class="caret" aria-hidden="true"
+          ></span></as-typeon
+        >
       </h1>
-      <canvas
-        class="spark-hero as-enter"
-        width="640"
-        height="44"
-        style="width:320px;height:22px;animation-delay:.12s"
-        aria-hidden="true"></canvas>
+      <as-spark data-kind="hero" class="as-enter" style="animation-delay:.12s">
+        <canvas class="spark-hero" width="640" height="44" style="width:320px;height:22px"
+          aria-hidden="true"></canvas>
+      </as-spark>
       <div class="role as-enter" style="animation-delay:.18s">{site.role}</div>
       <p class="intro as-enter" style="animation-delay:.24s">{site.intro}</p>
       <div class="socials as-enter" style="animation-delay:.3s">
@@ -74,13 +83,13 @@ const homeProjects = projects.filter((p) => p.home);
         <span class="accent">❯</span> now — {site.now}
       </div>
     </div>
-    <canvas
-      class="ascii-portrait as-enter"
-      data-cells="50x62"
-      width="400"
-      height="500"
-      style="width:200px;height:250px;background:var(--ascii-bg);border-radius:5px;animation-delay:.1s"
-    ></canvas>
+    <as-ascii-portrait data-cells="50x62" class="as-enter" style="animation-delay:.1s">
+      <canvas
+        class="ascii-portrait"
+        width="400"
+        height="500"
+        style="width:200px;height:250px;background:var(--ascii-bg);border-radius:5px"></canvas>
+    </as-ascii-portrait>
   </div>
 
   <div class="proof as-enter" style="animation-delay:.42s">
@@ -103,20 +112,15 @@ const homeProjects = projects.filter((p) => p.home);
     <Section label="01 · WORK" meta="all projects ↗" metaHref="/work" external />
     <div class="rows work-rows">
       {
-        homeProjects.map((p) => (
+        homeProjects.map((p, i) => (
           <div class="prow">
             <a class="pname" href={p.href} target="_blank" rel="noopener noreferrer">
               {p.name}
             </a>
             <span class="pdesc">{p.home}</span>
-            <canvas
-              class="spark"
-              width="144"
-              height="36"
-              style="width:72px;height:18px"
-              data-repo={p.repo}
-              aria-hidden="true"
-            />
+            <as-spark data-status={p.status} data-seed={String(7 + i)} data-repo={p.repo}>
+              <canvas class="spark" width="144" height="36" style="width:72px;height:18px" aria-hidden="true" />
+            </as-spark>
             <span class="ptag" data-status={p.status}>
               <span class="pdot" aria-hidden="true" />
               {p.status}
@@ -148,11 +152,11 @@ const homeProjects = projects.filter((p) => p.home);
     <div class="live-head">
       <Section label="03 · LIVE" meta="all feeds →" metaHref="/live" />
     </div>
-    <div class="ticker" data-ticker>
+    <as-ticker class="ticker" data-ticker data-items={JSON.stringify(tickerItems)}>
       <span class="pulse" aria-hidden="true"></span>
       <span class="tlabel" data-ticker-label>listening</span>
       <span class="tvalue" data-ticker-value>One More Time — Daft Punk</span>
-    </div>
+    </as-ticker>
   </section>
 
   <div class="foot">
@@ -349,6 +353,11 @@ const homeProjects = projects.filter((p) => p.home);
   }
   canvas.spark {
     display: block;
+    /* prototype dims sparklines at the element level: .75 normal, .6 archived */
+    opacity: 0.75;
+  }
+  as-spark[data-status='archived'] canvas.spark {
+    opacity: 0.6;
   }
   .ptag {
     font-family: var(--font-mono);
@@ -457,12 +466,26 @@ const homeProjects = projects.filter((p) => p.home);
     color: var(--as-accent);
     width: 80px;
     flex: 0 0 auto;
+    transition: opacity 0.25s ease;
   }
   .tvalue {
     font-family: var(--font-serif);
     font-style: italic;
     font-size: 17px;
     color: var(--text);
+    transition: opacity 0.25s ease;
+  }
+
+  as-ticker {
+    display: flex;
+  }
+  as-spark,
+  as-ascii-portrait {
+    display: block;
+  }
+  as-clock {
+    font-size: 12px;
+    color: var(--meta);
   }
 
   /* footer spacing — home's ticker owns the 60px gap (prototype) */
@@ -473,4 +496,12 @@ const homeProjects = projects.filter((p) => p.home);
 
 <!-- entrance stagger re-runs by itself on view-transition arrival: the swap
      inserts fresh .as-enter elements, so their CSS animations replay. -->
+
+<script>
+  import '~/islands/typeon';
+  import '~/islands/clock';
+  import '~/islands/ticker';
+  import '~/islands/spark';
+  import '~/islands/ascii-portrait';
+</script>
 

@@ -16,12 +16,13 @@ const details = Object.entries(calendar.details);
   <!-- halftone portrait + click-to-reveal facts -->
   <div class="portrait-grid">
     <div class="portrait">
-      <canvas
-        class="ascii-portrait"
-        data-cells="60x75"
-        width="480"
-        height="600"
-        style="width:240px;height:300px;background:var(--ascii-bg);border-radius:5px"></canvas>
+      <as-ascii-portrait data-cells="60x75">
+        <canvas
+          class="ascii-portrait"
+          width="480"
+          height="600"
+          style="width:240px;height:300px;background:var(--ascii-bg);border-radius:5px"></canvas>
+      </as-ascii-portrait>
     </div>
     <as-facts class="facts">
       <div class="facts-hint">click a row — nothing here is precious</div>
@@ -147,6 +148,9 @@ const details = Object.entries(calendar.details);
     gap: 8px;
   }
 
+  as-ascii-portrait {
+    display: block;
+  }
   .ascii-portrait {
     display: block;
     border: 1px solid var(--hair-card);
@@ -444,6 +448,8 @@ const details = Object.entries(calendar.details);
 </style>
 
 <script>
+  import '~/islands/ascii-portrait';
+
   if (!customElements.get('as-facts')) {
     customElements.define(
       'as-facts',

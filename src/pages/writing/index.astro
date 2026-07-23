@@ -31,7 +31,9 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
   description="JavaScript and React, explained properly. Eight articles since 2021."
   noDots
 >
-  <canvas class="dot-field" aria-hidden="true"></canvas>
+  <as-dot-field>
+    <canvas class="dot-field" aria-hidden="true"></canvas>
+  </as-dot-field>
   <as-search class="wrap">
     <div class="head">
       <div class="head-left">
@@ -105,7 +107,9 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
 </Base>
 
 <style>
-  /* cursor-reactive dot field — drawn in Phase 4 */
+  as-dot-field {
+    display: contents;
+  }
   .dot-field {
     position: fixed;
     inset: 0;
@@ -280,6 +284,8 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
 </style>
 
 <script>
+  import '~/islands/dot-field';
+
   class ASSearch extends HTMLElement {
     #input: HTMLInputElement | null = null;
 

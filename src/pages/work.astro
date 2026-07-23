@@ -35,20 +35,22 @@ import { experience, projects } from '~/config/site';
     <p class="why-slot" data-why-slot>— hover a project for the why</p>
     <div class="os-list" data-why-list>
       {
-        projects.map((project) => (
+        projects.map((project, i) => (
           <div class="os-row" data-why={project.why}>
             <a class="os-name" href={project.href} target="_blank" rel="noopener noreferrer">
               {project.name}
             </a>
             <span class="os-desc">{project.work}</span>
-            <canvas
-              class="spark"
-              width="144"
-              height="36"
-              style="width:72px;height:18px"
-              data-repo={project.repo}
-              data-status={project.status}
-            />
+            <as-spark data-status={project.status} data-seed={String(7 + i)} data-repo={project.repo}>
+              <canvas
+                class="spark"
+                width="144"
+                height="36"
+                style="width:72px;height:18px"
+                data-status={project.status}
+                aria-hidden="true"
+              />
+            </as-spark>
             <span class:list={['status', `status--${project.status}`]}>
               <span class="dot" aria-hidden="true" />
               {project.status}
@@ -152,6 +154,9 @@ import { experience, projects } from '~/config/site';
     line-height: 1.6;
   }
 
+  as-spark {
+    display: block;
+  }
   .spark {
     display: block;
     opacity: 0.75;
@@ -194,6 +199,8 @@ import { experience, projects } from '~/config/site';
 </style>
 
 <script>
+  import '~/islands/spark';
+
   if (!customElements.get('as-whyslot')) {
     class AsWhyslot extends HTMLElement {
       #slot: HTMLElement | null = null;
