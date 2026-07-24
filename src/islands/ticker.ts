@@ -5,7 +5,7 @@
  * attribute.
  *
  * With the `data-live` attribute present, it also fetches /api/spotify,
- * /api/github, /api/strava and /api/mal (allSettled — one dead feed never
+ * /api/github, /api/moving and /api/mal (allSettled — one dead feed never
  * blocks the rest) and builds live items. The placeholders keep rotating while the fetches are
  * in flight; once ≥2 live items resolve, the rotation swaps to them at the
  * next opacity dip (index reset to 0 inside the dip, so there's no visual
@@ -18,19 +18,22 @@ type Item = [string, string];
 const FRESH_MS = 48 * 3600 * 1000; // "recent enough to brag about" window
 const IST_OFFSET_MIN = 330; // relative-time buckets keep the author's clock
 
-/** Strava sport types that read as distance efforts (show the km prefix) */
+/** Garmin activity types that read as distance efforts (show the km prefix) */
 const KM_SPORTS = new Set([
-  'Run',
-  'TrailRun',
-  'VirtualRun',
-  'Ride',
-  'VirtualRide',
-  'EBikeRide',
-  'EMountainBikeRide',
-  'GravelRide',
-  'MountainBikeRide',
-  'Handcycle',
-  'Velomobile'
+  'running',
+  'trail_running',
+  'treadmill_running',
+  'track_running',
+  'virtual_run',
+  'indoor_running',
+  'cycling',
+  'road_biking',
+  'mountain_biking',
+  'gravel_cycling',
+  'indoor_cycling',
+  'virtual_ride',
+  'e_bike_fitness',
+  'e_bike_mountain'
 ]);
 
 /**
@@ -114,11 +117,11 @@ class AsTicker extends HTMLElement {
   }
 
   async #loadLive() {
-    const [spotify, github, strava, mal] = (
+    const [spotify, github, moving, mal] = (
       await Promise.allSettled([
         json('/api/spotify'),
         json('/api/github'),
-        json('/api/strava'),
+        json('/api/moving'),
         json('/api/mal')
       ])
     ).map(settled);
@@ -139,9 +142,9 @@ class AsTicker extends HTMLElement {
       items.push(['shipping', `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`]);
     }
 
-    // moving — latest Strava activity of any kind, skipped past 48h (or when
+    // moving — latest Garmin activity of any kind, skipped past 48h (or when
     // the feed is disabled). Runs/rides lead with km; gym/racquet by name.
-    const act = strava?.disabled ? null : strava?.latestAny;
+    const act = moving?.disabled ? null : moving?.latestAny;
     if (
       act?.name &&
       act.startedAt &&

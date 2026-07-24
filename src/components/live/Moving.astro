@@ -1,12 +1,16 @@
 ---
 /**
- * MOVING · GARMIN + STRAVA (frame 6d) — route etching + vitals + 90-day
- * consistency strip. Self-contained: mount <Moving /> and import
- * '~/islands/moving' — the <as-moving> island fetches /api/strava +
- * /api/fitness, fills the pre-rendered fragments and reveals the section.
+ * MOVING · GARMIN (frame 6d) — route etching + vitals + 90-day consistency
+ * strip. Self-contained: mount <Moving /> and import '~/islands/moving' —
+ * the <as-moving> island fetches /api/moving + /api/fitness (both Garmin
+ * Connect), fills the pre-rendered fragments and reveals the section.
+ *
+ * Feed history: the route/activity data came from Strava originally; Strava's
+ * API now requires a paid tier, so activities + GPS tracks are sourced from
+ * Garmin Connect (src/lib/moving.ts + garmin.ts) alongside the vitals.
  *
  * Degradation (README rule): the section ships `hidden` and is revealed only
- * when Strava data lands. Strava disabled/down → the section never shows.
+ * when activity data lands. Feed disabled/down → the section never shows.
  * Missing vitals (fitness nulls) → those rows are dropped, the rest stays.
  *
  * SSR copy below is the design placeholder — it is never visible (the island
@@ -15,13 +19,10 @@
  * scoped classes survive the swap.
  */
 import Section from '~/components/Section.astro';
-
-// TODO(owner): point at the real athlete profile when the account is linked
-const STRAVA_URL = 'https://www.strava.com/athletes/kazenil';
 ---
 
-<as-moving hidden data-section="strava">
-  <Section label="MOVING · GARMIN + STRAVA" meta="strava ↗" metaHref={STRAVA_URL} external />
+<as-moving hidden data-section="moving">
+  <Section label="MOVING · GARMIN" />
 
   <div class="mgrid" data-mgrid>
     <!-- route etching: latest run/ride polyline, no map tiles -->

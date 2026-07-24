@@ -179,7 +179,7 @@ check(
 );
 check(
   'footer copy',
-  (await text(page.locator('footer .left'))).endsWith('/api/spotify · /api/github · /api/strava · /api/mal') &&
+  (await text(page.locator('footer .left'))).endsWith('/api/spotify · /api/github · /api/moving · /api/mal') &&
     (await text(page.locator('footer a.chain'))) === 'next — ~/about →'
 );
 

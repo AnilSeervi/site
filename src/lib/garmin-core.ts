@@ -586,3 +586,75 @@ export async function getVo2Max(accessToken: string, date: string): Promise<numb
   const vo2 = generic?.vo2MaxValue;
   return typeof vo2 === 'number' && Number.isFinite(vo2) && vo2 > 0 ? vo2 : null;
 }
+
+// ---------------------------------------------------------------------------
+// Activities (Moving section — replaces the retired Strava feed)
+// ---------------------------------------------------------------------------
+
+export interface GarminActivity {
+  activityId: number;
+  /** activityType.typeKey, e.g. "running" / "cycling" / "table_tennis" */
+  typeKey: string;
+  activityName: string;
+  /** meters */
+  distanceMeters: number;
+  /** seconds (moving/elapsed — Garmin's `duration`) */
+  durationSeconds: number;
+  /** athlete wall clock "YYYY-MM-DD HH:MM:SS" (already IST for this account) */
+  startTimeLocal: string;
+  /** GMT "YYYY-MM-DD HH:MM:SS" (no zone suffix) */
+  startTimeGMT: string;
+  /** true when the activity carries a GPS track (route etching candidate) */
+  hasPolyline: boolean;
+}
+
+/** Recent activities, newest-first (activitylist-service search). */
+export async function getActivities(accessToken: string, limit = 60): Promise<GarminActivity[]> {
+  const raw = await apiGet(
+    accessToken,
+    `/activitylist-service/activities/search/activities?start=0&limit=${limit}`
+  );
+  if (!Array.isArray(raw)) return [];
+  const out: GarminActivity[] = [];
+  for (const item of raw) {
+    const r = asRecord(item);
+    const id = r?.activityId;
+    if (typeof id !== 'number') continue;
+    const type = asRecord(r?.activityType);
+    out.push({
+      activityId: id,
+      typeKey: typeof type?.typeKey === 'string' ? type.typeKey : '',
+      activityName: typeof r?.activityName === 'string' ? r.activityName : '',
+      distanceMeters: typeof r?.distance === 'number' ? r.distance : 0,
+      durationSeconds: typeof r?.duration === 'number' ? r.duration : 0,
+      startTimeLocal: typeof r?.startTimeLocal === 'string' ? r.startTimeLocal : '',
+      startTimeGMT: typeof r?.startTimeGMT === 'string' ? r.startTimeGMT : '',
+      hasPolyline: r?.hasPolyline === true
+    });
+  }
+  return out;
+}
+
+/**
+ * GPS track of an activity as [lat, lon] pairs (empty when none). Chart data
+ * is suppressed (maxChartSize=0); only geoPolylineDTO is needed.
+ */
+export async function getActivityTrack(
+  accessToken: string,
+  activityId: number
+): Promise<Array<[number, number]>> {
+  const data = asRecord(
+    await apiGet(
+      accessToken,
+      `/activity-service/activity/${activityId}/details?maxChartSize=0&maxPolylineSize=1000`
+    )
+  );
+  const poly = asRecord(data?.geoPolylineDTO)?.polyline;
+  if (!Array.isArray(poly)) return [];
+  const pts: Array<[number, number]> = [];
+  for (const p of poly) {
+    const r = asRecord(p);
+    if (typeof r?.lat === 'number' && typeof r?.lon === 'number') pts.push([r.lat, r.lon]);
+  }
+  return pts;
+}

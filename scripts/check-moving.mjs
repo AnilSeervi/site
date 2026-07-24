@@ -2,10 +2,10 @@
  * check-moving.mjs — Phase 6 verification for the MOVING · GARMIN + STRAVA
  * section (<as-moving>) and the home-ticker `moving` item.
  *
- * Pass 1 (live API): whatever /api/strava actually returns right now.
+ * Pass 1 (live API): whatever /api/moving actually returns right now.
  *   disabled/nulls → the section renders NOTHING (README rule);
  *   real data → the section is visible.
- * Pass 2 (mocked /api/strava + /api/fitness): route etching decoded from a
+ * Pass 2 (mocked /api/moving + /api/fitness): route etching decoded from a
  *   realistic encoded loop polyline (two stacked paths, runner lapping),
  *   vitals rows exact, 90 bars with mixed buckets + 16ms rise stagger,
  *   RHR dot beating at 60/52 ≈ 1.154s, reduced-motion fallbacks.
@@ -82,7 +82,7 @@ const maxSeconds = Math.max(...days.map((d) => d.seconds));
 const STRAVA_MOCK = {
   latest: {
     name: 'Cubbon Park Loop',
-    sportType: 'Run',
+    sportType: 'running',
     distanceKm: 12.4,
     movingTime: '58:12',
     paceMinKm: '4:41',
@@ -92,7 +92,7 @@ const STRAVA_MOCK = {
   },
   latestAny: {
     name: 'Morning Run around Cubbon Park',
-    sportType: 'Run',
+    sportType: 'running',
     distanceKm: 8.2,
     startedAt: new Date(Date.now() - 30 * 60000).toISOString()
   },
@@ -116,7 +116,7 @@ const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frida
 const latestWeekday = WEEKDAYS[istDate(Date.parse(latestStart)).getUTCDay()];
 
 const mockRoutes = async (page) => {
-  await page.route('**/api/strava', (route) =>
+  await page.route('**/api/moving', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify(STRAVA_MOCK) })
   );
   await page.route('**/api/fitness', (route) =>
@@ -127,11 +127,11 @@ const mockRoutes = async (page) => {
 const browser = await chromium.launch();
 
 // ---------------- pass 1 · live API state ----------------
-console.log('\npass 1 · live /api/strava state');
-const real = await fetch(`${BASE}/api/strava`).then((r) => r.json());
+console.log('\npass 1 · live /api/moving state');
+const real = await fetch(`${BASE}/api/moving`).then((r) => r.json());
 const page1 = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
 await page1.goto(`${BASE}${PAGE}`, { waitUntil: 'domcontentloaded' });
-await page1.waitForResponse('**/api/strava', { timeout: 20000 });
+await page1.waitForResponse('**/api/moving', { timeout: 20000 });
 await page1.waitForTimeout(500);
 if (real.disabled || !Array.isArray(real.days) || real.days.length === 0) {
   check('section renders NOTHING while strava is disabled/down', await page1.locator('as-moving').isHidden());
@@ -150,15 +150,14 @@ console.log('\npass 2 · mocked strava + fitness');
 const page2 = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 await mockRoutes(page2);
 await page2.goto(`${BASE}${PAGE}`, { waitUntil: 'domcontentloaded' });
-await page2.waitForResponse('**/api/strava', { timeout: 20000 });
+await page2.waitForResponse('**/api/moving', { timeout: 20000 });
 await page2.waitForSelector('as-moving:not([hidden])', { timeout: 10000 });
 await page2.waitForTimeout(400);
 
 check('section visible', await page2.locator('as-moving').isVisible());
 check(
-  'section header + strava ↗ meta',
-  (await text(page2.locator('as-moving .section-head .label'))) === 'MOVING · GARMIN + STRAVA' &&
-    (await text(page2.locator('as-moving .section-head a.meta'))) === 'strava ↗'
+  'section header (Garmin-only, no meta link)',
+  (await text(page2.locator('as-moving .section-head .label'))) === 'MOVING · GARMIN'
 );
 
 // etching — decoded path inside the viewBox, both paths share d, runner laps
@@ -325,7 +324,7 @@ async function tickerShows(page, wantValue, timeoutMs = 25000) {
 
 const runValue = `8.2km morning run around cubbon park, ${expectBucket(STRAVA_MOCK.latestAny.startedAt)}`;
 const page3 = await browser.newPage({ viewport: { width: 1000, height: 900 } });
-await page3.route('**/api/strava', (route) =>
+await page3.route('**/api/moving', (route) =>
   route.fulfill({ contentType: 'application/json', body: JSON.stringify(STRAVA_MOCK) })
 );
 await page3.route('**/api/spotify', (route) =>
@@ -342,11 +341,11 @@ await page3.close();
 const gymStart = new Date(Date.now() - 20 * 3600000).toISOString(); // ~yesterday-ish, inside 48h
 const gymMock = {
   ...STRAVA_MOCK,
-  latestAny: { name: 'Leg Day', sportType: 'WeightTraining', distanceKm: 0, startedAt: gymStart }
+  latestAny: { name: 'Leg Day', sportType: 'strength_training', distanceKm: 0, startedAt: gymStart }
 };
 const gymValue = `leg day, ${expectBucket(gymStart)}`;
 const page4 = await browser.newPage({ viewport: { width: 1000, height: 900 } });
-await page4.route('**/api/strava', (route) =>
+await page4.route('**/api/moving', (route) =>
   route.fulfill({ contentType: 'application/json', body: JSON.stringify(gymMock) })
 );
 await page4.route('**/api/spotify', (route) =>
@@ -366,7 +365,7 @@ const stale = {
   latestAny: { ...STRAVA_MOCK.latestAny, startedAt: new Date(Date.now() - 72 * 3600000).toISOString() }
 };
 const page5 = await browser.newPage({ viewport: { width: 1000, height: 900 } });
-await page5.route('**/api/strava', (route) =>
+await page5.route('**/api/moving', (route) =>
   route.fulfill({ contentType: 'application/json', body: JSON.stringify(stale) })
 );
 await page5.route('**/api/spotify', (route) =>

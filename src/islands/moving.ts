@@ -1,7 +1,7 @@
 /**
  * <as-moving> — data plumbing + drawing for the MOVING section (frame 6d).
  *
- * On connect it fetches /api/strava and /api/fitness in parallel
+ * On connect it fetches /api/moving and /api/fitness in parallel
  * (Promise.allSettled — a dead fitness feed never blocks the strip) and:
  *   - decodes the latest run/ride polyline (@mapbox/polyline) into the
  *     230×150 route etching (normalized, aspect-preserving, ~12px inset);
@@ -10,7 +10,7 @@
  *   - builds the 90-bar consistency strip and fires its rise-in stagger via
  *     IntersectionObserver on first viewport entry.
  *
- * Degradation (README rule): Strava disabled / unreachable / empty → the
+ * Degradation (README rule): Moving feed disabled / unreachable / empty → the
  * section stays `hidden` — it renders NOTHING. Fitness nulls → only those
  * rows drop. The SSR content under <as-moving> is placeholder copy that is
  * never shown; the island overwrites everything before un-hiding.
@@ -39,7 +39,7 @@ interface MovingDay {
   seconds: number;
   bucket: Bucket | 'rest';
 }
-interface StravaRes {
+interface MovingRes {
   disabled?: boolean;
   latest?: MovingLatest | null;
   latestAny?: { name: string; sportType: string; distanceKm: number; startedAt: string } | null;
@@ -124,15 +124,15 @@ class AsMoving extends HTMLElement {
   }
 
   async #load() {
-    const [strava, fitness] = await Promise.allSettled([
-      getJson<StravaRes>('/api/strava'),
+    const [moving, fitness] = await Promise.allSettled([
+      getJson<MovingRes>('/api/moving'),
       getJson<FitnessRes>('/api/fitness')
     ]);
     // view transition may have swapped this subtree away mid-flight
     if (!this.isConnected) return;
 
-    const s = alive(strava);
-    // Strava disabled or down (nulls + empty days) → the section never shows
+    const s = alive(moving);
+    // feed disabled or down (nulls + empty days) → the section never shows
     if (!s || !Array.isArray(s.days) || s.days.length === 0) return;
     const f = alive(fitness);
 
@@ -219,7 +219,7 @@ class AsMoving extends HTMLElement {
 
   #applyVitals(
     latest: MovingLatest | null,
-    month: StravaRes['month'],
+    month: MovingRes['month'],
     fitness: FitnessRes | null
   ) {
     // last run — the same activity the etching draws

@@ -17,6 +17,8 @@ import { kv } from '~/lib/schema';
 import { eq } from 'drizzle-orm';
 import {
   getAccessToken,
+  getActivities,
+  getActivityTrack,
   getDisplayName,
   getRestingHeartRate,
   getVo2Max,
@@ -24,6 +26,7 @@ import {
   KV_KEYS
 } from '~/lib/garmin-core';
 import type { GarminCredentials, TokenStore } from '~/lib/garmin-core';
+import { buildMovingPayload, isRunOrRide, type MovingPayload } from '~/lib/moving';
 
 const EMAIL = import.meta.env.GARMIN_EMAIL as string | undefined;
 const PASSWORD = import.meta.env.GARMIN_PASSWORD as string | undefined;
@@ -84,4 +87,26 @@ export async function getGarminFitness(): Promise<GarminFitness> {
   ]);
 
   return { vo2max, restingHr };
+}
+
+/**
+ * MOVING section payload from Garmin activities (replaces /api/strava).
+ * Two Garmin calls per cache window: the activity list, then the GPS track of
+ * the newest run/ride for the route etching. Throws on any auth/upstream
+ * failure — /api/moving degrades to an empty payload (section hides).
+ */
+export async function getGarminMoving(): Promise<MovingPayload> {
+  if (!isDbConfigured) throw new Error('Garmin: Turso kv store not configured');
+
+  const creds: GarminCredentials | null =
+    hasGarminCredentials && EMAIL && PASSWORD ? { email: EMAIL, password: PASSWORD } : null;
+
+  const accessToken = await getAccessToken(kvStore, creds);
+  // 80 covers a 90-day window comfortably even for a busy log
+  const acts = await getActivities(accessToken, 80);
+
+  const gps = acts.find((a) => a.hasPolyline && isRunOrRide(a.typeKey)) ?? null;
+  const track = gps ? await getActivityTrack(accessToken, gps.activityId) : [];
+
+  return buildMovingPayload(acts, gps, track);
 }
