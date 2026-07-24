@@ -153,6 +153,36 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
   .pager a:hover .ptitle {
     color: var(--text-hi);
   }
+
+  /* ---- mobile (7f) ---- */
+  @media (max-width: 768px) {
+    .crumb {
+      font-size: 11.5px;
+      margin-bottom: 22px;
+    }
+    h1 {
+      font-size: 26px;
+      line-height: 1.2;
+      margin: 0 0 14px;
+    }
+    .meta {
+      font-size: 11px;
+      margin-bottom: 32px;
+    }
+    .pager {
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 40px;
+      padding-top: 18px;
+      font-size: 11.5px;
+    }
+    .pager a.right {
+      text-align: left;
+    }
+    .pager .ptitle {
+      font-size: 15px;
+    }
+  }
 </style>
 
 <style is:global>
@@ -326,6 +356,33 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
     background: none;
     border: 0;
     padding: 0;
+  }
+
+  /* ---- prose mobile (7f) ---- */
+  @media (max-width: 768px) {
+    .prose {
+      font-size: 15.5px;
+      line-height: 1.8;
+    }
+    .prose > * {
+      margin: 0 0 20px;
+    }
+    .prose > p:first-child > em:first-child {
+      font-size: 17px;
+    }
+    .prose h2 {
+      font-size: 22px;
+    }
+    .prose h3 {
+      font-size: 19px;
+    }
+    .prose h4 {
+      font-size: 17px;
+    }
+    .prose pre {
+      padding: 16px;
+      font-size: 11.5px;
+    }
   }
 </style>
 

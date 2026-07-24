@@ -16,7 +16,9 @@
   <div class="gb-head">
     <span class="gb-label">GUESTBOOK</span>
     <span class="gb-rule" aria-hidden="true"></span>
-    <a class="gb-auth" href="/api/auth/github" data-gb-auth>sign with github →</a>
+    <a class="gb-auth" href="/api/auth/github" data-gb-auth
+      ><span class="desktop-only">sign with github →</span><span class="mobile-only">sign →</span></a
+    >
   </div>
   <div class="gb-grid">
     <div class="gb-left">
@@ -43,7 +45,9 @@
       </div>
     </div>
     <div class="gb-right">
-      <span class="gb-draw-label">or draw your signature —</span>
+      <span class="gb-draw-label"
+        >or draw your signature —<span class="mobile-only"> finger works</span></span
+      >
       <as-doodle>
         <canvas width="640" height="280" aria-label="Doodle pad — draw your signature"></canvas>
       </as-doodle>
@@ -235,6 +239,35 @@
   as-guestbook .gb-clear:hover,
   as-guestbook .gb-ink:hover {
     color: var(--text-hi);
+  }
+
+  /* ================= mobile (7d) ================= */
+  @media (max-width: 768px) {
+    as-guestbook .gb-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-bottom: 44px;
+    }
+    as-guestbook .gb-label {
+      font-size: 11px;
+    }
+    as-guestbook .gb-q {
+      font-size: 16px;
+    }
+    as-guestbook .gb-entry {
+      padding: 11px 0;
+    }
+    as-guestbook .gb-attr {
+      font-size: 10.5px;
+    }
+    as-guestbook .gb-draw-label {
+      font-size: 11px;
+    }
+    /* finger-drawing pad fills the column (330×150 in 7d) */
+    as-guestbook as-doodle canvas {
+      width: 100%;
+      height: 150px;
+    }
   }
 </style>
 

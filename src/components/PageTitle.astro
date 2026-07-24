@@ -35,4 +35,20 @@ const { title, sub } = Astro.props;
     max-width: 38em;
     text-wrap: pretty;
   }
+
+  /* ---- mobile (7b–7e headers) ---- */
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 32px;
+    }
+    .tilde {
+      font-size: 18px;
+      vertical-align: 5px;
+    }
+    .sub {
+      font-size: 14.5px;
+      line-height: 1.65;
+      margin: 0 0 28px;
+    }
+  }
 </style>

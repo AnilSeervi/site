@@ -78,6 +78,19 @@ a {
   border: 0;
 }
 
+/* breakpoint visibility helpers — swap copy that differs on mobile without JS */
+.mobile-only {
+  display: none;
+}
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+  .mobile-only {
+    display: revert;
+  }
+}
+
 /* dot-grid background layer — lives on a transition:persist element in Base */
 .dot-grid {
   position: fixed;

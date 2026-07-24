@@ -8,13 +8,17 @@
 interface Props {
   label: string;
   meta?: string;
+  /** shorter meta shown ≤768px (mobile design trims several of these); ''
+      hides the meta on mobile entirely. Omit to keep `meta` at every width. */
+  metaMobile?: string;
   metaHref?: string;
   external?: boolean;
   /** margin-bottom override — some sections use 12px when a hint line follows */
   mb?: number;
 }
-const { label, meta, metaHref, external = false, mb = 20 } = Astro.props;
+const { label, meta, metaMobile, metaHref, external = false, mb = 20 } = Astro.props;
 const newTab = !!metaHref && /^https?:\/\//.test(metaHref);
+const hasMobile = metaMobile !== undefined;
 ---
 
 <div class="section-head" style={`margin-bottom:${mb}px`}>
@@ -29,8 +33,20 @@ const newTab = !!metaHref && /^https?:\/\//.test(metaHref);
           target={newTab ? '_blank' : undefined}
           rel={newTab ? 'noopener noreferrer' : undefined}
         >
-          {meta}
+          {hasMobile ? (
+            <>
+              <span class="desktop-only">{meta}</span>
+              <span class="mobile-only">{metaMobile}</span>
+            </>
+          ) : (
+            meta
+          )}
         </a>
+      ) : hasMobile ? (
+        <span class="meta">
+          <span class="desktop-only">{meta}</span>
+          <span class="mobile-only">{metaMobile}</span>
+        </span>
       ) : (
         <span class="meta">{meta}</span>
       ))
@@ -74,5 +90,16 @@ const newTab = !!metaHref && /^https?:\/\//.test(metaHref);
   }
   a.meta.external:hover {
     transform: translate(2px, -2px);
+  }
+
+  /* mobile: labels + meta drop a notch (7a–7e) */
+  @media (max-width: 768px) {
+    .section-head {
+      gap: 12px;
+    }
+    .label,
+    .meta {
+      font-size: 11px;
+    }
   }
 </style>

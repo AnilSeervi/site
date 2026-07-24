@@ -20,6 +20,7 @@
  */
 
 import polyline from '@mapbox/polyline';
+import { isMobile, onBreakpointChange } from './breakpoint';
 
 type Bucket = 'run' | 'lift' | 'racquet';
 
@@ -104,14 +105,22 @@ function heatPhrase(hour: number): string {
 
 class AsMoving extends HTMLElement {
   #io: IntersectionObserver | null = null;
+  #unsub: (() => void) | null = null;
+  /** kept so the strip can be rebuilt (60d ↔ 90d) on a breakpoint crossing */
+  #days: MovingDay[] | null = null;
 
   connectedCallback() {
     void this.#load();
+    this.#unsub = onBreakpointChange(() => {
+      if (this.#days) this.#buildStrip(this.#days);
+    });
   }
 
   disconnectedCallback() {
     this.#io?.disconnect();
     this.#io = null;
+    this.#unsub?.();
+    this.#unsub = null;
   }
 
   async #load() {
@@ -127,6 +136,7 @@ class AsMoving extends HTMLElement {
     if (!s || !Array.isArray(s.days) || s.days.length === 0) return;
     const f = alive(fitness);
 
+    this.#days = s.days;
     this.#applyEtch(s.latest ?? null);
     this.#applyVitals(s.latest ?? null, s.month ?? null, f);
     this.#buildStrip(s.days);
@@ -266,9 +276,17 @@ class AsMoving extends HTMLElement {
 
   // ---- 90-day consistency strip -------------------------------------------
 
-  #buildStrip(days: MovingDay[]) {
+  #buildStrip(allDays: MovingDay[]) {
     const strip = this.querySelector<HTMLElement>('[data-strip]');
     if (!strip) return;
+
+    // a re-entry (breakpoint crossing) must retire the prior stagger observer
+    this.#io?.disconnect();
+    this.#io = null;
+
+    // mobile shows the last 60 days (7d); desktop the full 90
+    const days = isMobile() ? allDays.slice(-60) : allDays;
+    const stagger = isMobile() ? 20 : 16; // ms/bar
 
     const max = Math.max(1, ...days.map((d) => d.seconds));
     const frag = document.createDocumentFragment();
@@ -278,14 +296,16 @@ class AsMoving extends HTMLElement {
         bar.style.height = '4px';
         bar.style.background = REST_COLOR;
       } else {
-        // 12–30px, linear vs the 90-day max
+        // 12–30px, linear vs the window max
         bar.style.height = `${Math.round(12 + 18 * (day.seconds / max))}px`;
         bar.style.background = BAR_COLORS[day.bucket];
       }
-      bar.style.animationDelay = `${i * 16}ms`; // ~1.5s full sweep
+      bar.style.animationDelay = `${i * stagger}ms`;
       frag.appendChild(bar);
     });
     strip.replaceChildren(frag);
+    // a rebuild after the rise already played must re-arm the animation
+    strip.classList.remove('rise');
 
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       // instant — the global reduced-motion override zeroes the durations

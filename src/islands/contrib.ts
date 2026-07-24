@@ -19,9 +19,7 @@
  * avoids a degenerate cap on quiet years where p90 could be < 1.
  */
 
-// module scope (islands without imports are global scripts to TS —
-// spark.ts already owns a global `mulberry`)
-export {};
+import { isMobile, onBreakpointChange } from './breakpoint';
 
 function mulberry(a: number) {
   return () => {
@@ -58,10 +56,24 @@ class AsContrib extends HTMLElement {
 
   /** set after the first paint — attribute changes before then are handled by connectedCallback */
   #drawn = false;
+  #unsub: (() => void) | null = null;
+  /** weeks shown + CSS width — 52/702 desktop, 23/321 mobile (7d) */
+  #weeks = 52;
+  #cssW = 702;
 
   connectedCallback() {
+    this.#applySize();
     this.#draw();
     this.#drawn = true;
+    this.#unsub = onBreakpointChange(() => {
+      this.#applySize();
+      this.#draw();
+    });
+  }
+
+  disconnectedCallback() {
+    this.#unsub?.();
+    this.#unsub = null;
   }
 
   attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null) {
@@ -72,12 +84,25 @@ class AsContrib extends HTMLElement {
     this.#draw();
   }
 
+  /** pick weeks + size the canvas (backing 2×) for the current breakpoint */
+  #applySize() {
+    const mobile = isMobile();
+    this.#weeks = mobile ? 23 : 52;
+    this.#cssW = mobile ? 321 : 702;
+    const cv = this.querySelector('canvas');
+    if (!cv) return;
+    cv.width = this.#cssW * 2;
+    cv.height = 182;
+    cv.style.width = `${this.#cssW}px`;
+    cv.style.height = '91px';
+  }
+
   #draw() {
     const cv = this.querySelector('canvas');
     const x = cv?.getContext('2d');
     if (!x) return;
     x.setTransform(2, 0, 0, 2, 0, 0);
-    x.clearRect(0, 0, 702, 91);
+    x.clearRect(0, 0, this.#cssW, 91);
 
     const days = this.#days();
     if (days) this.#drawReal(x, days);
@@ -98,16 +123,18 @@ class AsContrib extends HTMLElement {
   }
 
   #drawReal(x: CanvasRenderingContext2D, days: number[][]) {
-    const nonzero = days
+    // mobile shows only the most recent weeks (7d: 23 vs 52)
+    const grid = days.slice(-this.#weeks);
+    const nonzero = grid
       .flat()
       .filter((c) => typeof c === 'number' && c > 0)
       .sort((a, b) => a - b);
     // cap = p90 of nonzero counts (see header comment for why not max)
     const cap = Math.max(1, nonzero.length ? nonzero[Math.floor(0.9 * (nonzero.length - 1))]! : 1);
 
-    for (let w = 0; w < 52; w++) {
+    for (let w = 0; w < grid.length; w++) {
       for (let d = 0; d < 7; d++) {
-        const count = days[w]?.[d] ?? 0;
+        const count = grid[w]?.[d] ?? 0;
         if (count <= 0) cell(x, w, d, EMPTY);
         else cell(x, w, d, brass(Math.min(1, count / cap)));
       }
@@ -117,7 +144,7 @@ class AsContrib extends HTMLElement {
   /** prototype's synthetic field — SSR default until real data lands */
   #drawSynthetic(x: CanvasRenderingContext2D) {
     const rnd = mulberry(7);
-    for (let w = 0; w < 52; w++) {
+    for (let w = 0; w < this.#weeks; w++) {
       for (let d = 0; d < 7; d++) {
         const v = Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55);
         if (v <= 0.1) cell(x, w, d, EMPTY);

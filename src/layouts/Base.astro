@@ -79,7 +79,10 @@ const ogImageURL = new URL(ogImage, site.url);
     {!noDots && <div class="dot-grid" transition:persist="dot-grid" aria-hidden="true" />}
     <div class="page" style={`--column: ${column}px`}>
       <header class="site-header" transition:persist="site-header">
-        <a class="brand" href="/">{site.handle}</a>
+        <a class="brand" href="/">
+          <span class="brand-full">{site.handle}</span>
+          <span class="brand-short" aria-hidden="true">~/anil</span>
+        </a>
         <nav aria-label="Main">
           {site.nav.map((item) => (
             <a href={item.href} data-navlink>
@@ -94,6 +97,15 @@ const ogImageURL = new URL(ogImage, site.url);
       </main>
       <Palette />
     </div>
+    <button
+      class="cmd-chip"
+      type="button"
+      aria-label="Open command palette"
+      data-palette-open
+      transition:persist="cmd-chip"
+    >
+      ❯
+    </button>
     <as-views data-slug={Astro.url.pathname} aria-hidden="true"></as-views>
     <Analytics />
     <SpeedInsights />
@@ -123,6 +135,10 @@ const ogImageURL = new URL(ogImage, site.url);
   }
   .brand:hover {
     color: var(--text-hi);
+  }
+  /* brand shortens to ~/anil on mobile */
+  .brand-short {
+    display: none;
   }
 
   nav {
@@ -157,6 +173,58 @@ const ogImageURL = new URL(ogImage, site.url);
   .cmdk:hover {
     color: var(--text-hi);
     border-color: rgba(237, 230, 218, 0.4);
+  }
+
+  /* floating ❯ command chip — touch replacement for ⌘K (mobile only) */
+  .cmd-chip {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 16px;
+    z-index: 90;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: #12100e;
+    border: 1px solid rgba(217, 165, 74, 0.45);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--as-accent);
+    cursor: pointer;
+    transition: border-color 180ms ease;
+  }
+  .cmd-chip:hover,
+  .cmd-chip:focus-visible {
+    border-color: var(--as-accent);
+  }
+
+  /* ---- mobile shell (≤768px) ---- */
+  @media (max-width: 768px) {
+    .page {
+      padding: 24px 30px 48px;
+    }
+    .site-header {
+      margin-bottom: 38px;
+      font-size: 11.5px;
+    }
+    nav {
+      gap: 13px;
+    }
+    .brand-full {
+      display: none;
+    }
+    .brand-short {
+      display: inline;
+    }
+    .cmdk {
+      display: none;
+    }
+    .cmd-chip {
+      display: flex;
+    }
   }
 </style>
 

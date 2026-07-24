@@ -17,6 +17,13 @@
     width: 280px;
     height: 280px;
   }
+  /* 7d: globe shrinks to 220px on mobile (island resizes the canvas backing) */
+  @media (max-width: 768px) {
+    as-globe {
+      width: 220px;
+      height: 220px;
+    }
+  }
   /* cobe v2 re-parents the canvas into a runtime wrapper div at init, so the
      descendant selector (not child) is load-bearing here */
   as-globe canvas {

@@ -35,6 +35,7 @@ const payload = {
   />
   <div class="pal-overlay">
     <div class="pal-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div class="pal-handle" aria-hidden="true"></div>
       <div class="pal-prompt">
         <span class="pal-ps1" aria-hidden="true">~ ❯</span>
         <div class="pal-inputwrap">
@@ -63,6 +64,10 @@ const payload = {
       <div class="pal-foot">
         <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
         <span class="pal-right">fuzzy over pages, posts &amp; actions</span>
+      </div>
+      <div class="pal-foot-mobile" aria-hidden="true">
+        <span>tap to run</span><span>swipe down to close</span>
+        <span class="pal-right">fuzzy over everything</span>
       </div>
     </div>
   </div>
@@ -241,10 +246,67 @@ const payload = {
   .pal-right {
     margin-left: auto;
   }
+
+  /* drag handle + mobile hint bar — hidden on desktop */
+  .pal-handle,
+  .pal-foot-mobile {
+    display: none;
+  }
+
+  /* ---- bottom-sheet (≤768px) ---- */
+  @media (max-width: 768px) {
+    as-palette .pal-overlay {
+      background: rgba(8, 7, 6, 0.78);
+    }
+    as-palette[data-open] .pal-overlay {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      /* visualViewport-driven when the keyboard is open (set in JS) */
+      height: var(--pal-vvh, 100%);
+      top: var(--pal-vvt, 0);
+    }
+    .pal-panel {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      border: 0;
+      border-top: 1px solid rgba(237, 230, 218, 0.14);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.55);
+      will-change: transform;
+    }
+    .pal-handle {
+      display: block;
+      width: 36px;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(237, 230, 218, 0.2);
+      margin: 10px auto 4px;
+    }
+    .pal-foot {
+      display: none;
+    }
+    .pal-foot-mobile {
+      display: flex;
+      gap: 16px;
+      padding: 10px 20px;
+      border-top: 1px solid rgba(237, 230, 218, 0.08);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--faint);
+    }
+    /* keyboard-shortcut hints (⌘C) are meaningless on touch (7g omits them);
+       the ↵ affordance on the active row stays */
+    .pal-hint:not(.pal-enter) {
+      display: none;
+    }
+  }
 </style>
 
 <script>
   import { navigate } from 'astro:transitions/client';
+  import { isMobile } from '~/islands/breakpoint';
 
   interface PalItem {
     kind: 'page' | 'action' | 'writing';
@@ -268,16 +330,22 @@ const payload = {
       private input!: HTMLInputElement;
       private body!: HTMLElement;
       private overlay!: HTMLElement;
+      private panel!: HTMLElement;
       private items: PalItem[] = [];
       private index = 0;
       private copyTimer: ReturnType<typeof setTimeout> | null = null;
       private bound = false;
+      // swipe-down-to-dismiss (touch) state
+      private dragY = 0;
+      private dragging = false;
+      private vvHandler: (() => void) | null = null;
 
       connectedCallback() {
         this.data = JSON.parse(this.querySelector('[data-pal-data]')!.textContent!);
         this.input = this.querySelector('.pal-input')!;
         this.body = this.querySelector('.pal-body')!;
         this.overlay = this.querySelector('.pal-overlay')!;
+        this.panel = this.querySelector('.pal-panel')!;
         this.setAttribute('data-empty', '');
         // listeners live on descendants of the element, which persists across
         // view transitions — guard so a re-connect never double-binds
@@ -300,11 +368,73 @@ const payload = {
           const row = (e.target as Element).closest('.pal-row') as HTMLElement | null;
           if (row) this.select(Number(row.dataset.i));
         });
+
+        // swipe-down to dismiss (touch) — drag begins only when the sheet's
+        // scroll is at the top, so downward flicks over a scrolled list scroll
+        // natively instead of closing
+        this.panel.addEventListener(
+          'touchstart',
+          (e) => {
+            if (this.body.scrollTop > 0) return;
+            this.dragging = true;
+            this.dragY = e.touches[0].clientY;
+          },
+          { passive: true }
+        );
+        this.panel.addEventListener(
+          'touchmove',
+          (e) => {
+            if (!this.dragging) return;
+            const dy = e.touches[0].clientY - this.dragY;
+            if (dy <= 0) {
+              this.panel.style.transform = '';
+              return;
+            }
+            e.preventDefault();
+            this.panel.style.transform = `translateY(${dy}px)`;
+          },
+          { passive: false }
+        );
+        const endDrag = (e: TouchEvent) => {
+          if (!this.dragging) return;
+          this.dragging = false;
+          const dy = (e.changedTouches[0]?.clientY ?? this.dragY) - this.dragY;
+          this.panel.style.transition = 'transform 180ms ease';
+          this.panel.style.transform = '';
+          setTimeout(() => (this.panel.style.transition = ''), 200);
+          if (dy > 80) this.close();
+        };
+        this.panel.addEventListener('touchend', endDrag);
+        this.panel.addEventListener('touchcancel', endDrag);
       }
 
       disconnectedCallback() {
         if (this.copyTimer) clearTimeout(this.copyTimer);
         this.copyTimer = null;
+        this.detachViewport();
+      }
+
+      /** keep the sheet above the on-screen keyboard (visualViewport) */
+      private attachViewport() {
+        const vv = window.visualViewport;
+        if (!vv || this.vvHandler) return;
+        this.vvHandler = () => {
+          this.overlay.style.setProperty('--pal-vvh', `${vv.height}px`);
+          this.overlay.style.setProperty('--pal-vvt', `${vv.offsetTop}px`);
+        };
+        this.vvHandler();
+        vv.addEventListener('resize', this.vvHandler);
+        vv.addEventListener('scroll', this.vvHandler);
+      }
+      private detachViewport() {
+        const vv = window.visualViewport;
+        if (vv && this.vvHandler) {
+          vv.removeEventListener('resize', this.vvHandler);
+          vv.removeEventListener('scroll', this.vvHandler);
+        }
+        this.vvHandler = null;
+        this.overlay.style.removeProperty('--pal-vvh');
+        this.overlay.style.removeProperty('--pal-vvt');
       }
 
       get isOpen() {
@@ -315,7 +445,9 @@ const payload = {
         this.input.value = '';
         this.setAttribute('data-empty', '');
         this.setAttribute('data-open', '');
+        this.panel.style.transform = '';
         this.render();
+        this.attachViewport();
         requestAnimationFrame(() => this.input.focus());
       }
 
@@ -325,6 +457,7 @@ const payload = {
           clearTimeout(this.copyTimer);
           this.copyTimer = null;
         }
+        this.detachViewport();
         this.input.blur();
       }
 
@@ -365,12 +498,15 @@ const payload = {
           label: p.label,
           href: p.href
         }));
-        const actions: PalItem[] = this.data.actions.map((a) => ({
-          kind: 'action',
-          label: a.label,
-          hint: a.hint,
-          action: a.action
-        }));
+        const actions: PalItem[] = this.data.actions
+          // the sheet drops "cat feed.xml" on touch (7g lists three actions)
+          .filter((a) => !isMobile() || a.action !== 'open-feed')
+          .map((a) => ({
+            kind: 'action',
+            label: a.label,
+            hint: a.hint,
+            action: a.action
+          }));
         if (!q) {
           groups.push({ label: 'PAGES', items: pages });
           groups.push({ label: 'ACTIONS', items: actions });

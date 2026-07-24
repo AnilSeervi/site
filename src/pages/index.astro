@@ -90,6 +90,7 @@ const tickerItems: [string, string][] = [
     </div>
     <as-ascii-portrait
       data-cells="50x62"
+      data-cells-mobile="29x36"
       class="as-enter"
       style="animation-delay:.1s"
       role="img"
@@ -121,7 +122,7 @@ const tickerItems: [string, string][] = [
   </div>
 
   <section class="as-enter" style="animation-delay:.48s">
-    <Section label="01 · WORK" meta="all projects ↗" metaHref="/work" external />
+    <Section label="01 · WORK" meta="all projects ↗" metaMobile="all ↗" metaHref="/work" external />
     <div class="rows work-rows">
       {
         homeProjects.map((p, i) => (
@@ -162,7 +163,7 @@ const tickerItems: [string, string][] = [
 
   <section class="as-enter" style="animation-delay:.6s">
     <div class="live-head">
-      <Section label="03 · LIVE" meta="all feeds →" metaHref="/live" />
+      <Section label="03 · LIVE" meta="all feeds →" metaMobile="all →" metaHref="/live" />
     </div>
     <as-ticker class="ticker" data-ticker data-live data-items={JSON.stringify(tickerItems)}>
       <span class="pulse" aria-hidden="true"></span>
@@ -503,6 +504,145 @@ const tickerItems: [string, string][] = [
   /* footer spacing — home's ticker owns the 60px gap (prototype) */
   .foot :global(footer) {
     margin-top: 0;
+  }
+
+  /* ================= mobile (7a) ================= */
+  @media (max-width: 768px) {
+    /* hero: name + portrait share row 1; everything else spans full width below.
+       display:contents lifts .hero-left's children into the .hero grid so the
+       portrait (a sibling) can sit beside just the name. */
+    .hero {
+      grid-template-columns: 1fr 116px;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 44px;
+    }
+    .hero-left {
+      display: contents;
+    }
+    h1 {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 34px;
+      min-height: 70px;
+      line-height: 1.08;
+      letter-spacing: -0.4px;
+      margin: 0 0 8px;
+    }
+    .caret {
+      width: 4px;
+      height: 25px;
+      margin-left: 8px;
+    }
+    /* portrait spans the name + role rows; role sits beside it in col 1 (7a) */
+    .hero as-ascii-portrait {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+    .ascii-portrait {
+      max-width: 100%;
+    }
+    .role {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: start;
+      font-size: 11.5px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .hero as-spark,
+    .intro,
+    .socials,
+    .now {
+      grid-column: 1 / -1;
+    }
+    .spark-hero {
+      margin: 2px 0 14px;
+    }
+    .intro {
+      font-size: 15px;
+      line-height: 1.7;
+      margin: 0 0 16px;
+    }
+    .socials {
+      flex-wrap: wrap;
+      font-size: 12.5px;
+    }
+    .now {
+      font-size: 11.5px;
+    }
+
+    /* proof strip wraps; the pushed line drops to its own row (7a: two rows) */
+    .proof {
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      margin-bottom: 44px;
+    }
+    .pushed {
+      margin-left: 0;
+      flex-basis: 100%;
+    }
+
+    /* work digest rows: name + chip on line 1, one-liner below; spark hidden */
+    .rows {
+      margin-bottom: 44px;
+    }
+    .prow {
+      grid-template-columns: 1fr auto;
+      gap: 3px 12px;
+      padding: 13px 0;
+      align-items: baseline;
+    }
+    .prow as-spark {
+      display: none;
+    }
+    .pname {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 18px;
+    }
+    .ptag {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: 10.5px;
+    }
+    .pdesc {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    /* writing digest */
+    .wtitle {
+      font-size: 16.5px;
+      line-height: 1.4;
+    }
+    .wdate {
+      font-size: 11px;
+    }
+    .wmore {
+      font-size: 12px;
+    }
+
+    /* live ticker — single row, 64px label */
+    .ticker {
+      gap: 11px;
+      padding: 14px 0;
+      min-height: 40px;
+      margin-bottom: 56px;
+      align-items: flex-start;
+    }
+    .tlabel {
+      width: 64px;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .tvalue {
+      font-size: 15.5px;
+      line-height: 1.5;
+    }
   }
 </style>
 

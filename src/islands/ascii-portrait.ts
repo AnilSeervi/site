@@ -6,8 +6,14 @@
  * per-cell hash shimmer ±0.08 advanced every 90ms, hover-develop gaussian σ≈80px,
  * warm tint rgb(m, .92m, .76m).
  *
- * Markup contract: <as-ascii-portrait data-cells="50x62"><canvas …></canvas></as-ascii-portrait>
+ * Markup contract: <as-ascii-portrait data-cells="50x62" data-cells-mobile="29x36">
+ *   <canvas …></canvas></as-ascii-portrait>
+ * The canvas backing store (cols·8 × rows·8, i.e. cols·4 CSS px at 2×) and CSS
+ * box are set in JS from the active cell grid, so the mobile size (7a 29×36 /
+ * 7e 52×65) is driven by the breakpoint, not the markup.
  */
+
+import { isMobile, onBreakpointChange } from './breakpoint';
 
 const GW = 60;
 const GH = 75;
@@ -64,6 +70,7 @@ class AsAsciiPortrait extends HTMLElement {
   #mouse: [number, number] | null = null;
   #queued = false;
   #lum: { L: Float32Array; gw: number; gh: number } | null = null;
+  #unsub: (() => void) | null = null;
 
   #onMove = (e: PointerEvent) => {
     const r = this.#cv!.getBoundingClientRect();
@@ -86,15 +93,37 @@ class AsAsciiPortrait extends HTMLElement {
     this.#draw();
   };
 
+  /** pick the cell grid for the current breakpoint and size the canvas from it */
+  #applySize() {
+    const attr = (isMobile() && this.dataset.cellsMobile) || this.dataset.cells || '50x62';
+    const [c, r] = attr.split('x').map(Number);
+    this.#cols = c || 50;
+    this.#rows = r || 62;
+    const cv = this.#cv;
+    if (!cv) return;
+    // CSS box = cols·4 × rows·4; backing store 2× for retina (matches the
+    // setTransform(2,…) in #draw)
+    const cssW = this.#cols * 4;
+    const cssH = this.#rows * 4;
+    cv.width = cssW * 2;
+    cv.height = cssH * 2;
+    cv.style.width = `${cssW}px`;
+    cv.style.height = `${cssH}px`;
+  }
+
   async connectedCallback() {
     this.#cv = this.querySelector('canvas');
     if (!this.#cv) return;
-    const [c, r] = (this.dataset.cells ?? '50x62').split('x').map(Number);
-    this.#cols = c || 50;
-    this.#rows = r || 62;
+    this.#applySize();
 
     this.#cv.addEventListener('pointermove', this.#onMove);
     this.#cv.addEventListener('pointerleave', this.#onLeave);
+
+    // re-size + repaint when the viewport crosses the mobile breakpoint
+    this.#unsub = onBreakpointChange(() => {
+      this.#applySize();
+      this.#draw();
+    });
 
     this.#lum = await loadPortrait();
     if (!this.isConnected) return;
@@ -113,6 +142,8 @@ class AsAsciiPortrait extends HTMLElement {
   disconnectedCallback() {
     if (this.#loop) clearInterval(this.#loop);
     this.#loop = null;
+    this.#unsub?.();
+    this.#unsub = null;
     this.#cv?.removeEventListener('pointermove', this.#onMove);
     this.#cv?.removeEventListener('pointerleave', this.#onLeave);
   }

@@ -87,8 +87,8 @@ const STRAVA_URL = 'https://www.strava.com/athletes/kazenil';
     <span
       ><span class="k-run">run</span> · <span class="k-lift">lift</span> · <span class="k-racquet"
         >racquet</span
-      > — anything that moved counts</span>
-    <span>last 90 days</span>
+      ><span class="desktop-only"> — anything that moved counts</span></span>
+    <span class="desktop-only">last 90 days</span><span class="mobile-only">last 60 days</span>
   </div>
 </as-moving>
 
@@ -227,6 +227,40 @@ const STRAVA_URL = 'https://www.strava.com/athletes/kazenil';
   @media (prefers-reduced-motion: reduce) {
     .runner {
       display: none;
+    }
+  }
+
+  /* ================= mobile (7d) ================= */
+  @media (max-width: 768px) {
+    /* route etch stacks above the vitals, full column width */
+    .mgrid {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .route {
+      width: 100%;
+      height: auto;
+    }
+    .etch-cap {
+      font-size: 10.5px;
+    }
+    .vrow {
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+    }
+    .vlabel {
+      font-size: 11px;
+    }
+    .vval {
+      font-size: 12px;
+    }
+    .strip {
+      gap: 2px;
+    }
+    .strip-meta {
+      font-size: 10.5px;
+      margin-bottom: 40px;
     }
   }
 </style>

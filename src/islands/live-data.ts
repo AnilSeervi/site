@@ -151,7 +151,12 @@ class AsLiveData extends HTMLElement {
       typeof g.total === 'number' ? g.total : days.flat().reduce((a, b) => a + (b || 0), 0);
     const el = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
     if (el) {
-      el.textContent = `${total.toLocaleString('en-US')} contributions in the last year — brass runs hotter where the weeks did`;
+      const base = `${total.toLocaleString('en-US')} contributions in the last year`;
+      // the "brass runs hotter" clause is desktop-only (7d trims it so the
+      // short total + "23 weeks shown" fit one row)
+      el.textContent = matchMedia('(max-width: 768px)').matches
+        ? base
+        : `${base} — brass runs hotter where the weeks did`;
     }
   }
 

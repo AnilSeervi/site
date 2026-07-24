@@ -21,6 +21,7 @@
  */
 import createGlobe from 'cobe';
 import type { Globe } from 'cobe';
+import { isMobile, onBreakpointChange } from './breakpoint';
 
 const BENGALURU: [number, number] = [12.9716, 77.5946];
 const PHI_START = 4.9;
@@ -47,10 +48,24 @@ class AsGlobe extends HTMLElement {
   #globe: Globe | null = null;
   #io: IntersectionObserver | null = null;
   #raf = 0;
+  #unsub: (() => void) | null = null;
+
+  /** CSS box (px) — 280 desktop / 220 mobile (7d); backing store is 2× */
+  #cssSize() {
+    return isMobile() ? 220 : 280;
+  }
+
+  /** size the canvas box for the current breakpoint (backing is set by cobe) */
+  #applyCanvasSize(cv: HTMLCanvasElement) {
+    const s = this.#cssSize();
+    cv.style.width = `${s}px`;
+    cv.style.height = `${s}px`;
+  }
 
   connectedCallback() {
     const cv = this.querySelector('canvas');
     if (!cv) return;
+    this.#applyCanvasSize(cv);
     this.#io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       this.#io?.disconnect();
@@ -58,11 +73,24 @@ class AsGlobe extends HTMLElement {
       this.#init(cv);
     });
     this.#io.observe(cv);
+    // rebuild at the new size when the viewport crosses the breakpoint
+    this.#unsub = onBreakpointChange(() => {
+      this.#applyCanvasSize(cv);
+      if (this.#globe) {
+        cancelAnimationFrame(this.#raf);
+        this.#raf = 0;
+        this.#globe.destroy();
+        this.#globe = null;
+        this.#init(cv);
+      }
+    });
   }
 
   disconnectedCallback() {
     this.#io?.disconnect();
     this.#io = null;
+    this.#unsub?.();
+    this.#unsub = null;
     cancelAnimationFrame(this.#raf);
     this.#raf = 0;
     this.#globe?.destroy();
@@ -71,11 +99,12 @@ class AsGlobe extends HTMLElement {
 
   #init(cv: HTMLCanvasElement) {
     if (this.#globe || !this.isConnected) return;
+    const backing = this.#cssSize() * 2;
     let phi = PHI_START;
     const globe = createGlobe(cv, {
       devicePixelRatio: 2,
-      width: 560,
-      height: 560,
+      width: backing,
+      height: backing,
       phi,
       theta: 0.22,
       dark: 1,

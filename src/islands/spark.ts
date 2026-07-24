@@ -9,7 +9,12 @@
  * Without (or with invalid) data-values it falls back to the prototype's
  * deterministic synthetic series (mulberry32 seed 7 + sin wave) so the visual
  * matches the design reference exactly.
+ *
+ * Mobile (7a): the hero sparkline is a touch narrower (300px full-column vs
+ * 320px). Row sparks are hidden below 768px, so only the hero re-sizes.
  */
+
+import { isMobile, onBreakpointChange } from './breakpoint';
 
 function mulberry(a: number) {
   return () => {
@@ -49,10 +54,20 @@ class AsSpark extends HTMLElement {
 
   /** set after the first paint — attribute changes before then are handled by connectedCallback */
   #drawn = false;
+  #unsub: (() => void) | null = null;
 
   connectedCallback() {
     this.#draw();
     this.#drawn = true;
+    // only the hero sparkline changes width across the breakpoint
+    if (this.dataset.kind === 'hero') {
+      this.#unsub = onBreakpointChange(() => this.#draw());
+    }
+  }
+
+  disconnectedCallback() {
+    this.#unsub?.();
+    this.#unsub = null;
   }
 
   attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null) {
@@ -80,8 +95,16 @@ class AsSpark extends HTMLElement {
     }
 
     const hero = this.dataset.kind === 'hero';
-    const w = hero ? 320 : 72;
+    const w = hero ? (isMobile() ? 300 : 320) : 72;
     const h = hero ? 22 : 18;
+    // hero sizes its own canvas (backing 2×) so the width tracks the breakpoint;
+    // row sparks keep their markup dims
+    if (hero) {
+      cv.width = w * 2;
+      cv.height = h * 2;
+      cv.style.width = `${w}px`;
+      cv.style.height = `${h}px`;
+    }
 
     // row sparks read as gentle 12-month waves in the design — bucket the
     // 52-week series down so 72px doesn't render as noise

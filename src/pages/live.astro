@@ -82,15 +82,18 @@ import Guestbook from '~/components/live/Guestbook.astro';
       </div>
       <div class="contrib-meta">
         <span data-live="contrib-total"
-          >2,437 contributions in the last year — brass runs hotter where the weeks did</span>
-        <span>52 weeks</span>
+          >2,437 contributions in the last year<span class="desktop-only">
+            — brass runs hotter where the weeks did</span
+          ></span
+        >
+        <span class="desktop-only">52 weeks</span><span class="mobile-only">23 weeks shown</span>
       </div>
     </section>
 
     <Moving />
 
     <section class="watching-sec" data-section="mal">
-      <Section label="WATCHING · MYANIMELIST" meta="weeb stats, worn proudly" />
+      <Section label="WATCHING · MYANIMELIST" meta="weeb stats, worn proudly" metaMobile="" />
       <div class="rows">
         <div class="lrow" data-row="watching">
           <span class="rlabel">airing now</span>
@@ -295,6 +298,93 @@ import Guestbook from '~/components/live/Guestbook.astro';
   /* footer gap is owned by the last section's margin (prototype) */
   .foot :global(footer) {
     margin-top: 0;
+  }
+
+  /* ================= mobile (7d) ================= */
+  @media (max-width: 768px) {
+    /* hero stacks; globe drops between the intro and the right-now rows
+       (display:contents lifts the title/sub/now-rows so order can interleave
+       the globe, a sibling of .hero-left) */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 40px;
+    }
+    .hero-left {
+      display: contents;
+    }
+    .hero-left :global(h1) {
+      order: 1;
+    }
+    .hero-left :global(.sub) {
+      order: 2;
+      margin-bottom: 26px;
+    }
+    .globe-col {
+      order: 3;
+      margin-bottom: 26px;
+    }
+    .now-rows {
+      order: 4;
+    }
+    .globe-cap {
+      font-size: 10.5px;
+    }
+
+    /* right-now rows: 76px label, still side-by-side (7d drops coords) */
+    .nrow {
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+    }
+    .nrow[data-row='coords'] {
+      display: none;
+    }
+    .nlabel {
+      font-size: 11px;
+    }
+    .nval {
+      font-size: 12px;
+    }
+    .reading {
+      font-size: 13.5px;
+    }
+    .reading em {
+      font-size: 15px;
+    }
+
+    /* listening + watching rows: label above value (7d) */
+    .rows {
+      margin-bottom: 40px;
+    }
+    .lrow {
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 11px 0;
+    }
+    .rlabel {
+      font-size: 11px;
+    }
+    .track {
+      font-size: 14px;
+    }
+    .track em {
+      font-size: 16px;
+    }
+    .shelf {
+      font-size: 12px;
+    }
+
+    /* the "brass runs hotter" clause is desktop-only, so the short total +
+       "23 weeks shown" fit one space-between row (7d) */
+    .contrib-wrap {
+      margin-bottom: 10px;
+    }
+    .contrib-meta {
+      font-size: 10.5px;
+      margin-bottom: 40px;
+    }
   }
 </style>
 

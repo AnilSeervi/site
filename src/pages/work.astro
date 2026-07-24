@@ -202,40 +202,125 @@ import { experience, projects } from '~/config/site';
   :global(main > footer:last-child) {
     margin-top: 64px;
   }
+
+  /* ================= mobile (7b) ================= */
+  @media (max-width: 768px) {
+    .xp-list {
+      margin-bottom: 40px;
+    }
+    .xp-row {
+      padding: 13px 0;
+    }
+    .xp-name {
+      font-size: 18px;
+    }
+    .xp-desc {
+      display: block;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .xp-meta {
+      font-size: 11px;
+    }
+
+    /* why-line sits above the list; tap a row to fill it (JS below) */
+    .why-slot {
+      min-height: 42px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      margin: 0 0 10px;
+    }
+    .os-list {
+      margin-bottom: 48px;
+    }
+    .os-row {
+      grid-template-columns: 1fr auto;
+      gap: 3px 12px;
+      padding: 13px 0;
+      align-items: baseline;
+    }
+    .os-row as-spark {
+      display: none;
+    }
+    .os-name {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 18px;
+    }
+    .status {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: 10.5px;
+    }
+    .os-desc {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    :global(main > footer:last-child) {
+      margin-top: 48px;
+    }
+  }
 </style>
 
 <script>
   import '~/islands/spark';
   import '~/islands/home-data';
+  import { isMobile, onBreakpointChange } from '~/islands/breakpoint';
 
   if (!customElements.get('as-whyslot')) {
     class AsWhyslot extends HTMLElement {
       #slot: HTMLElement | null = null;
       #list: HTMLElement | null = null;
       #rows: HTMLElement[] = [];
-      #defaultText = '';
+      #showingDefault = true;
+      #unsub: (() => void) | null = null;
+
+      // desktop reveals on hover; mobile on tap (README 7b) — the prompt copy
+      // follows the active affordance
+      #defaultText() {
+        return isMobile() ? '— tap a project for the why' : '— hover a project for the why';
+      }
 
       #enter = (event: Event) => {
         const why = (event.currentTarget as HTMLElement).dataset.why;
-        if (this.#slot && why) this.#slot.textContent = why;
+        if (this.#slot && why) {
+          this.#slot.textContent = why;
+          this.#showingDefault = false;
+        }
       };
 
       #reset = () => {
-        if (this.#slot) this.#slot.textContent = this.#defaultText;
+        if (this.#slot) this.#slot.textContent = this.#defaultText();
+        this.#showingDefault = true;
       };
 
       connectedCallback() {
         this.#slot = this.querySelector('[data-why-slot]');
-        this.#defaultText = this.#slot?.textContent ?? '';
         this.#list = this.querySelector('[data-why-list]');
         this.#rows = Array.from(this.querySelectorAll<HTMLElement>('[data-why]'));
-        this.#rows.forEach((row) => row.addEventListener('mouseenter', this.#enter));
+        this.#reset();
+        this.#rows.forEach((row) => {
+          row.addEventListener('mouseenter', this.#enter);
+          row.addEventListener('click', this.#enter); // touch
+        });
         this.#list?.addEventListener('mouseleave', this.#reset);
+        // keep the prompt's hover/tap wording correct across a bp crossing
+        this.#unsub = onBreakpointChange(() => {
+          if (this.#showingDefault) this.#reset();
+        });
       }
 
       disconnectedCallback() {
-        this.#rows.forEach((row) => row.removeEventListener('mouseenter', this.#enter));
+        this.#rows.forEach((row) => {
+          row.removeEventListener('mouseenter', this.#enter);
+          row.removeEventListener('click', this.#enter);
+        });
         this.#list?.removeEventListener('mouseleave', this.#reset);
+        this.#unsub?.();
+        this.#unsub = null;
         this.#rows = [];
         this.#slot = null;
         this.#list = null;

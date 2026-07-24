@@ -88,7 +88,7 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
     }
 
     <div class="jar">
-      <Section label="SNIPPET JAR" meta="css, js & serverless tricks" mb={14} />
+      <Section label="SNIPPET JAR" meta="css, js & serverless tricks" metaMobile="" mb={14} />
       <div class="jar-rows">
         {
           snippets.map((s) => (
@@ -282,10 +282,61 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
   .wrap :global(footer) {
     margin-top: 0;
   }
+
+  /* ================= mobile (7c) ================= */
+  @media (max-width: 768px) {
+    /* title over full-width search */
+    .head {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .search {
+      width: 100%;
+      padding: 11px 14px;
+    }
+    .preview {
+      min-height: 44px;
+      font-size: 14.5px;
+      margin: 0 0 20px;
+    }
+    .ghost {
+      font-size: 84px;
+      right: -2px;
+      top: -30px;
+    }
+    .year {
+      font-size: 11px;
+    }
+    .rows {
+      margin-bottom: 32px;
+    }
+    .group:last-of-type .rows {
+      margin-bottom: 40px;
+    }
+    .row {
+      padding: 12px 0;
+    }
+    .title {
+      font-size: 17px;
+      line-height: 1.4;
+    }
+    .date {
+      font-size: 11px;
+    }
+    .jar-rows {
+      margin-bottom: 44px;
+    }
+    .snip {
+      font-size: 14px;
+    }
+  }
 </style>
 
 <script>
   import '~/islands/dot-field';
+  import { isMobile } from '~/islands/breakpoint';
 
   class ASSearch extends HTMLElement {
     #input: HTMLInputElement | null = null;
@@ -301,7 +352,13 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
     connectedCallback() {
       this.#input = this.querySelector<HTMLInputElement>('[data-search-input]');
       const preview = this.querySelector<HTMLElement>('[data-preview]');
-      const fallback = preview?.textContent?.trim() ?? '';
+      let fallback = preview?.textContent?.trim() ?? '';
+      // touch has no hover: the opening-line fill is skipped on mobile (rows
+      // navigate on tap), so the prompt reads "tap" and stays as the default
+      if (isMobile() && preview) {
+        fallback = '— tap an article; its opening line appears here';
+        preview.textContent = fallback;
+      }
 
       this.querySelectorAll<HTMLElement>('[data-row]').forEach((row) => {
         row.addEventListener('mouseenter', () => {
