@@ -4,6 +4,11 @@
 --------------------------------------------------------------------------- */
 
 :root {
+  /* the browser's default canvas is light — without this it flashes white
+     for a frame during navigation (behind the view-transition snapshots, and
+     on overscroll/scrollbars). Declaring the scheme makes that UA canvas dark. */
+  color-scheme: dark;
+
   /* color tokens */
   --bg: #0f0d0b;
   --surface: #141110;
@@ -180,6 +185,74 @@ a {
   animation: as-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ---- loading / waiting states (design_handoff_loading_states) ----
+   The rule: never render a value you don't have. Labels, rules and section
+   headers are static; only the value slot is absent, its space reserved.
+   Skeletons breathe (never shimmer-sweep); values fade in on arrival. */
+@keyframes as-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.34;
+  }
+}
+@keyframes as-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes as-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* skeleton bar — height/width set inline (a plausible fraction, never 100%).
+   primary fill .07; .sk-dim .06 and .sk-faint .05 for secondary lines. */
+.sk {
+  border-radius: 3px;
+  background: rgba(237, 230, 218, 0.07);
+}
+.sk-dim {
+  background: rgba(237, 230, 218, 0.06);
+}
+.sk-faint {
+  background: rgba(237, 230, 218, 0.05);
+}
+
+/* phase gating — an island carries data-load = idle | waiting | arrived.
+   [data-sk] holds the skeleton, [data-val] the real value; exactly one shows.
+   idle (pre-180ms): neither — the row's reserved min-height holds the space,
+   so data resolving under 180ms goes straight to the value with no flash.
+
+   The island tag prefix (:is) is load-bearing: it lifts the specificity to
+   (0,2,1) so these win over Astro's *scoped* component rules — a scoped
+   `.foo` compiles to `.foo[data-astro-cid…]` (0,2,0), which would otherwise
+   tie and let a component's own `display:` leave a skeleton on screen. */
+:is(as-live-data, as-moving)[data-load] [data-sk] {
+  display: none;
+}
+:is(as-live-data, as-moving)[data-load='waiting'] [data-sk] {
+  display: block;
+  animation: as-breathe 1.7s ease-in-out infinite;
+}
+/* value hidden until arrived, then it keeps whatever display its own CSS sets */
+:is(as-live-data, as-moving)[data-load='idle'] [data-val],
+:is(as-live-data, as-moving)[data-load='waiting'] [data-val] {
+  display: none;
+}
+:is(as-live-data, as-moving)[data-load='arrived'] [data-val] {
+  animation: as-fade 0.45s ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -187,5 +260,10 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* skeletons stop breathing and sit statically at .34 (the global override
+     above would otherwise freeze them at the 0% frame — full opacity) */
+  :is(as-live-data, as-moving)[data-load='waiting'] [data-sk] {
+    opacity: 0.34;
   }
 }

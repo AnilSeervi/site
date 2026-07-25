@@ -25,8 +25,7 @@
  * section whose rows all vanished is hidden with them.
  */
 
-// module scope (islands without imports are global scripts to TS)
-export {};
+import { LoadPhase } from './loadphase';
 
 interface SpotifyNow {
   title: string;
@@ -75,8 +74,15 @@ function alive<T extends { disabled?: boolean }>(r: PromiseSettledResult<T>): T 
 }
 
 class AsLiveData extends HTMLElement {
+  #phase = new LoadPhase(this);
+
   connectedCallback() {
+    this.#phase.start();
     void this.#load();
+  }
+
+  disconnectedCallback() {
+    this.#phase.cancel();
   }
 
   async #load() {
@@ -89,11 +95,17 @@ class AsLiveData extends HTMLElement {
     // view transition may have swapped this subtree away mid-flight
     if (!this.isConnected) return;
 
-    this.#applySpotify(alive(spotify));
-    this.#applyGithub(alive(github));
-    this.#applyMal(alive(mal));
-    this.#applyWeather(alive(weather));
-    this.#pruneSections();
+    // hold the skeletons until min-show, then fill + fade the values in
+    this.#phase.settle(() => {
+      this.#applySpotify(alive(spotify));
+      this.#applyGithub(alive(github));
+      this.#applyMal(alive(mal));
+      this.#applyWeather(alive(weather));
+      // the LISTENING phase note flips to 'live' once the section resolves
+      const note = this.querySelector<HTMLElement>('[data-live="phase-note"]');
+      if (note) note.textContent = 'live';
+      this.#pruneSections();
+    });
   }
 
   #hideRow(name: string) {
@@ -138,18 +150,24 @@ class AsLiveData extends HTMLElement {
   }
 
   #applyGithub(g: GithubRes | null) {
+    const wrap = this.querySelector<HTMLElement>('[data-contrib]');
+    const el = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
+
+    // didn't answer → the empty dot-grid stays, the caption says why (8b).
+    // (the contribution grid is never faked — no zeros, no synthetic field.)
     if (!g || !Array.isArray(g.days)) {
-      const sec = this.querySelector<HTMLElement>('[data-section="github"]');
-      if (sec) sec.style.display = 'none';
+      if (el) el.textContent = 'github is quiet — try later';
       return;
     }
+
     const days = g.days;
     const contrib = this.querySelector('as-contrib');
     if (contrib) contrib.setAttribute('data-values', JSON.stringify(days));
+    // reveal the real canvas (fade), drop the dot-field placeholder
+    wrap?.classList.add('arrived');
 
     const total =
       typeof g.total === 'number' ? g.total : days.flat().reduce((a, b) => a + (b || 0), 0);
-    const el = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
     if (el) {
       const base = `${total.toLocaleString('en-US')} contributions in the last year`;
       // the "brass runs hotter" clause is desktop-only (7d trims it so the

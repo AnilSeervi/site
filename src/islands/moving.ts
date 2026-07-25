@@ -21,6 +21,7 @@
 
 import polyline from '@mapbox/polyline';
 import { isMobile, onBreakpointChange } from './breakpoint';
+import { LoadPhase } from './loadphase';
 
 type Bucket = 'run' | 'lift' | 'racquet';
 
@@ -106,10 +107,21 @@ function heatPhrase(hour: number): string {
 class AsMoving extends HTMLElement {
   #io: IntersectionObserver | null = null;
   #unsub: (() => void) | null = null;
+  #phase = new LoadPhase(this);
   /** kept so the strip can be rebuilt (60d ↔ 90d) on a breakpoint crossing */
   #days: MovingDay[] | null = null;
+  /** connect time — a fetch resolving under 180ms skips the route loader */
+  #t0 = 0;
+  /** route GPS-acquire lock→unfurl→settle timers */
+  #etchT1: ReturnType<typeof setTimeout> | null = null;
+  #etchT2: ReturnType<typeof setTimeout> | null = null;
 
   connectedCallback() {
+    // reveal the shell (labels + rule + placeholders); the skeletons breathe
+    // in only after the 180ms gate, values fade in once data lands
+    this.#t0 = performance.now();
+    this.hidden = false;
+    this.#phase.start();
     void this.#load();
     this.#unsub = onBreakpointChange(() => {
       if (this.#days) this.#buildStrip(this.#days);
@@ -117,6 +129,11 @@ class AsMoving extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.#phase.cancel();
+    if (this.#etchT1) clearTimeout(this.#etchT1);
+    if (this.#etchT2) clearTimeout(this.#etchT2);
+    this.#etchT1 = null;
+    this.#etchT2 = null;
     this.#io?.disconnect();
     this.#io = null;
     this.#unsub?.();
@@ -132,16 +149,23 @@ class AsMoving extends HTMLElement {
     if (!this.isConnected) return;
 
     const s = alive(moving);
-    // feed disabled or down (nulls + empty days) → the section never shows
-    if (!s || !Array.isArray(s.days) || s.days.length === 0) return;
+    // didn't answer / disabled / empty → hide the whole block, no zeros (8b)
+    if (!s || !Array.isArray(s.days) || s.days.length === 0) {
+      this.#phase.cancel();
+      this.hidden = true;
+      return;
+    }
+    const days = s.days;
     const f = alive(fitness);
 
-    this.#days = s.days;
-    this.#applyEtch(s.latest ?? null);
-    this.#applyVitals(s.latest ?? null, s.month ?? null, f);
-    this.#buildStrip(s.days);
-
-    this.hidden = false;
+    // hold the skeletons until min-show, then fill + reveal (route draws,
+    // vitals fade, strip rises — all gated on data-load="arrived" in CSS)
+    this.#phase.settle(() => {
+      this.#days = days;
+      this.#applyEtch(s.latest ?? null);
+      this.#applyVitals(s.latest ?? null, s.month ?? null, f);
+      this.#buildStrip(days);
+    });
   }
 
   #hideRow(name: string) {
@@ -201,18 +225,41 @@ class AsMoving extends HTMLElement {
 
     this.querySelector('[data-route-base]')?.setAttribute('d', d);
     this.querySelector('[data-route-runner]')?.setAttribute('d', d);
-    const start = this.querySelector('[data-route-start]');
-    start?.setAttribute('cx', px(0));
-    start?.setAttribute('cy', py(0));
 
+    const base = this.querySelector<SVGPathElement>('[data-route-base]');
+    const fix = this.querySelector<SVGGElement>('[data-route-fix]');
     const cap = this.querySelector<HTMLElement>('[data-live="etch-cap"]');
-    if (cap) {
-      const when = istDate(latest.startedAt);
-      const weekday = when ? WEEKDAYS[when.getUTCDay()] : null;
-      cap.textContent = weekday
-        ? `the shape of ${weekday} — ${latest.name.toLowerCase()}`
-        : `the shape of it — ${latest.name.toLowerCase()}`;
+    const when = istDate(latest.startedAt);
+    const weekday = when ? WEEKDAYS[when.getUTCDay()] : null;
+    const shape = weekday
+      ? `the shape of ${weekday} — ${latest.name.toLowerCase()}`
+      : `the shape of it — ${latest.name.toLowerCase()}`;
+
+    // lock the fix dot onto the route's start point (it slides there from centre)
+    if (fix) fix.style.transform = `translate(${px(0)}px,${py(0)}px)`;
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const instant = performance.now() - this.#t0 < 180;
+
+    // cached / reduced motion → no loader: the route is simply there, whole
+    if (reduced || instant) {
+      if (base) base.style.strokeDashoffset = '0';
+      this.classList.add('settled');
+      if (cap) cap.textContent = shape;
+      return;
     }
+
+    // GPS-acquire: keep pinging through the lock slide, then unfurl, then settle
+    this.classList.add('locking');
+    this.#etchT1 = setTimeout(() => {
+      if (!this.isConnected) return;
+      this.classList.remove('locking');
+      this.classList.add('unfurl');
+      if (cap) cap.textContent = shape;
+      this.#etchT2 = setTimeout(() => {
+        if (this.isConnected) this.classList.add('settled');
+      }, 1150);
+    }, 640);
   }
 
   // ---- vitals rows ---------------------------------------------------------

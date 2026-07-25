@@ -136,10 +136,17 @@ class AsGuestbook extends HTMLElement {
     if (me.status === 'fulfilled' && me.value?.user) this.#user = me.value.user;
     this.#applyAuthState();
 
+    // fetch OK → the API is the source of truth: render real entries, or the
+    // 'be the first to sign' empty state (8b). Fetch failed → leave the SSR
+    // quotes (real archived entries — a value we do have, not a fake).
     const entries = gb.status === 'fulfilled' ? gb.value?.entries : null;
-    if (Array.isArray(entries) && entries.length) {
+    if (Array.isArray(entries)) {
       const list = this.querySelector('[data-gb-entries]');
-      if (list) list.replaceChildren(...entries.map((e) => this.#renderEntry(e)));
+      if (list) {
+        list.replaceChildren(
+          ...(entries.length ? entries.map((e) => this.#renderEntry(e)) : [this.#emptyNode()])
+        );
+      }
     }
 
     this.#wire();
@@ -230,6 +237,17 @@ class AsGuestbook extends HTMLElement {
     } catch {
       node.remove();
     }
+  }
+
+  /** empty guestbook (8b) — an invitation in the entries' own quote style */
+  #emptyNode(): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'gb-entry gb-empty';
+    const q = document.createElement('span');
+    q.className = 'gb-q';
+    q.textContent = 'be the first to sign';
+    wrap.append(q);
+    return wrap;
   }
 
   /** Build an entry node — textContent only, user content is never markup. */

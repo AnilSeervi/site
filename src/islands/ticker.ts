@@ -4,13 +4,16 @@
  * `transition: opacity .25s ease`). Items come from the data-items JSON
  * attribute.
  *
- * With the `data-live` attribute present, it also fetches /api/spotify,
- * /api/github, /api/moving and /api/mal (allSettled — one dead feed never
- * blocks the rest) and builds live items. The placeholders keep rotating while the fetches are
- * in flight; once ≥2 live items resolve, the rotation swaps to them at the
- * next opacity dip (index reset to 0 inside the dip, so there's no visual
- * jump). If fewer than 2 live items resolve, the placeholders stay — better
- * a plausible lie than a broken one-item ticker.
+ * Loading (design_handoff_loading_states 8b): the SSR state is the waiting
+ * line — an inert dot + `❯ listening for signals…`, carried by
+ * `data-load="waiting"`. Never a faked feed value.
+ *
+ * With the `data-live` attribute present it fetches /api/spotify, /api/github,
+ * /api/moving and /api/mal (allSettled — one dead feed never blocks the rest)
+ * and builds live items from whatever answered. Once ≥1 real item resolves the
+ * island leaves the waiting state, lights the pulse, shows the label and
+ * rotates (a lone item just sits). Nothing answered → the waiting line stays;
+ * a feed older than ~48h simply never joins the cycle.
  */
 
 type Item = [string, string];
@@ -70,8 +73,6 @@ class AsTicker extends HTMLElement {
   #dip: ReturnType<typeof setTimeout> | null = null;
   #idx = 0;
   #items: Item[] = [];
-  /** live items waiting to be swapped in at the next dip */
-  #pending: Item[] | null = null;
   #label: HTMLElement | null = null;
   #value: HTMLElement | null = null;
 
@@ -94,19 +95,12 @@ class AsTicker extends HTMLElement {
   }
 
   #start() {
-    if (this.#iv || this.#items.length < 2) return; // nothing to rotate (yet)
+    if (this.#iv || this.#items.length < 2) return; // a lone item just sits
     this.#iv = setInterval(() => {
       this.#label!.style.opacity = '0';
       this.#value!.style.opacity = '0';
       this.#dip = setTimeout(() => {
-        if (this.#pending) {
-          // live feed landed — swap the whole rotation while faded out
-          this.#items = this.#pending;
-          this.#pending = null;
-          this.#idx = 0;
-        } else {
-          this.#idx = (this.#idx + 1) % this.#items.length;
-        }
+        this.#idx = (this.#idx + 1) % this.#items.length;
         const [l, v] = this.#items[this.#idx]!;
         this.#label!.textContent = l;
         this.#value!.textContent = v;
@@ -114,6 +108,21 @@ class AsTicker extends HTMLElement {
         this.#value!.style.opacity = '1';
       }, 260);
     }, 3400);
+  }
+
+  /** leave the waiting line — a real signal answered; light the dot + rotate */
+  #activate(items: Item[]) {
+    this.#items = items;
+    this.#idx = 0;
+    delete this.dataset.load; // drops data-load="waiting" → live styling
+    const [l, v] = items[0]!;
+    if (this.#label && this.#value) {
+      this.#label.textContent = l;
+      this.#value.textContent = v;
+      this.#label.style.opacity = '1';
+      this.#value.style.opacity = '1';
+    }
+    this.#start();
   }
 
   async #loadLive() {
@@ -173,22 +182,9 @@ class AsTicker extends HTMLElement {
       items.push(['reading', r.title === 'Berserk' ? `${r.title} — the long haul` : r.title]);
     }
 
-    // <2 live items → keep the placeholders. A believable static rotation
-    // beats a single frozen line or an empty strip.
-    if (items.length < 2 || !this.isConnected) return;
-    if (this.#iv) {
-      this.#pending = items; // swapped in at the next dip
-    } else {
-      // placeholders were too few to rotate — start straight on live items
-      this.#items = items;
-      this.#idx = 0;
-      const [l, v] = items[0]!;
-      if (this.#label && this.#value) {
-        this.#label.textContent = l;
-        this.#value.textContent = v;
-      }
-      this.#start();
-    }
+    // nothing answered (or all feeds stale) → keep the waiting line (8b)
+    if (!items.length || !this.isConnected) return;
+    this.#activate(items);
   }
 
   disconnectedCallback() {
@@ -196,7 +192,6 @@ class AsTicker extends HTMLElement {
     if (this.#dip) clearTimeout(this.#dip);
     this.#iv = null;
     this.#dip = null;
-    this.#pending = null;
   }
 }
 

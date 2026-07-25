@@ -13,7 +13,7 @@ import Guestbook from '~/components/live/Guestbook.astro';
   description="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
   ogImage="/og/live.png"
 >
-  <as-live-data>
+  <as-live-data data-load="idle">
     <!-- hero: title + right-now rows beside the 280px globe column -->
     <div class="hero">
       <div class="hero-left">
@@ -28,7 +28,10 @@ import Guestbook from '~/components/live/Guestbook.astro';
           </div>
           <div class="nrow" data-row="weather">
             <span class="nlabel">weather</span>
-            <span class="nval" data-live="weather">28° · monsoon clouds</span>
+            <span class="nvcell">
+              <span class="sk" data-sk style="height:12px;width:58%"></span>
+              <span class="nval" data-val data-live="weather"></span>
+            </span>
           </div>
           <div class="nrow" data-row="coords">
             <span class="nlabel">coords</span>
@@ -36,8 +39,11 @@ import Guestbook from '~/components/live/Guestbook.astro';
           </div>
           <div class="nrow" data-row="reading">
             <span class="nlabel">reading</span>
-            <span class="reading" data-live="reading"><em data-part="title">Berserk</em><span
-                data-part="tail"> — the long haul</span></span>
+            <span class="nvcell">
+              <span class="sk sk-faint" data-sk style="height:14px;width:52%"></span>
+              <span class="reading" data-val data-live="reading"><em data-part="title"></em><span
+                  data-part="tail"></span></span>
+            </span>
           </div>
         </div>
       </div>
@@ -48,21 +54,27 @@ import Guestbook from '~/components/live/Guestbook.astro';
     </div>
 
     <section data-section="spotify">
-      <Section label="LISTENING · SPOTIFY" />
+      <Section label="LISTENING · SPOTIFY" phaseNote />
       <div class="rows">
         <div class="lrow" data-row="now">
           <span class="rlabel eq-label"
-            ><span class="eq playing" data-eq aria-hidden="true"><span></span><span></span><span
+            ><span class="eq" data-eq aria-hidden="true"><span></span><span></span><span
               ></span></span>now</span>
-          <span class="track hi" data-live="now"><em data-part="title">One More Time</em><span
-              data-part="tail"> — Daft Punk · </span><span class="ctx" data-part="ctx"
-              >discovery weekly</span></span>
+          <span class="tcell">
+            <span class="sk-now" data-sk aria-hidden="true"
+              ><span style="height:15px;width:54%"></span><span
+                class="sk-faint" style="height:10px;width:31%"></span></span>
+            <span class="track hi" data-val data-live="now"><em data-part="title"></em><span
+                data-part="tail"></span><span class="ctx" data-part="ctx"></span></span>
+          </span>
         </div>
         <div class="lrow" data-row="last">
           <span class="rlabel">last played</span>
-          <span class="track muted" data-live="last"><em data-part="title"
-              >Harder, Better, Faster, Stronger</em><span data-part="tail"> — Daft Punk</span
-            ></span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:40%"></span>
+            <span class="track muted" data-val data-live="last"><em data-part="title"></em><span
+                data-part="tail"></span></span>
+          </span>
         </div>
       </div>
     </section>
@@ -74,18 +86,15 @@ import Guestbook from '~/components/live/Guestbook.astro';
         metaHref="https://github.com/AnilSeervi"
         external
       />
-      <div class="contrib-wrap">
+      <div class="contrib-wrap" data-contrib>
+        <span class="gh-sk" data-gh-sk aria-hidden="true"></span>
         <as-contrib>
           <canvas width="1404" height="182" style="width:702px;height:91px" aria-hidden="true"
           ></canvas>
         </as-contrib>
       </div>
       <div class="contrib-meta">
-        <span data-live="contrib-total"
-          >2,437 contributions in the last year<span class="desktop-only">
-            — brass runs hotter where the weeks did</span
-          ></span
-        >
+        <span data-live="contrib-total"></span>
         <span class="desktop-only">52 weeks</span><span class="mobile-only">23 weeks shown</span>
       </div>
     </section>
@@ -97,15 +106,19 @@ import Guestbook from '~/components/live/Guestbook.astro';
       <div class="rows">
         <div class="lrow" data-row="watching">
           <span class="rlabel">airing now</span>
-          <span class="track hi" data-live="watching"><em data-part="title">Sousou no Frieren</em
-            ><span data-part="tail"> 2nd season — episode 5 of 10</span></span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:60%"></span>
+            <span class="track hi" data-val data-live="watching"><em data-part="title"></em><span
+                data-part="tail"></span></span>
+          </span>
         </div>
         <div class="lrow" data-row="shelf">
           <span class="rlabel">the shelf</span>
-          <span class="shelf" data-live="shelf"><span data-part="head"
-              >112 anime · 2,940 episodes · 49.6 days · mean </span><span
-              class="accent"
-              data-part="mean">9.21</span></span>
+          <span class="tcell">
+            <span class="sk sk-dim" data-sk aria-hidden="true" style="height:13px;width:55%"></span>
+            <span class="shelf" data-val data-live="shelf"><span data-part="head"></span><span
+                class="accent" data-part="mean"></span></span>
+          </span>
         </div>
       </div>
     </section>
@@ -298,6 +311,77 @@ import Guestbook from '~/components/live/Guestbook.astro';
   /* footer gap is owned by the last section's margin (prototype) */
   .foot :global(footer) {
     margin-top: 0;
+  }
+
+  /* ================= loading / waiting (8a) ================= */
+  /* each value cell stacks a skeleton over the real value; only one shows
+     (global [data-load] gating), the row min-heights hold the space */
+  .tcell,
+  .nvcell {
+    min-width: 0;
+  }
+  /* 'now' skeleton is two stacked bars — center it against the eq label */
+  .lrow[data-row='now'] {
+    align-items: center;
+  }
+  /* two stacked bars; display is owned by the global [data-load] gating, so
+     the gap rides on margin (flex here would be overridden to block) */
+  .sk-now span {
+    display: block;
+    border-radius: 3px;
+    background: rgba(237, 230, 218, 0.07);
+  }
+  .sk-now span + span {
+    margin-top: 8px;
+  }
+  .sk-now span.sk-faint {
+    background: rgba(237, 230, 218, 0.05);
+  }
+
+  /* equalizer sits dim but still animating while the feed is fetching (8a) */
+  .eq {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+  as-live-data[data-load='waiting'] .eq {
+    opacity: 0.25;
+  }
+  as-live-data[data-load='waiting'] .eq span {
+    animation-play-state: running;
+  }
+
+  /* github: dot-field placeholder holds the 91px grid until the canvas lands;
+     it also IS the 'didn't answer' state (stays, caption reads the error) */
+  .contrib-wrap {
+    position: relative;
+    min-height: 91px;
+  }
+  .gh-sk {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(237, 230, 218, 0.07) 2px, transparent 2.6px);
+    background-size: 13.5px 13px;
+    background-position: 2px 2px;
+    animation: as-breathe 1.9s ease-in-out infinite;
+  }
+  .contrib-wrap as-contrib canvas {
+    opacity: 0;
+  }
+  .contrib-wrap.arrived .gh-sk {
+    display: none;
+  }
+  .contrib-wrap.arrived as-contrib canvas {
+    opacity: 1;
+    animation: as-fade 0.5s ease both;
+  }
+  /* reserve the meta line so the empty → text (or error) swap never reflows */
+  .contrib-meta {
+    min-height: 16px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gh-sk {
+      opacity: 0.34;
+    }
   }
 
   /* ================= mobile (7d) ================= */

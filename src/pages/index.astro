@@ -35,16 +35,6 @@ const shortDate = (d: Date) =>
   `${d.toLocaleString('en-US', { month: 'short' }).toLowerCase()} ’${String(d.getFullYear()).slice(2)}`;
 
 const homeProjects = projects.filter((p) => p.home);
-
-/** placeholder ticker items (prototype TICK) — shown while the live feeds load;
- *  <as-ticker data-live> swaps in real /api/spotify+github+mal items once ≥2 resolve */
-const tickerItems: [string, string][] = [
-  ['listening', 'One More Time — Daft Punk'],
-  ['shipping', '3 commits to devfolio, earlier today'],
-  ['moving', '8.2km around cubbon park, this morning'],
-  ['watching', 'Sousou no Frieren s2 — episode 5 of 10'],
-  ['reading', 'Berserk — the long haul']
-];
 ---
 
 <Base>
@@ -165,10 +155,13 @@ const tickerItems: [string, string][] = [
     <div class="live-head">
       <Section label="03 · LIVE" meta="all feeds →" metaMobile="all →" metaHref="/live" />
     </div>
-    <as-ticker class="ticker" data-ticker data-live data-items={JSON.stringify(tickerItems)}>
+    <!-- waiting state (design_handoff_loading_states 8b): an inert dot + the
+         ❯ prompt, no faked feed line. The island swaps in real signals as the
+         feeds answer and only then lights the pulse + shows the label. -->
+    <as-ticker class="ticker" data-ticker data-live data-load="waiting">
       <span class="pulse" aria-hidden="true"></span>
-      <span class="tlabel" data-ticker-label>listening</span>
-      <span class="tvalue" data-ticker-value>One More Time — Daft Punk</span>
+      <span class="tlabel" data-ticker-label></span>
+      <span class="tvalue" data-ticker-value>❯ listening for signals…</span>
     </as-ticker>
   </section>
 
@@ -487,6 +480,22 @@ const tickerItems: [string, string][] = [
     font-size: 17px;
     color: var(--text);
     transition: opacity 0.25s ease;
+  }
+
+  /* waiting (8b): inert grey dot, no label, the prompt line reads mono/muted
+     — never a faked feed value. The island clears data-load once a signal lands. */
+  as-ticker[data-load='waiting'] .pulse {
+    background: rgba(237, 230, 218, 0.14);
+    animation: none;
+  }
+  as-ticker[data-load='waiting'] .tlabel {
+    display: none;
+  }
+  as-ticker[data-load='waiting'] .tvalue {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 12.5px;
+    color: var(--faint);
   }
 
   as-ticker {

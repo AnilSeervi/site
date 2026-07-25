@@ -101,26 +101,34 @@ class AsGlobe extends HTMLElement {
     if (this.#globe || !this.isConnected) return;
     const backing = this.#cssSize() * 2;
     let phi = PHI_START;
-    const globe = createGlobe(cv, {
-      devicePixelRatio: 2,
-      width: backing,
-      height: backing,
-      phi,
-      theta: 0.22,
-      dark: 1,
-      diffuse: 1.15,
-      mapSamples: 16000,
-      mapBrightness: 4.5,
-      baseColor: [0.24, 0.22, 0.19],
-      markerColor: accentRgb(),
-      glowColor: [0.07, 0.06, 0.055],
-      // cobe v2: markerElevation defaults high enough to float the dot off the
-      // sphere near the limb (pin near the surface), and marker size renders
-      // ~2× larger than the v0.6 scale the prototype was specced against —
-      // 0.045 here reads like the reference's 0.09
-      markerElevation: 0.01,
-      markers: [{ location: BENGALURU, size: 0.045 }]
-    });
+    let globe: Globe;
+    try {
+      globe = createGlobe(cv, {
+        devicePixelRatio: 2,
+        width: backing,
+        height: backing,
+        phi,
+        theta: 0.22,
+        dark: 1,
+        diffuse: 1.15,
+        mapSamples: 16000,
+        mapBrightness: 4.5,
+        baseColor: [0.24, 0.22, 0.19],
+        markerColor: accentRgb(),
+        glowColor: [0.07, 0.06, 0.055],
+        // cobe v2: markerElevation defaults high enough to float the dot off the
+        // sphere near the limb (pin near the surface), and marker size renders
+        // ~2× larger than the v0.6 scale the prototype was specced against —
+        // 0.045 here reads like the reference's 0.09
+        markerElevation: 0.01,
+        markers: [{ location: BENGALURU, size: 0.045 }]
+      });
+    } catch {
+      // WebGL unsupported → hide the globe box, keep the caption alone (8b).
+      // The caption lives outside <as-globe> in live.astro, so it survives.
+      this.style.display = 'none';
+      return;
+    }
     this.#globe = globe;
 
     // reduced motion: globe still renders, phi never advances; the loop
