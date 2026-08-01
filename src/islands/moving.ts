@@ -23,7 +23,7 @@ import polyline from '@mapbox/polyline';
 import { isMobile, onBreakpointChange } from './breakpoint';
 import { LoadPhase } from './loadphase';
 
-type Bucket = 'run' | 'lift' | 'racquet';
+type Bucket = 'run' | 'lift' | 'racquet' | 'other';
 
 interface MovingLatest {
   name: string;
@@ -39,6 +39,12 @@ interface MovingDay {
   date: string;
   seconds: number;
   bucket: Bucket | 'rest';
+  /** detail for the hover readout — absent on rest days (see lib/moving.ts) */
+  count?: number;
+  parts?: Array<{ bucket: Bucket; seconds: number }>;
+  names?: string[];
+  km?: number;
+  pace?: string;
 }
 interface MovingRes {
   disabled?: boolean;
@@ -51,6 +57,7 @@ interface FitnessRes {
   disabled?: boolean;
   vo2max?: number | null;
   restingHr?: number | null;
+  vo2maxRating?: string | null;
   source?: string;
 }
 
@@ -65,7 +72,8 @@ const IST_OFFSET_MIN = 330;
 const BAR_COLORS: Record<Bucket, string> = {
   run: 'var(--as-accent)',
   lift: 'var(--live-green)',
-  racquet: 'var(--quote)'
+  racquet: 'var(--quote)',
+  other: 'var(--meta)'
 };
 const REST_COLOR = 'rgba(237,230,218,.12)';
 
@@ -90,6 +98,8 @@ const WEEKDAYS = [
   'saturday'
 ] as const;
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
+
 /** IST wall clock of a UTC instant */
 function istDate(iso: string): Date | null {
   const t = Date.parse(iso);
@@ -104,12 +114,38 @@ function heatPhrase(hour: number): string {
   return 'after the heat';
 }
 
+/**
+ * Coarse duration for the strip readout — `42m`, `1h12`, `<1m`. The vitals row
+ * keeps m:ss precision because it's a record; the strip is a scan.
+ */
+function coarse(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return '<1m';
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+}
+
+/** 'sat jul 18' — the strip's dates are already IST calendar days, no offset maths */
+function dayLabel(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const at = new Date(Date.UTC(y, m - 1, d));
+  return `${WEEKDAYS[at.getUTCDay()]!.slice(0, 3)} ${MONTHS[m - 1]} ${d}`;
+}
+
+/** keep the readout on one line — Garmin names can run long */
+function clip(s: string, n = 34): string {
+  return s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
+}
+
 class AsMoving extends HTMLElement {
   #io: IntersectionObserver | null = null;
   #unsub: (() => void) | null = null;
   #phase = new LoadPhase(this);
   /** kept so the strip can be rebuilt (60d ↔ 90d) on a breakpoint crossing */
   #days: MovingDay[] | null = null;
+  /** the slice currently on screen — bars index into this via data-day */
+  #stripDays: MovingDay[] = [];
   /** connect time — a fetch resolving under 180ms skips the route loader */
   #t0 = 0;
   /** route GPS-acquire lock→unfurl→settle timers */
@@ -126,9 +162,20 @@ class AsMoving extends HTMLElement {
     this.#unsub = onBreakpointChange(() => {
       if (this.#days) this.#buildStrip(this.#days);
     });
+
+    // The strip readout is pointer-fine only: aiming at a ~4px bar by touch is
+    // a coin flip, so phones keep the legend and lose nothing they could use.
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      const strip = this.querySelector<HTMLElement>('[data-strip]');
+      strip?.addEventListener('pointerover', this.#onStripOver);
+      strip?.addEventListener('pointerleave', this.#onStripLeave);
+    }
   }
 
   disconnectedCallback() {
+    const strip = this.querySelector<HTMLElement>('[data-strip]');
+    strip?.removeEventListener('pointerover', this.#onStripOver);
+    strip?.removeEventListener('pointerleave', this.#onStripLeave);
     this.#phase.cancel();
     if (this.#etchT1) clearTimeout(this.#etchT1);
     if (this.#etchT2) clearTimeout(this.#etchT2);
@@ -280,8 +327,9 @@ class AsMoving extends HTMLElement {
       const tail = this.#part('lastrun', 'tail');
       if (tail) {
         const when = istDate(latest.startedAt);
+        // weekday + short date, then the time-of-day phrase
         tail.textContent = when
-          ? `— ${WEEKDAYS[when.getUTCDay()]}, ${heatPhrase(when.getUTCHours())}`
+          ? `— ${WEEKDAYS[when.getUTCDay()]} ${MONTHS[when.getUTCMonth()]} ${when.getUTCDate()}, ${heatPhrase(when.getUTCHours())}`
           : '';
       }
     } else {
@@ -301,7 +349,12 @@ class AsMoving extends HTMLElement {
       const num = this.#part('vo2max', 'num');
       if (num) num.textContent = String(fitness.vo2max);
       const tail = this.#part('vo2max', 'tail');
-      if (tail) tail.textContent = ' — garmin calls it “superior”; the legs disagree';
+      // real Garmin rating (age+sex Cooper norms), not a hardcoded label
+      if (tail) {
+        tail.textContent = fitness.vo2maxRating
+          ? ` — garmin calls it “${fitness.vo2maxRating}”; the legs disagree`
+          : ' ml/kg/min';
+      }
     } else {
       this.#hideRow('vo2max');
     }
@@ -321,24 +374,101 @@ class AsMoving extends HTMLElement {
     }
   }
 
+  // ---- strip hover readout -------------------------------------------------
+
+  /**
+   * Fill the readout with one day, in the legend's place:
+   *   `sat jul 18 — run 8.2 km · 42m · 5:04/km — morning run`
+   *   `tue jul 21 — racquet 45m · lift 27m — table tennis, strength`
+   *   `wed jul 22 — rest`
+   * Built as DOM nodes rather than innerHTML — the names come off the wire.
+   */
+  #showDay(day: MovingDay) {
+    const out = this.querySelector<HTMLElement>('[data-readout]');
+    if (!out) return;
+
+    const frag = document.createDocumentFragment();
+    const put = (text: string, cls?: string) => {
+      const el = document.createElement('span');
+      el.textContent = text;
+      if (cls) el.className = cls;
+      frag.appendChild(el);
+    };
+
+    put(dayLabel(day.date));
+    if (day.bucket === 'rest' || day.seconds <= 0) {
+      put(' — rest', 'ro-dim');
+    } else {
+      put(' — ');
+      // per-bucket minutes, dominant first, each word in its legend colour
+      const parts = day.parts?.length
+        ? day.parts
+        : [{ bucket: day.bucket as Bucket, seconds: day.seconds }];
+      parts.forEach((p, i) => {
+        if (i) put(' · ');
+        put(p.bucket, `k-${p.bucket}`);
+        put(` ${coarse(p.seconds)}`);
+      });
+      if (day.km) put(` · ${day.km} km`);
+      if (day.pace) put(` · ${day.pace}/km`);
+      // the names, then ×n when more sessions ran than names shown (three legs
+      // all called "bengaluru running" fold to one name — the ×3 restores them)
+      const names = day.names ?? [];
+      if (names.length) {
+        const more = (day.count ?? 0) > names.length ? ` ×${day.count}` : '';
+        put(` — ${clip(names.join(', '))}${more}`, 'ro-dim');
+      }
+    }
+
+    out.replaceChildren(frag);
+    out.hidden = false;
+    const legend = this.querySelector<HTMLElement>('[data-legend]');
+    if (legend) legend.hidden = true;
+  }
+
+  /** hand the line back to the legend */
+  #clearDay() {
+    const out = this.querySelector<HTMLElement>('[data-readout]');
+    if (out) out.hidden = true;
+    const legend = this.querySelector<HTMLElement>('[data-legend]');
+    if (legend) legend.hidden = false;
+  }
+
+  #onStripOver = (e: PointerEvent) => {
+    const bar = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-day]');
+    // gaps between bars target the strip itself → keep the last day showing
+    // rather than flickering back to the legend on every 2.5px crossing
+    if (!bar) return;
+    const day = this.#stripDays[Number(bar.dataset.day)];
+    if (day) this.#showDay(day);
+  };
+
+  #onStripLeave = () => this.#clearDay();
+
   // ---- 90-day consistency strip -------------------------------------------
 
   #buildStrip(allDays: MovingDay[]) {
     const strip = this.querySelector<HTMLElement>('[data-strip]');
     if (!strip) return;
 
-    // a re-entry (breakpoint crossing) must retire the prior stagger observer
+    // a re-entry (breakpoint crossing) must retire the prior stagger observer,
+    // and drop any readout still showing — its day index is about to shift
     this.#io?.disconnect();
     this.#io = null;
+    this.#clearDay();
 
     // mobile shows the last 60 days (7d); desktop the full 90
     const days = isMobile() ? allDays.slice(-60) : allDays;
     const stagger = isMobile() ? 20 : 16; // ms/bar
 
+    this.#stripDays = days;
+
     const max = Math.max(1, ...days.map((d) => d.seconds));
     const frag = document.createDocumentFragment();
     days.forEach((day, i) => {
       const bar = document.createElement('span');
+      // index, not the day itself — 90 JSON blobs in the DOM would be wasteful
+      bar.dataset.day = String(i);
       if (day.bucket === 'rest' || day.seconds <= 0) {
         bar.style.height = '4px';
         bar.style.background = REST_COLOR;

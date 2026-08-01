@@ -116,11 +116,17 @@ import Section from '~/components/Section.astro';
   <div class="strip" data-strip role="img" aria-label="daily activity, last 90 days">
     <span class="strip-sk" data-sk aria-hidden="true"></span>
   </div>
+  <!-- one reserved line, two tenants: the legend by default, and the hovered
+       day's detail in its place (see #showDay). Never both, so no reflow. -->
   <div class="strip-meta">
-    <span data-val
-      ><span class="k-run">run</span> · <span class="k-lift">lift</span> · <span class="k-racquet"
-        >racquet</span
-      ><span class="desktop-only"> — anything that moved counts</span></span
+    <span class="meta-slot" data-val
+      ><span data-legend
+        ><span class="k-run">run</span> · <span class="k-lift">lift</span> · <span class="k-racquet"
+          >racquet</span
+        > · <span class="k-other">other</span><span class="desktop-only">
+          — anything that moved counts</span
+        ></span
+      ><span class="readout" data-readout hidden></span></span
     >
     <span class="desktop-only">last 90 days</span><span class="mobile-only">last 60 days</span>
   </div>
@@ -305,6 +311,17 @@ import Section from '~/components/Section.astro';
     flex: 1;
     border-radius: 1px;
     transform-origin: bottom;
+    transition: filter 120ms ease;
+  }
+  /* the bars are ~6px wide — an outline would swamp one, so the hovered day
+     just brightens while its detail fills the legend line below */
+  @media (hover: hover) and (pointer: fine) {
+    .strip {
+      cursor: crosshair;
+    }
+    .strip :global(span:hover) {
+      filter: brightness(1.45);
+    }
   }
   /* bars stay down until the IntersectionObserver fires the rise */
   .strip:not(.rise) :global(span) {
@@ -332,14 +349,35 @@ import Section from '~/components/Section.astro';
     /* hold the legend line so its empty → text swap never reflows (8a) */
     min-height: 16px;
   }
-  .k-run {
+  .meta-slot {
+    min-width: 0;
+    /* a long Garmin activity name must not shove `last 90 days` off the line */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* the hovered day reads a notch brighter than the legend it replaces */
+  .readout {
+    color: var(--text-muted);
+  }
+
+  /* :global — these classes are shared by the SSR legend and the spans the
+     island builds for the readout, which carry no scope attribute */
+  .strip-meta :global(.k-run) {
     color: var(--as-accent);
   }
-  .k-lift {
+  .strip-meta :global(.k-lift) {
     color: var(--live-green);
   }
-  .k-racquet {
+  .strip-meta :global(.k-racquet) {
     color: var(--quote);
+  }
+  .strip-meta :global(.k-other) {
+    color: var(--meta);
+  }
+  .strip-meta :global(.ro-dim) {
+    color: var(--faint);
   }
 
   /* reduced motion: route draws instantly (global 0.01ms override), the runner

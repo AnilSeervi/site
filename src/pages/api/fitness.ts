@@ -19,6 +19,8 @@ export const prerender = false;
 interface FitnessBody {
   vo2max: number | null;
   restingHr: number | null;
+  /** Garmin's fitness rating for the VO2max (age+sex Cooper norms); garmin-only */
+  vo2maxRating: string | null;
   source: 'garmin' | 'file' | 'none';
 }
 
@@ -61,20 +63,20 @@ export const GET: APIRoute = async () => {
   // 1. Garmin — only worth attempting with env creds or bootstrapped tokens.
   try {
     if (hasGarminCredentials || (await hasStoredGarminTokens())) {
-      const { vo2max, restingHr } = await getGarminFitness();
+      const { vo2max, restingHr, vo2maxRating } = await getGarminFitness();
       // Both null means Garmin had nothing useful — prefer the curated file.
       if (vo2max !== null || restingHr !== null) {
-        return json({ vo2max, restingHr, source: 'garmin' }, 86400);
+        return json({ vo2max, restingHr, vo2maxRating, source: 'garmin' }, 86400);
       }
     }
   } catch {
     // Any failure (MFA required, token drift, upstream down) → file fallback.
   }
 
-  // 2. Hand-editable file fallback.
+  // 2. Hand-editable file fallback (no age/sex on hand → no rating).
   const file = await readFitnessFile();
-  if (file) return json({ ...file, source: 'file' }, 3600);
+  if (file) return json({ ...file, vo2maxRating: null, source: 'file' }, 3600);
 
   // 3. Honest nulls.
-  return json({ vo2max: null, restingHr: null, source: 'none' }, 60);
+  return json({ vo2max: null, restingHr: null, vo2maxRating: null, source: 'none' }, 60);
 };

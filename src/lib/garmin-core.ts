@@ -587,6 +587,71 @@ export async function getVo2Max(accessToken: string, date: string): Promise<numb
   return typeof vo2 === 'number' && Number.isFinite(vo2) && vo2 > 0 ? vo2 : null;
 }
 
+/** gender + birthDate from the profile — used to classify VO2max (Garmin's
+ * maxmet endpoint returns the value but no age/sex rating). */
+export async function getPersonalInfo(
+  accessToken: string
+): Promise<{ gender: string | null; birthDate: string | null }> {
+  const data = asRecord(await apiGet(accessToken, '/userprofile-service/userprofile/personal-information'));
+  return {
+    gender: typeof data?.gender === 'string' ? data.gender : null,
+    birthDate: typeof data?.birthDate === 'string' ? data.birthDate : null
+  };
+}
+
+export type Vo2Rating = 'superior' | 'excellent' | 'good' | 'fair' | 'poor';
+
+/**
+ * Cooper Institute VO2max norms (ml/kg/min) — the age/sex percentile scale
+ * Garmin Connect uses for its fitness rating. Each row is the *lower bound* of
+ * a category for an age band; a value at/above `sup` is superior, etc.
+ */
+const VO2_NORMS: Record<
+  'male' | 'female',
+  Array<{ maxAge: number; sup: number; exc: number; good: number; fair: number }>
+> = {
+  male: [
+    { maxAge: 29, sup: 55.4, exc: 51.1, good: 45.4, fair: 41.7 },
+    { maxAge: 39, sup: 54.0, exc: 48.3, good: 44.0, fair: 40.5 },
+    { maxAge: 49, sup: 52.5, exc: 46.4, good: 42.4, fair: 38.5 },
+    { maxAge: 59, sup: 48.9, exc: 43.4, good: 39.2, fair: 35.6 },
+    { maxAge: 69, sup: 45.7, exc: 39.5, good: 35.5, fair: 32.3 },
+    { maxAge: 200, sup: 42.1, exc: 36.7, good: 32.3, fair: 29.4 }
+  ],
+  female: [
+    { maxAge: 29, sup: 49.6, exc: 43.9, good: 39.5, fair: 36.1 },
+    { maxAge: 39, sup: 47.4, exc: 42.4, good: 37.8, fair: 34.4 },
+    { maxAge: 49, sup: 45.3, exc: 39.7, good: 36.3, fair: 33.0 },
+    { maxAge: 59, sup: 41.1, exc: 36.7, good: 33.0, fair: 30.1 },
+    { maxAge: 69, sup: 37.8, exc: 33.0, good: 30.0, fair: 27.5 },
+    { maxAge: 200, sup: 36.7, exc: 30.9, good: 28.1, fair: 25.9 }
+  ]
+};
+
+/** whole years between an ISO birthDate ("YYYY-MM-DD") and now, or null */
+export function ageFromBirthDate(birthDate: string): number | null {
+  const b = new Date(birthDate);
+  if (Number.isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - b.getUTCFullYear();
+  const m = now.getUTCMonth() - b.getUTCMonth();
+  if (m < 0 || (m === 0 && now.getUTCDate() < b.getUTCDate())) age--;
+  return age >= 0 && age < 130 ? age : null;
+}
+
+/** classify a VO2max on Garmin's scale (Cooper norms) → rating word, or null */
+export function vo2MaxRating(vo2: number, gender: string, age: number): Vo2Rating | null {
+  if (!(vo2 > 0) || !(age > 0)) return null;
+  const sex = gender.trim().toUpperCase().startsWith('F') ? 'female' : 'male';
+  const bands = VO2_NORMS[sex];
+  const band = bands.find((b) => age <= b.maxAge) ?? bands[bands.length - 1]!;
+  if (vo2 >= band.sup) return 'superior';
+  if (vo2 >= band.exc) return 'excellent';
+  if (vo2 >= band.good) return 'good';
+  if (vo2 >= band.fair) return 'fair';
+  return 'poor';
+}
+
 // ---------------------------------------------------------------------------
 // Activities (Moving section — replaces the retired Strava feed)
 // ---------------------------------------------------------------------------

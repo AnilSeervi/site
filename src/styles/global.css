@@ -60,9 +60,16 @@ body {
   background: rgba(217, 165, 74, 0.35);
 }
 
+/* Links default to no underline. Those that opt in (`text-decoration-line:
+   underline`, NOT the `text-decoration` shorthand — which would reset these)
+   inherit a thin underline softened to 42% of the link's own colour, so it
+   reads as a hint and tracks the hover crossfade. */
 a {
   color: inherit;
-  text-decoration: none;
+  text-decoration-line: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 42%, transparent);
   transition: color 180ms ease;
 }
 

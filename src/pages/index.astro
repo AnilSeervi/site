@@ -166,7 +166,7 @@ const homeProjects = projects.filter((p) => p.home);
   </section>
 
   <div class="foot">
-    <Footer left="astro · vercel ▲ · view transitions on">
+    <Footer left="astro · vercel ▲">
       <a href={site.socials.github} target="_blank" rel="noopener noreferrer">github</a>
       <a href={site.socials.twitter} target="_blank" rel="noopener noreferrer">twitter</a>
       <a href="/rss.xml">rss</a>
@@ -261,7 +261,7 @@ const homeProjects = projects.filter((p) => p.home);
   }
   .socials a {
     color: var(--as-accent);
-    text-decoration: underline;
+    text-decoration-line: underline;
     text-underline-offset: 3px;
   }
   .socials a:hover {
@@ -641,7 +641,7 @@ const homeProjects = projects.filter((p) => p.home);
       padding: 14px 0;
       min-height: 40px;
       margin-bottom: 56px;
-      align-items: flex-start;
+      align-items: baseline;
     }
     .tlabel {
       width: 64px;

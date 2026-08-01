@@ -188,7 +188,8 @@ const ogImageURL = new URL(ogImage, site.url);
     justify-content: center;
     border-radius: 13px;
     background: #12100e;
-    border: 1px solid rgba(217, 165, 74, 0.45);
+    /* brass edge from the accent token (not a hardcoded rgba) */
+    border: 1px solid color-mix(in srgb, var(--as-accent) 45%, transparent);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     font-family: var(--font-mono);
     font-size: 15px;

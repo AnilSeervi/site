@@ -26,6 +26,7 @@
  */
 
 import { LoadPhase } from './loadphase';
+import type { ContribCell } from './contrib';
 
 interface SpotifyNow {
   title: string;
@@ -49,6 +50,10 @@ interface GithubRes {
   disabled?: boolean;
   total?: number | null;
   days?: number[][] | null;
+  /** 52 weekly totals — the readout's "N that week" */
+  weeks?: number[] | null;
+  /** ISO date of days[0][0]; <as-contrib> derives every cell's date from it */
+  from?: string | null;
 }
 interface MalRes {
   disabled?: boolean;
@@ -73,15 +78,97 @@ function alive<T extends { disabled?: boolean }>(r: PromiseSettledResult<T>): T 
   return r.status === 'fulfilled' && !r.value.disabled ? r.value : null;
 }
 
+// ---- contribution-grid hover readout ---------------------------------------
+
+const WEEKDAYS_SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+const MONTHS_SHORT = [
+  'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+  'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+] as const;
+
+/** 'thu jul 30' from an ISO date (the grid's dates are plain calendar days) */
+function shortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const at = new Date(Date.UTC(y, m - 1, d));
+  return `${WEEKDAYS_SHORT[at.getUTCDay()]} ${MONTHS_SHORT[m - 1]} ${d}`;
+}
+
+/**
+ * The unbroken run of contributing days containing `index`, as [position, length]
+ * — `day 4 of a 6-day streak`. Walks both directions: a streak the hovered day
+ * sits in the middle of is still a streak, and stopping at the cursor would
+ * report it as shorter than it is.
+ *
+ * Runs off the flattened grid, where index = week * 7 + weekday is chronological
+ * because the calendar is contiguous and Sunday-aligned.
+ */
+function runAt(flat: number[], index: number): [number, number] {
+  if ((flat[index] ?? 0) <= 0) return [0, 0];
+  let start = index;
+  while (start > 0 && (flat[start - 1] ?? 0) > 0) start--;
+  let end = index;
+  // stop at the last day that actually happened — the padded tail is zeros
+  while (end + 1 < flat.length && (flat[end + 1] ?? 0) > 0) end++;
+  return [index - start + 1, end - start + 1];
+}
+
+/**
+ * The two halves of a readout line: the figures, and the dim clause after them.
+ * Everything here is computed from the grid — GitHub's calendar carries no repo
+ * names or messages per day, so context is derived rather than fetched.
+ */
+function contribLine(
+  cell: ContribCell,
+  ctx: {
+    weekTotal: number;
+    best: number;
+    bestWeek: number;
+    /** whether the peak is held by a single day / week — see below */
+    bestIsUnique: boolean;
+    bestWeekIsUnique: boolean;
+    run: [number, number];
+  }
+): { main: string; tail: string } {
+  const head = shortDate(cell.date!);
+  if (cell.count <= 0) return { main: head, tail: ' — quiet' };
+
+  const n = cell.count;
+  let main = `${head} — ${n} contribution${n === 1 ? '' : 's'}`;
+  // only when the week holds more than this one day; `1 contribution · 1 that
+  // week` spends a clause to repeat itself
+  if (ctx.weekTotal > n) main += ` · ${ctx.weekTotal} that week`;
+
+  // One closing clause, most-interesting first — a day can qualify for several
+  // at once and stacking them turns a glance into a paragraph. Superlatives are
+  // claimed only when the peak is unique: on a quiet year several days tie the
+  // maximum, and calling each of them "busiest" is just wrong.
+  const [pos, len] = ctx.run;
+  let tail = '';
+  if (ctx.bestIsUnique && n === ctx.best) tail = ' — busiest day of the year';
+  else if (ctx.bestWeekIsUnique && ctx.weekTotal === ctx.bestWeek)
+    tail = ' — busiest week of the year';
+  else if (len >= 3) tail = ` — day ${pos} of a ${len}-day streak`;
+  return { main, tail };
+}
+
 class AsLiveData extends HTMLElement {
   #phase = new LoadPhase(this);
 
   connectedCallback() {
     this.#phase.start();
     void this.#load();
+    // bound once here rather than when the feed lands, so a second #applyGithub
+    // can never stack a duplicate pair; the handlers no-op until #grid is set
+    const contrib = this.querySelector('as-contrib');
+    contrib?.addEventListener('contrib:day', this.#onContribDay);
+    contrib?.addEventListener('contrib:leave', this.#onContribLeave);
   }
 
   disconnectedCallback() {
+    const contrib = this.querySelector('as-contrib');
+    contrib?.removeEventListener('contrib:day', this.#onContribDay);
+    contrib?.removeEventListener('contrib:leave', this.#onContribLeave);
     this.#phase.cancel();
   }
 
@@ -162,7 +249,12 @@ class AsLiveData extends HTMLElement {
 
     const days = g.days;
     const contrib = this.querySelector('as-contrib');
-    if (contrib) contrib.setAttribute('data-values', JSON.stringify(days));
+    if (contrib) {
+      contrib.setAttribute('data-values', JSON.stringify(days));
+      // the calendar anchor: read lazily by the hit-test, so NOT observed —
+      // setting it must not trigger a second repaint
+      if (g.from) contrib.setAttribute('data-from', g.from);
+    }
     // reveal the real canvas (fade), drop the dot-field placeholder
     wrap?.classList.add('arrived');
 
@@ -176,7 +268,68 @@ class AsLiveData extends HTMLElement {
         ? base
         : `${base} — brass runs hotter where the weeks did`;
     }
+    // stats the hover readout derives its context from
+    const flat = days.flat();
+    const weekTotals =
+      g.weeks?.length === days.length ? g.weeks : days.map((w) => w.reduce((a, b) => a + (b || 0), 0));
+    const best = Math.max(0, ...flat);
+    const bestWeek = Math.max(0, ...weekTotals);
+    this.#grid = {
+      flat,
+      weekTotals,
+      best,
+      bestWeek,
+      // a peak shared by several days isn't a superlative worth printing
+      bestIsUnique: best > 0 && flat.filter((v) => v === best).length === 1,
+      bestWeekIsUnique: bestWeek > 0 && weekTotals.filter((v) => v === bestWeek).length === 1
+    };
   }
+
+  // ---- contribution grid hover readout -------------------------------------
+
+  /** grid stats for the readout — set once the GitHub feed lands */
+  #grid: {
+    flat: number[];
+    weekTotals: number[];
+    best: number;
+    bestWeek: number;
+    bestIsUnique: boolean;
+    bestWeekIsUnique: boolean;
+  } | null = null;
+
+  #onContribDay = (e: Event) => {
+    const cell = (e as CustomEvent<ContribCell>).detail;
+    const g = this.#grid;
+    const out = this.querySelector<HTMLElement>('[data-contrib-readout]');
+    if (!g || !out) return;
+    // no date → the pad appended to the current week: days that haven't
+    // happened, not days with nothing in them. Say nothing about them.
+    if (!cell?.date) return this.#onContribLeave();
+
+    const main = out.querySelector<HTMLElement>('[data-part="main"]');
+    const tail = out.querySelector<HTMLElement>('[data-part="ctx"]');
+    const line = contribLine(cell, {
+      weekTotal: g.weekTotals[cell.week] ?? 0,
+      best: g.best,
+      bestWeek: g.bestWeek,
+      bestIsUnique: g.bestIsUnique,
+      bestWeekIsUnique: g.bestWeekIsUnique,
+      run: runAt(g.flat, cell.week * 7 + cell.day)
+    });
+    if (main) main.textContent = line.main;
+    if (tail) tail.textContent = line.tail;
+
+    out.hidden = false;
+    const total = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
+    if (total) total.hidden = true;
+  };
+
+  #onContribLeave = () => {
+    const out = this.querySelector<HTMLElement>('[data-contrib-readout]');
+    if (out) out.hidden = true;
+    const total = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
+    if (total) total.hidden = false;
+  };
 
   #applyMal(m: MalRes | null) {
     if (m?.reading?.title) {

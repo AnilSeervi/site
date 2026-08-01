@@ -175,12 +175,12 @@ check('GUESTBOOK section absent', (await page.locator('text=/GUESTBOOK/').count(
 check(
   'globe placeholder 280×280 + caption',
   (await page.locator('.globe-ph').evaluate((el) => `${el.offsetWidth}×${el.offsetHeight}`)) === '280×280' &&
-    (await text(page.locator('.globe-cap'))) === 'the brass dot is bengaluru — home'
+  (await text(page.locator('.globe-cap'))) === 'bengaluru — home'
 );
 check(
   'footer copy',
   (await text(page.locator('footer .left'))).endsWith('/api/spotify · /api/github · /api/moving · /api/mal') &&
-    (await text(page.locator('footer a.chain'))) === 'next — ~/about →'
+  (await text(page.locator('footer a.chain'))) === 'next — ~/about →'
 );
 
 const shot = process.env.SHOT_PATH;

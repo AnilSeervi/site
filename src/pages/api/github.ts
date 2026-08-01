@@ -47,6 +47,8 @@ export const GET: APIRoute = async () => {
       total: cal?.total ?? null,
       weeks: cal?.weeks ?? null,
       days: cal?.days ?? null,
+      /** ISO date of days[0][0] — the grid's calendar anchor (see Contributions) */
+      from: cal?.from ?? null,
       followers: cal?.followers ?? null,
       repoCount: repo?.repoCount ?? null,
       stars: repo?.stars ?? null,

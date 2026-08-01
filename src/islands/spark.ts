@@ -38,16 +38,30 @@ function syntheticWeeks(seed = 7): number[] {
   return wk;
 }
 
+/** resolve a theme token (:root custom property) to its hex, with a fallback */
+function cssHex(name: string, fallback: string): string {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/** hex (#rgb / #rrggbb) → rgba() string at the given alpha */
+function hexToRgba(hex: string, a: number): string {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
 /**
- * Row strokes are SOLID — the prototype dims via element-level opacity
- * (.75 normal / .6 archived), which the pages own via CSS. Baking alpha here
- * too would double-apply it.
+ * Row stroke colours come from the theme tokens (status → accent/green/faint).
+ * Strokes are SOLID — the prototype dims via element-level opacity (.75 normal
+ * / .6 archived), which the pages own via CSS; baking alpha here would double it.
  */
-const STATUS_COLORS: Record<string, string> = {
-  maintained: '#D9A54A',
-  active: '#92C78C',
-  archived: '#5E5749'
-};
+function statusColor(status: string | undefined): string {
+  if (status === 'active') return cssHex('--live-green', '#92c78c');
+  if (status === 'archived') return cssHex('--faint', '#5e5749');
+  return cssHex('--as-accent', '#d9a54a');
+}
 
 class AsSpark extends HTMLElement {
   static observedAttributes = ['data-values'];
@@ -119,10 +133,10 @@ class AsSpark extends HTMLElement {
         return sum / (to - from);
       });
     }
-    // hero keeps the prototype's baked-in alpha (no element opacity there)
+    // hero keeps the prototype's --as-accent at .75 (no element opacity there)
     const stroke = hero
-      ? 'rgba(217,165,74,.75)'
-      : (STATUS_COLORS[this.dataset.status ?? ''] ?? '#D9A54A');
+      ? hexToRgba(cssHex('--as-accent', '#d9a54a'), 0.75)
+      : statusColor(this.dataset.status);
 
     const x = cv.getContext('2d')!;
     x.setTransform(2, 0, 0, 2, 0, 0);

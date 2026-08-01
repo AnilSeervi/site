@@ -23,6 +23,14 @@ export interface Contributions {
   weeks: number[];
   /** weeks[i] = 7 daily counts (partial current week padded with 0s) */
   days: number[][];
+  /**
+   * ISO date of days[0][0] — the anchor the grid's calendar is derived from.
+   * The calendar is a contiguous Sunday-aligned grid, so every cell's date is
+   * `from + (week * 7 + weekday)` days; sending 364 date strings instead would
+   * cost ~4.7KB to say the same thing. Also the only way to tell the padded
+   * tail of the current week (future days) from genuine rest days.
+   */
+  from: string;
   followers: number;
 }
 
@@ -33,7 +41,7 @@ const CONTRIBUTIONS_QUERY = `
       contributionsCollection {
         contributionCalendar {
           totalContributions
-          weeks { contributionDays { contributionCount } }
+          weeks { contributionDays { contributionCount date } }
         }
       }
     }
@@ -52,21 +60,32 @@ export async function getContributions(): Promise<Contributions> {
   if (!user) throw new Error('GitHub GraphQL returned no user');
 
   const calendar = user.contributionsCollection.contributionCalendar;
-  const allWeeks: { contributionDays: { contributionCount: number }[] }[] = calendar.weeks;
+  const allWeeks: { contributionDays: { contributionCount: number; date: string }[] }[] =
+    calendar.weeks;
 
   // The calendar spans ~53 columns; keep the most recent 52 and pad any
   // partial week (the current one) to 7 days so the shape is consistent.
-  const days = allWeeks.slice(-52).map((week) => {
+  const kept = allWeeks.slice(-52);
+  const days = kept.map((week) => {
     const counts = week.contributionDays.map((d) => d.contributionCount);
     while (counts.length < 7) counts.push(0);
     return counts;
   });
   const weeks = days.map((w) => w.reduce((a, b) => a + b, 0));
 
+  // The anchor is simply the oldest kept week's first day: GitHub returns every
+  // column Sunday-aligned and full, padding the oldest one itself — only the
+  // current week comes back short. (Verified against the live calendar: 53
+  // columns, all 7 days but the last, and all 362 cells derive from this one
+  // date.) Note the padding above is appended, so a partial FIRST column would
+  // break the mapping rather than shift it — hence no clever realignment here.
+  const from = kept[0]?.contributionDays[0]?.date ?? '';
+
   return {
     total: calendar.totalContributions,
     weeks,
     days,
+    from,
     followers: user.followers.totalCount
   };
 }

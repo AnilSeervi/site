@@ -22,7 +22,7 @@ const IST_OFFSET_MIN = 330;
 const DAY_MS = 86_400_000;
 export const WINDOW_DAYS = 90;
 
-export type Bucket = 'run' | 'lift' | 'racquet';
+export type Bucket = 'run' | 'lift' | 'racquet' | 'other';
 
 export interface MovingLatest {
   name: string;
@@ -50,10 +50,30 @@ export interface MovingMonth {
   daysInMonth: number;
 }
 
+export interface MovingDayPart {
+  bucket: Bucket;
+  seconds: number;
+}
+
+/**
+ * One day of the consistency strip. `date`/`seconds`/`bucket` drive the bar
+ * itself; the rest is detail for the strip's hover readout — all optional and
+ * absent on rest days, so 51-of-90 empty days cost nothing in the payload.
+ */
 export interface MovingDay {
   date: string;
   seconds: number;
   bucket: Bucket | 'rest';
+  /** activities that day */
+  count?: number;
+  /** per-bucket seconds, dominant first — parts[0].bucket IS `bucket` */
+  parts?: MovingDayPart[];
+  /** activity names, chronological + deduped, at most 2 (count carries the rest) */
+  names?: string[];
+  /** total distance that day, km to 1dp — absent when nothing carried distance */
+  km?: number;
+  /** pace over the day's run legs, "m:ss" — run-dominant days only */
+  pace?: string;
 }
 
 export interface MovingPayload {
@@ -64,8 +84,8 @@ export interface MovingPayload {
 }
 
 // ---- Garmin activityType.typeKey → bucket -------------------------------
-// README bucket law: running family → run; strength/HIIT/crossfit → lift;
-// everything else that moved (racquet sports, walks, rides, swims…) → racquet.
+// running family → run; strength/HIIT/crossfit → lift; racket sports → racquet;
+// everything else that moved (rides, walks, swims, hikes…) → other.
 const RUN_TYPES = new Set([
   'running',
   'trail_running',
@@ -97,11 +117,25 @@ const LIFT_TYPES = new Set([
   'crossfit',
   'functional_strength'
 ]);
+const RACQUET_TYPES = new Set([
+  'table_tennis',
+  'tennis',
+  'badminton',
+  'squash',
+  'racquetball',
+  'pickleball',
+  'padel',
+  'platform_tennis'
+]);
+
+/** tie-break order when two buckets share a day's minutes */
+const BUCKET_ORDER: Bucket[] = ['run', 'lift', 'racquet', 'other'];
 
 export function bucketFor(typeKey: string): Bucket {
   if (RUN_TYPES.has(typeKey)) return 'run';
   if (LIFT_TYPES.has(typeKey)) return 'lift';
-  return 'racquet';
+  if (RACQUET_TYPES.has(typeKey)) return 'racquet';
+  return 'other';
 }
 
 /** run or ride → carries a route worth etching / a km-leading ticker line */
@@ -206,14 +240,47 @@ export function buildMovingPayload(
   };
 
   // ---- 90-day consistency strip, oldest → newest ----
-  const perDay = new Map<string, { seconds: number; byBucket: Record<Bucket, number> }>();
+  // Aggregated per IST day: the bar needs `seconds` + the dominant bucket, the
+  // hover readout needs the bucket split, the names and the distance/pace.
+  interface DayAgg {
+    seconds: number;
+    byBucket: Record<Bucket, number>;
+    /** distinct name → its total seconds, so names can be ranked like buckets */
+    byName: Map<string, number>;
+    count: number;
+    meters: number;
+    runMeters: number;
+    runSeconds: number;
+  }
+  const perDay = new Map<string, DayAgg>();
   for (const a of acts) {
     const day = activityDay(a);
     if (!day) continue;
-    const entry = perDay.get(day) ?? { seconds: 0, byBucket: { run: 0, lift: 0, racquet: 0 } };
+    let entry = perDay.get(day);
+    if (!entry) {
+      entry = {
+        seconds: 0,
+        byBucket: { run: 0, lift: 0, racquet: 0, other: 0 },
+        byName: new Map(),
+        count: 0,
+        meters: 0,
+        runMeters: 0,
+        runSeconds: 0
+      };
+      perDay.set(day, entry);
+    }
     entry.seconds += a.durationSeconds;
     entry.byBucket[bucketFor(a.typeKey)] += a.durationSeconds;
-    perDay.set(day, entry);
+    entry.count += 1;
+    entry.meters += a.distanceMeters;
+    // Garmin auto-names repeat across same-day sessions — fold them together so
+    // three "bengaluru running" legs read as one name, not three
+    const name = a.activityName.trim().toLowerCase();
+    if (name) entry.byName.set(name, (entry.byName.get(name) ?? 0) + a.durationSeconds);
+    if (RUN_TYPES.has(a.typeKey)) {
+      entry.runMeters += a.distanceMeters;
+      entry.runSeconds += a.durationSeconds;
+    }
   }
 
   const days: MovingDay[] = [];
@@ -225,10 +292,35 @@ export function buildMovingPayload(
       days.push({ date, seconds: 0, bucket: 'rest' });
       continue;
     }
-    const order: Bucket[] = ['run', 'lift', 'racquet'];
-    let bucket: Bucket = 'run';
-    for (const b of order) if (entry.byBucket[b] > entry.byBucket[bucket]) bucket = b;
-    days.push({ date, seconds: entry.seconds, bucket });
+    // dominant-first split; the sort is stable, so BUCKET_ORDER breaks ties
+    const parts: MovingDayPart[] = BUCKET_ORDER.filter((b) => entry.byBucket[b] > 0)
+      .map((b) => ({ bucket: b, seconds: Math.round(entry.byBucket[b]) }))
+      .sort((x, y) => y.seconds - x.seconds);
+    const bucket = parts[0]?.bucket ?? 'other';
+    const day: MovingDay = {
+      date,
+      seconds: Math.round(entry.seconds),
+      bucket,
+      count: entry.count,
+      parts,
+      // ranked by time, like `parts` — so the names read in the same order as
+      // the buckets beside them. Two is all the readout line has room for.
+      names: [...entry.byName.entries()]
+        .sort((x, y) => y[1] - x[1])
+        .slice(0, 2)
+        .map(([name]) => name)
+    };
+    // Distance is the day's total, EXCEPT on run-dominant days where it's the
+    // run's own — there it sits beside `pace`, and the two must agree.
+    // 500m floor either way: Garmin logs incidental metres for indoor sessions,
+    // and `· 0.1 km` next to a strength workout is noise, not information.
+    const meters = bucket === 'run' ? entry.runMeters : entry.meters;
+    if (meters >= 500) day.km = km1(meters);
+    if (bucket === 'run') {
+      const pace = fmtPace(entry.runSeconds, entry.runMeters);
+      if (pace) day.pace = pace;
+    }
+    days.push(day);
   }
 
   return { latest, latestAny, month, days };

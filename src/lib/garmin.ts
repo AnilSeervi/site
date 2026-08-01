@@ -22,8 +22,12 @@ import {
   getDisplayName,
   getRestingHeartRate,
   getVo2Max,
+  getPersonalInfo,
+  ageFromBirthDate,
+  vo2MaxRating,
   calendarDate,
-  KV_KEYS
+  KV_KEYS,
+  type Vo2Rating
 } from '~/lib/garmin-core';
 import type { GarminCredentials, TokenStore } from '~/lib/garmin-core';
 import { buildMovingPayload, isRunOrRide, type MovingPayload } from '~/lib/moving';
@@ -65,6 +69,8 @@ export async function hasStoredGarminTokens(): Promise<boolean> {
 export interface GarminFitness {
   vo2max: number | null;
   restingHr: number | null;
+  /** Garmin's fitness rating for the VO2max (Cooper norms, age+sex), or null */
+  vo2maxRating: Vo2Rating | null;
 }
 
 /**
@@ -81,12 +87,20 @@ export async function getGarminFitness(): Promise<GarminFitness> {
   const displayName = await getDisplayName(kvStore, accessToken);
   const today = calendarDate();
 
-  const [restingHr, vo2max] = await Promise.all([
+  const [restingHr, vo2max, personal] = await Promise.all([
     getRestingHeartRate(accessToken, displayName, today),
-    getVo2Max(accessToken, today)
+    getVo2Max(accessToken, today),
+    getPersonalInfo(accessToken)
   ]);
 
-  return { vo2max, restingHr };
+  // classify on Garmin's own scale (maxmet gives the value, not the rating)
+  let vo2maxRating: Vo2Rating | null = null;
+  if (vo2max !== null && personal.gender && personal.birthDate) {
+    const age = ageFromBirthDate(personal.birthDate);
+    if (age !== null) vo2maxRating = vo2MaxRating(vo2max, personal.gender, age);
+  }
+
+  return { vo2max, restingHr, vo2maxRating };
 }
 
 /**

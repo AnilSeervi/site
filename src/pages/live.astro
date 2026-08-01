@@ -49,7 +49,7 @@ import Guestbook from '~/components/live/Guestbook.astro';
       </div>
       <div class="globe-col">
         <Globe />
-        <span class="globe-cap">the brass dot is bengaluru — home</span>
+        <span class="globe-cap">bengaluru — home</span>
       </div>
     </div>
 
@@ -93,8 +93,14 @@ import Guestbook from '~/components/live/Guestbook.astro';
           ></canvas>
         </as-contrib>
       </div>
+      <!-- one reserved line, two tenants: the year's total by default, and the
+           hovered day's detail in its place. Never both, so no reflow. -->
       <div class="contrib-meta">
-        <span data-live="contrib-total"></span>
+        <span data-live="contrib-total"></span><span
+          class="contrib-readout"
+          data-contrib-readout
+          hidden><span data-part="main"></span><span class="dim" data-part="ctx"></span></span
+        >
         <span class="desktop-only">52 weeks</span><span class="mobile-only">23 weeks shown</span>
       </div>
     </section>
@@ -292,6 +298,24 @@ import Guestbook from '~/components/live/Guestbook.astro';
     font-size: 11.5px;
     color: var(--faint);
     margin-bottom: 48px;
+  }
+  /* the hovered day reads a notch brighter than the total it replaces; its
+     closing clause drops back to --faint. No `display` here — [hidden] must
+     keep winning while the total holds the line. */
+  .contrib-readout {
+    color: var(--text-muted);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .contrib-readout .dim {
+    color: var(--faint);
+  }
+  /* cells are 10px at both breakpoints, so the grid is aimable by mouse or
+     thumb — crosshair advertises that the field answers questions */
+  as-contrib canvas {
+    cursor: crosshair;
   }
 
   /* watching */
