@@ -9,7 +9,7 @@ const page = await ctx.newPage();
 const out = {};
 
 // 1. home stagger present + replays after nav round-trip
-await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
+await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 out.staggerCount = await page.locator('.as-enter').count();
 await page.click('nav a[href="/work"]');
 await page.waitForURL('**/work');
@@ -21,17 +21,21 @@ out.staggerReplays = await page.evaluate(() =>
   )
 );
 
-// 2. work why-slot hover
-await page.goto('http://localhost:4321/work', { waitUntil: 'networkidle' });
-const whyBefore = (await page.textContent('[data-why], .why, [data-why-slot]').catch(() => null))?.trim();
-const whySlot = page.locator('as-whyslot [data-why], as-whyslot .why-slot, [data-why-slot], .why').first();
-await page.hover('text=DevFolio');
-await page.waitForTimeout(150);
-out.whyAfterHover = (await whySlot.textContent().catch(() => 'SLOT NOT FOUND'))?.trim().slice(0, 45);
-out.whyDefault = whyBefore?.slice(0, 45);
+// 2. work: the why-line is inline on every spread (handoff 6b). It used to be
+// one shared slot above the list that filled on hover — invisible on touch, and
+// it shoved the list down up to 25px when it grew. Nothing to hover now.
+await page.goto('http://localhost:4321/work', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(600);
+out.spreads = await page.locator('.spread').count();
+out.whyLinesVisible = await page.locator('.spread .why:visible').count();
+out.everyWhyStartsWithWhy = await page.$$eval('.spread .why', (els) =>
+  els.length > 0 && els.every((e) => e.textContent.trim().startsWith('Why:'))
+);
+out.hoverSlotGone = (await page.locator('[data-why-slot], as-whyslot').count()) === 0;
+out.archiveRows = await page.locator('.arow').count();
 
 // 3. writing: search filter + preview slot + morph name present
-await page.goto('http://localhost:4321/writing', { waitUntil: 'networkidle' });
+await page.goto('http://localhost:4321/writing', { waitUntil: 'domcontentloaded' });
 await page.keyboard.press('/');
 out.searchFocused = await page.evaluate(() => document.activeElement?.tagName === 'INPUT');
 await page.keyboard.type('event loop');
@@ -55,21 +59,26 @@ const h1Style = await page.evaluate(() => getComputedStyle(document.querySelecto
 out.morph = { row: rowStyle, h1: h1Style, match: rowStyle === h1Style && !!rowStyle && rowStyle !== 'none' };
 
 // 5. about: facts reveal + calendar panel
-await page.goto('http://localhost:4321/about', { waitUntil: 'networkidle' });
+await page.goto('http://localhost:4321/about', { waitUntil: 'domcontentloaded' });
 const blurBefore = await page.evaluate(() => getComputedStyle(document.querySelector('.fact-value')).filter);
 await page.click('.fact');
 await page.waitForTimeout(500);
 const blurAfter = await page.evaluate(() => getComputedStyle(document.querySelector('.fact-value')).filter);
 out.facts = { before: blurBefore.includes('blur'), after: blurAfter === 'none' };
+// the calendar detail is a drawer now, not an inline toggle: the card only
+// opens, and Esc / the close pill / the overlay / a drag dismiss it. Clicking
+// the card a second time can't work — the overlay is over it.
 await page.click('[data-cal="zd"]');
-await page.waitForTimeout(120);
-out.calOpen = await page.evaluate(() => !document.querySelector('[data-cal-detail="zd"]')?.hidden);
-await page.click('[data-cal="zd"]');
-await page.waitForTimeout(120);
-out.calClosed = await page.evaluate(() => document.querySelector('[data-cal-detail="zd"]')?.hidden === true);
+await page.waitForTimeout(650);
+out.calOpen = await page.evaluate(
+  () => !document.querySelector('[data-cal-detail="zd"]')?.hidden && !document.querySelector('as-drawer')?.hidden
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(650);
+out.calClosed = await page.evaluate(() => document.querySelector('as-drawer')?.hidden === true);
 
 // 6. palette: ⌘K, fuzzy, soft-nav via Enter
-await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
+await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 await page.evaluate(() => ((window).__soft = true));
 await page.keyboard.press('Meta+k');
 out.palOpen = await page.evaluate(() => document.querySelector('as-palette')?.hasAttribute('data-open'));

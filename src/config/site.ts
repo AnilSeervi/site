@@ -31,43 +31,75 @@ export const site = {
 		"Fixed a stranger's SDK. Got hired 13 days later. Still fixing things.",
 } as const
 
-export type ProjectStatus = "active" | "maintained" | "archived"
-
 export interface Project {
 	name: string
-	/** short description used on the home list */
+	/** short description used on the home digest */
 	home?: string
-	/** longer description used on /work */
+	/** the spread's description on /work (handoff 6b, right column) */
 	work: string
+	/** always-visible italic line under the description; starts "Why:" */
 	why: string
-	status: ProjectStatus
-	/** owner/repo for the commit-activity sparkline (wired in Phase 5) */
+	/**
+	 * Real stack, dot-separated. The handoff shipped placeholders and flagged
+	 * them as such — they were wrong in every row (DevFolio was listed as
+	 * next.js/styled-components/vercel; it is SCSS + HTML served from js.org).
+	 * These come from the GitHub languages + topics APIs and the live host.
+	 */
+	stack: string[]
+	/**
+	 * `spread` gets the editorial treatment; `archive` gets a compact row under
+	 * FROM THE ARCHIVE. The tier is the honest claim — archive means "I'm not
+	 * saying anything more about this", which is different from "it's dead".
+	 */
+	tier: "spread" | "archive"
+	/** one-liner for an archive row, where there's no room for `work` + `why` */
+	blurb?: string
+	/**
+	 * Extra text on the chip, after the `active` dot. A number, never a status
+	 * word — that was the one thing here a reader could not check, and it
+	 * contradicted its own neighbours. DevFolio's numbers come from the API
+	 * instead (see `live`).
+	 */
+	metric?: string
+	/**
+	 * The deployed thing responds — renders as a green dot + `active` on the
+	 * chip, and it is the ONLY status this page makes. That's what makes it
+	 * sayable: it describes the SITE, not the repo. The old
+	 * active/maintained/archived field described intent, couldn't be checked,
+	 * and contradicted its own neighbours — "archived" beside copy saying the
+	 * site still serves, "maintained" beside a repo two years cold. It's gone.
+	 * All five verified 200 on 2026-08-06; re-check with
+	 * `curl -sSL -o /dev/null -w '%{http_code}' <href>` before trusting it.
+	 */
+	siteUp?: boolean
+	/** owner/repo — drives both the source link and the home sparkline */
 	repo?: string
+	/** the running thing: the app, the npm page. The source link is derived. */
 	href: string
 	/**
-	 * Renders live GitHub counts after the `work` copy instead of baking them
-	 * into the string. The hardcoded "★485 · 166 forks" had drifted from the
-	 * real 486/165 in both directions at once, which is what hardcoded brags do.
+	 * Fills the chip from /api/github rather than baking counts into a string.
+	 * The hardcoded "★485 · 166 forks" had drifted from the real 486/165 in
+	 * both directions at once, which is what hardcoded brags do.
 	 */
 	live?: "devfolio"
 }
 
 /**
- * Home shows the 4 with `home` copy; /work shows all 6, in this order.
- *
- * `status` is checked against the GitHub API, not vibes — it had inverted:
- * Pomodorox was marked archived while being the second-most-recently-pushed
- * repo in the whole account, and QP Hoard was marked active with no commit in
- * 41 months. A live site is not the same claim as a live repo, so where the two
- * disagree the copy says the site is up and the status describes the repo.
+ * /work shows all six — the five `spread` tiers in this order, then the
+ * `archive` rows. The home digest is whichever have `home` copy: four, and
+ * deliberately not the same four as the top of this list. `this site` is
+ * excluded because the digest renders on it, and Inspirational Quotes because
+ * the digest shouldn't promote what /work puts in the archive.
  */
 export const projects: Project[] = [
 	{
 		name: "DevFolio",
 		home: "Portfolio template — clone, fill six sections, ship.",
-		work: "Portfolio template with a documented path from clone to hosted.",
-		why: "Why: every portfolio tutorial stopped at “deploy”. DevFolio documents what comes after.",
-		status: "maintained",
+		work: "Portfolio template with a documented path from clone to hosted. Hundreds of other developers run it today.",
+		why: "Why: every portfolio tutorial stopped at “deploy”. DevFolio starts there.",
+		stack: ["scss", "vanilla js", "js.org"],
+		tier: "spread",
+		siteUp: true,
 		repo: "AnilSeervi/DevFolio",
 		href: "https://devfolio.js.org",
 		live: "devfolio",
@@ -75,60 +107,74 @@ export const projects: Project[] = [
 	{
 		name: "QP Hoard",
 		home: "Previous years' papers for undergrads, offline-first.",
-		work: "PWA hoarding previous years' question papers — searchable, offline-first. Still serving.",
-		why: "Why: exam week, papers scattered across WhatsApp groups. Now they're one search away, offline.",
-		status: "archived",
+		work: "PWA hoarding previous years' question papers — searchable, offline-first. Built for exam week, kept alive since.",
+		why: "Why: papers were scattered across WhatsApp groups. Now they're one search away.",
+		stack: ["react", "pwa", "cloudflare pages"],
+		tier: "spread",
+		siteUp: true,
 		repo: "AnilSeervi/QP-Hoard",
 		href: "https://qp.pages.dev",
 	},
 	{
-		/* display name, not the package id — `inspirational-quotes` breaks at its
-		   hyphen in the 150px name column and reads as two half-words */
-		name: "Inspirational Quotes",
-		home: "One npm install, one random quote. ~280 a month.",
-		work: "npm package that hands you a random quote. ~280 installs a month, still.",
-		why: "Why: I wanted to know what publishing to a registry actually involved. Turns out: versioning discipline.",
-		status: "archived",
-		repo: "AnilSeervi/inspirational-quotes",
-		href: "https://www.npmjs.com/package/@anilseervi/inspirational-quotes",
-	},
-	{
-		name: "Pomodorox",
-		work: "Hourglass-concept pomodoro timer, customizable to your rhythm.",
-		why: "Why: every timer nagged. An hourglass you flip felt honest.",
-		status: "maintained",
-		repo: "AnilSeervi/Pomodorox",
-		href: "https://pomodorox.pages.dev",
-	},
-	{
 		name: "Atmos",
-		/* no `home` copy: the front page digest holds four, and Atmos is the
-		   weakest of the six by every public number — 0 stars, 0 forks, and a
-		   newer weather app (atmof) already exists. It keeps its /work row. */
+		home: "The modern-UI weather app — Vite + React.",
 		work: "The modern-UI weather app — Vite + React on OpenWeather and Mapbox.",
 		why: "Why: weather apps are ad farms. I wanted radar-clean UI and an excuse to learn Mapbox.",
-		status: "archived",
+		stack: ["vite", "react", "mapbox"],
+		tier: "spread",
+		siteUp: true,
 		repo: "AnilSeervi/Atmos",
 		href: "https://atmos.pages.dev",
 	},
 	{
+		name: "Pomodorox",
+		home: "Hourglass-concept pomodoro timer — flip to start.",
+		work: "Hourglass-concept pomodoro timer, customizable to your rhythm.",
+		why: "Why: every timer nagged. An hourglass you flip felt honest.",
+		stack: ["react", "typescript", "cloudflare pages"],
+		tier: "spread",
+		siteUp: true,
+		repo: "AnilSeervi/Pomodorox",
+		href: "https://pomodorox.pages.dev",
+	},
+	{
 		name: "this site",
-		home: "Astro islands, live feeds, view transitions. You're in it.",
-		work: "Astro islands over live Spotify, GitHub & MAL feeds. Source in the open.",
-		why: "Why: the site is the sandbox — every new API or platform trick lands here first.",
-		status: "active",
+		/* no `home` copy — the digest sits on this very page, so a row telling
+		   you about it is the one project a visitor doesn't need pointing at */
+		work: "Astro islands over live Spotify, GitHub & MAL feeds. Source in the open — you're in it right now.",
+		why: "Why: the sandbox where every new API or platform trick lands first.",
+		stack: ["astro", "islands", "vercel"],
+		tier: "spread",
+		siteUp: true,
 		repo: "AnilSeervi/site",
-		href: "https://github.com/AnilSeervi/site",
+		/* the deployed site, even though you're standing in it — otherwise `href`
+		   and the derived source URL collide, srcUrl() returns null, and the row
+		   renders a single ↗ that leads to GitHub. Both icons, both honest. */
+		href: "https://anil.vercel.app",
+	},
+	{
+		/* display name, not the package id — `inspirational-quotes` breaks at its
+		   own hyphen in a narrow column and reads as two half-words */
+		name: "Inspirational Quotes",
+		/* no `home` copy — it's the archive tier on /work, and the digest should
+		   agree with the page it links to rather than promote what that page demotes */
+		work: "An npm package that hands you a random quote. Typed, scoped, and still being pulled three years on.",
+		why: "Why: I wanted to know what publishing to a registry actually involved. Turns out: versioning discipline.",
+		/* the archive tier has no chip, so the install count rides the blurb */
+		blurb: "one npm install, one random quote — ~280 a month",
+		stack: ["typescript", "npm"],
+		tier: "archive",
+		repo: "AnilSeervi/inspirational-quotes",
+		href: "https://www.npmjs.com/package/@anilseervi/inspirational-quotes",
 	},
 ]
 
 /**
  * Source link for a row, derived from the same owner/repo the sparkline uses so
- * there's one place to be wrong. `href` points at the running thing — the app,
- * the npm page — and this points at the code, so a name click and a `src ↗`
- * click always land somewhere predictable. Returns null when they'd be the same
- * link: `this site` has no "try it" that isn't the page you're already on, so
- * its name goes to the repo and the slot stays empty.
+ * there is one place to be wrong. `href` points at the running thing — the app,
+ * the npm page — and this points at the code, so the two icons always land
+ * somewhere predictable. Null when they would be the same link: `this site` has
+ * no "try it" that isn't the page you're already on.
  */
 export const srcUrl = (p: Project): string | null => {
 	if (!p.repo) return null
@@ -136,11 +182,8 @@ export const srcUrl = (p: Project): string | null => {
 	return url === p.href ? null : url
 }
 
-export const statusColors: Record<ProjectStatus, string> = {
-	active: "#92C78C",
-	maintained: "#D9A54A",
-	archived: "#5E5749",
-}
+export const spreads = projects.filter((p) => p.tier === "spread")
+export const archive = projects.filter((p) => p.tier === "archive")
 
 /**
  * /work — the day job. One entry, because there is one job: the `ladder` line

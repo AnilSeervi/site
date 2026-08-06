@@ -3,7 +3,9 @@ import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
 import Section from '~/components/Section.astro';
-import { contributions, experience, projects, srcUrl } from '~/config/site';
+import ProjectSpread from '~/components/ProjectSpread.astro';
+import ProjectRow from '~/components/ProjectRow.astro';
+import { archive, contributions, experience, spreads } from '~/config/site';
 
 /** each row links to the public search that produced its number */
 const prSearch = (repo: string) =>
@@ -59,71 +61,33 @@ const prSearch = (repo: string) =>
   </div>
   <p class="cb-tail">{contributions.tail}</p>
 
-  <!-- reuses the home fetcher: fills any <as-spark data-repo> in this page's main -->
+  {/* The handoff calls this page island-free, and it nearly is. This one is
+      invisible and earns its place: it fills DevFolio's ★/forks from
+      /api/github, and the alternative is a hardcoded count that had already
+      drifted from 486/165 to "★485 · 166" in opposite directions. */}
   <as-home-data aria-hidden="true"></as-home-data>
-  <as-whyslot>
-    <Section
-      label="PROJECTS"
-      meta="sources on github ↗"
-      metaMobile="sources ↗"
-      metaHref="https://github.com/AnilSeervi?tab=repositories"
-      external
-      mb={12}
-    />
-    <p class="why-slot" data-why-slot>— hover a project for the why</p>
-    <div class="os-list" data-why-list>
-      {
-        projects.map((project, i) => (
-          <div class="os-row" data-why={project.why}>
-            <a class="os-name" href={project.href} target="_blank" rel="noopener noreferrer">
-              {project.name}
-            </a>
-            <span class="os-desc">
-              {project.work}
-              {/* SSR values are last-known fallbacks — as-home-data overwrites
-                  both from /api/github, so the brag can't go stale again. The ★
-                  lives INSIDE the span: the island writes `★N`, matching the
-                  home proof strip, so a glyph out here would double it. */}
-              {project.live === 'devfolio' && (
-                <span class="os-num">
-                  {' '}<span data-proof="stars">★486</span> · <span data-proof="forks">165</span> forks.
-                </span>
-              )}
-            </span>
-            <as-spark data-status={project.status} data-seed={String(7 + i)} data-repo={project.repo}>
-              <canvas
-                class="spark"
-                width="144"
-                height="36"
-                style="width:72px;height:18px"
-                data-status={project.status}
-                aria-hidden="true"
-              />
-            </as-spark>
-            {/* the row's second link. active/maintained/archived used to sit
-                here, but it was the one thing on the page nobody could check —
-                and it contradicted its neighbours: "archived" beside copy that
-                says the site is still serving, "maintained" beside a repo with
-                no commit in two years. A link either works or it doesn't. */}
-            {srcUrl(project) && (
-              <a
-                class="os-src"
-                href={srcUrl(project)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${project.name} source on GitHub`}
-              >
-                src ↗
-              </a>
-            )}
-          </div>
-        ))
-      }
+
+  <Section
+    label="OPEN SOURCE"
+    meta="sources on github ↗"
+    metaMobile="sources ↗"
+    metaHref="https://github.com/AnilSeervi?tab=repositories"
+    external
+  />
+  <div class="spreads">
+    {spreads.map((project) => <ProjectSpread project={project} />)}
+  </div>
+
+  {/* the quiet tier: finished work, given a line each instead of a spread */}
+  <div class="archive">
+    <p class="archive-label">FROM THE ARCHIVE</p>
+    <div class="archive-rows">
+      {archive.map((project) => <ProjectRow project={project} />)}
     </div>
-  </as-whyslot>
+  </div>
 
   <Footer left="astro · vercel ▲">
-    <a class="chain" href="/writing">next — ~/writing →</a>
+    <a class="chain" href="/writing">~/writing →</a>
   </Footer>
 </Base>
 
@@ -267,82 +231,34 @@ const prSearch = (repo: string) =>
     margin: 16px 0 56px;
   }
 
-  /* ---- OPEN SOURCE ---- */
-  as-whyslot {
-    display: block;
+  /* ---- OPEN SOURCE ----
+     The rows themselves live in ProjectSpread / ProjectRow; only the outer
+     rhythm is the page's business. Gone from here: the 150px/1fr/76px/auto
+     table, the hover-only why slot, and the row sparklines — the why is inline
+     now, and the sparks were drawing an all-zero series for five of six repos. */
+  .spreads {
+    /* the last spread's own divider doubles as the rule above the archive */
+    margin-bottom: 0;
   }
 
-  .why-slot {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: 15.5px;
-    color: var(--quote);
-    min-height: 24px;
-    margin: 0 0 16px;
-  }
-
-  .os-list {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 64px;
-  }
-
-  .os-row {
+  .archive {
     display: grid;
-    grid-template-columns: 150px 1fr 76px auto;
-    gap: 20px;
-    padding: 15px 0;
-    align-items: center;
-    transition: background 180ms ease;
-  }
-  .os-row:not(:last-child) {
-    border-bottom: 1px solid var(--hair-row);
-  }
-  .os-row:hover {
-    background: rgba(237, 230, 218, 0.035);
+    grid-template-columns: 190px 1fr;
+    gap: 28px;
+    padding: 26px 0 4px;
+    margin-bottom: 60px;
   }
 
-  .os-name {
-    font-family: var(--font-serif);
-    font-size: 20px;
-    color: var(--text-hi);
-    transition: color 180ms ease;
-  }
-  .os-row:hover .os-name {
-    color: var(--as-accent);
-  }
-
-  .os-desc {
-    font-size: 15px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  as-spark {
-    display: block;
-  }
-  .spark {
-    display: block;
-    opacity: 0.75;
-  }
-  /* the island hides itself when the repo's real 52-week series is empty —
-     see spark.ts. Nothing here keys off `status` any more. */
-
-  .os-src {
+  .archive-label {
     font-family: var(--font-mono);
     font-size: 11px;
-    white-space: nowrap;
-    color: var(--meta);
-    text-decoration: none;
-    display: inline-block;
-    transition:
-      color 180ms ease,
-      transform 180ms ease;
+    letter-spacing: 1px;
+    color: var(--faint);
+    margin: 0;
   }
-  .os-src:hover {
-    color: var(--as-accent);
-    /* same ↗ lift the Section metas use */
-    transform: translate(2px, -2px);
+
+  .archive-rows {
+    min-width: 0;
   }
 
   /* frame 6b: footer rule sits 64px below the last row. Footer's default is
@@ -414,48 +330,15 @@ const prSearch = (repo: string) =>
       margin: 14px 0 44px;
     }
 
-    /* The why-line sits ABOVE the list, so any growth when it fills shoves the
-       whole list down. 45px is exactly two lines at 14.5px/1.55 (2 × 22.475),
-       which is what the longest `why` now needs — every project measured 0px of
-       shift at that height. The old 42px was under even a two-line fill, so all
-       five nudged 2.93px and DevFolio, then 114 chars and three lines, jumped
-       25.41px. Keep every `why` under ~90 chars or this floor stops holding. */
-    .why-slot {
-      min-height: 45px;
-      font-size: 14.5px;
-      line-height: 1.55;
-      margin: 0 0 10px;
+    /* the archive label stops being a left column and becomes a heading */
+    .archive {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 18px 0 4px;
+      margin-bottom: 44px;
     }
-    .os-list {
-      margin-bottom: 48px;
-    }
-    .os-row {
-      grid-template-columns: 1fr auto;
-      gap: 3px 12px;
-      padding: 13px 0;
-      align-items: baseline;
-    }
-    .os-row as-spark {
-      display: none;
-    }
-    .os-name {
-      grid-column: 1;
-      grid-row: 1;
-      font-size: 18px;
-    }
-    /* `src ↗` rides the name's line; 44px tall so it's a real tap target */
-    .os-src {
-      grid-column: 2;
-      grid-row: 1;
+    .archive-label {
       font-size: 10.5px;
-      padding: 6px 0 6px 10px;
-      margin: -6px 0;
-    }
-    .os-desc {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      font-size: 13.5px;
-      line-height: 1.55;
     }
 
     :global(main > footer:last-child) {
@@ -465,66 +348,9 @@ const prSearch = (repo: string) =>
 </style>
 
 <script>
-  import '~/islands/spark';
+  /* The only island left: it fills DevFolio's ★/forks from /api/github. The
+     why-slot element is gone — the why is inline on every spread now, so there
+     is nothing to reveal on hover and nothing that was invisible on touch.
+     `spark` is gone too: /work has no sparklines in the 6b handoff. */
   import '~/islands/home-data';
-  import { isMobile, onBreakpointChange } from '~/islands/breakpoint';
-
-  if (!customElements.get('as-whyslot')) {
-    class AsWhyslot extends HTMLElement {
-      #slot: HTMLElement | null = null;
-      #list: HTMLElement | null = null;
-      #rows: HTMLElement[] = [];
-      #showingDefault = true;
-      #unsub: (() => void) | null = null;
-
-      // desktop reveals on hover; mobile on tap (README 7b) — the prompt copy
-      // follows the active affordance
-      #defaultText() {
-        return isMobile() ? '— tap a project for the why' : '— hover a project for the why';
-      }
-
-      #enter = (event: Event) => {
-        const why = (event.currentTarget as HTMLElement).dataset.why;
-        if (this.#slot && why) {
-          this.#slot.textContent = why;
-          this.#showingDefault = false;
-        }
-      };
-
-      #reset = () => {
-        if (this.#slot) this.#slot.textContent = this.#defaultText();
-        this.#showingDefault = true;
-      };
-
-      connectedCallback() {
-        this.#slot = this.querySelector('[data-why-slot]');
-        this.#list = this.querySelector('[data-why-list]');
-        this.#rows = Array.from(this.querySelectorAll<HTMLElement>('[data-why]'));
-        this.#reset();
-        this.#rows.forEach((row) => {
-          row.addEventListener('mouseenter', this.#enter);
-          row.addEventListener('click', this.#enter); // touch
-        });
-        this.#list?.addEventListener('mouseleave', this.#reset);
-        // keep the prompt's hover/tap wording correct across a bp crossing
-        this.#unsub = onBreakpointChange(() => {
-          if (this.#showingDefault) this.#reset();
-        });
-      }
-
-      disconnectedCallback() {
-        this.#rows.forEach((row) => {
-          row.removeEventListener('mouseenter', this.#enter);
-          row.removeEventListener('click', this.#enter);
-        });
-        this.#list?.removeEventListener('mouseleave', this.#reset);
-        this.#unsub?.();
-        this.#unsub = null;
-        this.#rows = [];
-        this.#slot = null;
-        this.#list = null;
-      }
-    }
-    customElements.define('as-whyslot', AsWhyslot);
-  }
 </script>

@@ -4,6 +4,8 @@ import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import Section from '~/components/Section.astro';
 import { site, projects, srcUrl } from '~/config/site';
+import GitHubMark from '~/components/icons/GitHubMark.astro';
+import ArrowUpRight from '~/components/icons/ArrowUpRight.astro';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -115,28 +117,32 @@ const homeProjects = projects.filter((p) => p.home);
     <Section label="01 · WORK" meta="all projects ↗" metaMobile="all ↗" metaHref="/work" external />
     <div class="rows work-rows">
       {
-        homeProjects.map((p, i) => (
+        homeProjects.map((p) => (
           <div class="prow">
             <a class="pname" href={p.href} target="_blank" rel="noopener noreferrer">
               {p.name}
             </a>
             <span class="pdesc">{p.home}</span>
-            <as-spark data-status={p.status} data-seed={String(7 + i)} data-repo={p.repo}>
-              <canvas class="spark" width="144" height="36" style="width:72px;height:18px" aria-hidden="true" />
-            </as-spark>
-            {/* `src ↗`, not a status word — see the note in work.astro. The
-                name goes to the running thing, this goes to the code. */}
-            {srcUrl(p) && (
+            {/* Same icon pair as the /work spreads: the mark is the source, the
+                arrow is the running thing. The row sparkline that used to sit
+                here is gone — every one of these repos has an all-zero 52-week
+                series, so it drew a 1.5px flat line pretending to be a chart. */}
+            <p class="plinks">
+              {srcUrl(p) && (
+                <a href={srcUrl(p)} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub`}>
+                  <GitHubMark size={14} />
+                </a>
+              )}
               <a
-                class="psrc"
-                href={srcUrl(p)}
+                class="plive"
+                href={p.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`${p.name} source on GitHub`}
+                aria-label={`open ${p.name}`}
               >
-                src ↗
+                <ArrowUpRight size={14} />
               </a>
-            )}
+            </p>
           </div>
         ))
       }
@@ -353,7 +359,8 @@ const homeProjects = projects.filter((p) => p.home);
   }
   .prow {
     display: grid;
-    grid-template-columns: 132px 1fr 76px auto;
+    /* the 76px sparkline column is gone — name, one-liner, links */
+    grid-template-columns: 132px 1fr auto;
     gap: 20px;
     padding: 15px 0;
     border-bottom: 1px solid var(--hair-row);
@@ -375,28 +382,26 @@ const homeProjects = projects.filter((p) => p.home);
     color: var(--text-muted);
     line-height: 1.6;
   }
-  canvas.spark {
-    display: block;
-    /* prototype dims sparklines at the element level: .75 normal, .6 archived */
-    opacity: 0.75;
+  /* the icon pair, matching the /work spreads */
+  .plinks {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
   }
-  /* the island hides itself when a repo's real 52-week series is empty —
-     see spark.ts. Nothing here keys off `status` any more. */
-
-  .psrc {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    white-space: nowrap;
+  .plinks a {
+    display: inline-flex;
     color: var(--meta);
-    text-decoration: none;
-    display: inline-block;
     transition:
       color 180ms ease,
       transform 180ms ease;
   }
-  .psrc:hover {
-    color: var(--as-accent);
-    transform: translate(2px, -2px);
+  .plinks a:hover {
+    color: var(--text-hi);
+  }
+  /* only the arrow lifts — the mark is a destination, the arrow is a direction */
+  .plinks a.plive:hover {
+    transform: translate(1px, -1px);
   }
 
   /* 5 · writing rows */
@@ -602,7 +607,7 @@ const homeProjects = projects.filter((p) => p.home);
       flex-basis: 100%;
     }
 
-    /* work digest rows: name + chip on line 1, one-liner below; spark hidden */
+    /* work digest rows: name + icon pair on line 1, one-liner below */
     .rows {
       margin-bottom: 44px;
     }
@@ -612,21 +617,22 @@ const homeProjects = projects.filter((p) => p.home);
       padding: 13px 0;
       align-items: baseline;
     }
-    .prow as-spark {
-      display: none;
-    }
     .pname {
       grid-column: 1;
       grid-row: 1;
       font-size: 18px;
     }
-    /* `src ↗` rides the name's line; padded out to a real tap target */
-    .psrc {
+    /* the pair rides the name's line; padding goes on the anchors so each is a
+       44px target rather than growing the flex container (see ProjectSpread) */
+    .plinks {
       grid-column: 2;
       grid-row: 1;
-      font-size: 10.5px;
-      padding: 6px 0 6px 10px;
-      margin: -6px 0;
+      gap: 0;
+      margin-right: -8px;
+    }
+    .plinks a {
+      padding: 15px 8px;
+      margin: -15px 0;
     }
     .pdesc {
       grid-column: 1 / -1;

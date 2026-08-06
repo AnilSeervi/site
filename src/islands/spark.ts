@@ -1,8 +1,11 @@
 /**
- * <as-spark> — commit-activity sparklines (frames 6a/6b).
+ * <as-spark> — commit-activity sparkline (frame 6a).
  * Hero: 320×22 (2× backing 640×44), 52 weekly points, brass rgba(217,165,74,.75).
- * Row: 72×18 (2× 144×36), colored by project status —
- *   maintained → accent brass · active → #92C78C · archived → #5E5749.
+ *
+ * The 72×18 row variant is no longer mounted anywhere: /work dropped per-project
+ * sparklines in the 6b handoff, and the home digest followed because every one of
+ * those repos has an all-zero 52-week series — a 1.5px flat line pretending to be
+ * a chart. The row sizing path is kept for when a row spark has real data again.
  *
  * Data: `data-values` JSON array of non-negative numbers — <as-home-data>
  * sets it from /api/github after mount, and attributeChangedCallback redraws.
@@ -28,17 +31,6 @@ function hexToRgba(hex: string, a: number): string {
   if (h.length === 3) h = h.split('').map((c) => c + c).join('');
   const n = parseInt(h, 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-}
-
-/**
- * Row stroke colours come from the theme tokens (status → accent/green/faint).
- * Strokes are SOLID — the prototype dims via element-level opacity (.75 normal
- * / .6 archived), which the pages own via CSS; baking alpha here would double it.
- */
-function statusColor(status: string | undefined): string {
-  if (status === 'active') return cssHex('--live-green', '#92c78c');
-  if (status === 'archived') return cssHex('--faint', '#5e5749');
-  return cssHex('--as-accent', '#d9a54a');
 }
 
 class AsSpark extends HTMLElement {
@@ -124,10 +116,12 @@ class AsSpark extends HTMLElement {
         return sum / (to - from);
       });
     }
-    // hero keeps the prototype's --as-accent at .75 (no element opacity there)
-    const stroke = hero
-      ? hexToRgba(cssHex('--as-accent', '#d9a54a'), 0.75)
-      : statusColor(this.dataset.status);
+    // Brass at .75 for the hero, solid for a row. Rows used to take their
+    // colour from the project's active/maintained/archived field; that field is
+    // gone (it couldn't be checked), and with it the last reason for a
+    // per-status palette here.
+    const accent = cssHex('--as-accent', '#d9a54a');
+    const stroke = hero ? hexToRgba(accent, 0.75) : accent;
 
     const x = cv.getContext('2d')!;
     x.setTransform(2, 0, 0, 2, 0, 0);

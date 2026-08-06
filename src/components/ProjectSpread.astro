@@ -1,0 +1,252 @@
+---
+/**
+ * ProjectSpread — the editorial treatment on /work (handoff 6b).
+ *
+ * Two columns, 190px + rest. Left carries identity and the two ways out (the
+ * running thing, the source); right carries the prose. The why-line is inline
+ * and always visible, which is the point: it used to live in a single shared
+ * slot above the list that filled on hover, so it was invisible on touch and
+ * shoved the whole list down by up to 25px when it grew.
+ *
+ * The chip under the name holds a number, never a status word — see the note on
+ * `Project.metric`. DevFolio's is filled from /api/github by <as-home-data>,
+ * which is why this page still mounts one invisible island despite the
+ * handoff's "no islands": the alternative is hardcoding a count that drifts.
+ */
+import type { Project } from '~/config/site';
+import { srcUrl } from '~/config/site';
+import GitHubMark from '~/components/icons/GitHubMark.astro';
+import ArrowUpRight from '~/components/icons/ArrowUpRight.astro';
+
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+const src = srcUrl(project);
+---
+
+<article class="spread">
+  <div class="left">
+    <a class="name" href={project.href} target="_blank" rel="noopener noreferrer">{project.name}</a>
+
+    {
+      (project.siteUp || project.live || project.metric) && (
+        <p class="chip">
+          {/* `active` is a claim about the deployed site, not the repo — the one
+              version of this label a reader can check by clicking the ↗ */}
+          {project.siteUp && (
+            <span class="up">
+              <span class="dot" aria-hidden="true" />active
+            </span>
+          )}
+          {project.live === 'devfolio' && (
+            <span class="num">
+              {/* SSR values are last-known fallbacks; the island overwrites both */}
+              {project.siteUp && ' · '}
+              <span data-proof="stars">★486</span> · <span data-proof="forks">165</span> forks
+            </span>
+          )}
+          {project.metric && (
+            <span class="num">
+              {project.siteUp && ' · '}
+              {project.metric}
+            </span>
+          )}
+        </p>
+      )
+    }
+
+    <p class="links">
+      {
+        src && (
+          <a href={src} target="_blank" rel="noopener noreferrer" aria-label={`${project.name} source on GitHub`}>
+            <GitHubMark />
+          </a>
+        )
+      }
+      <a
+        class="live"
+        href={project.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`open ${project.name}`}
+      >
+        <ArrowUpRight />
+      </a>
+    </p>
+  </div>
+
+  <div class="right">
+    <p class="desc">{project.work}</p>
+    <p class="why">{project.why}</p>
+    <p class="stack">{project.stack.join(' · ')}</p>
+  </div>
+</article>
+
+<style>
+  .spread {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 28px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--hair-row);
+  }
+
+  .left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: 23px;
+    line-height: 1.1;
+    color: var(--text-hi);
+    text-decoration: none;
+    transition: color 0.18s ease;
+  }
+  .name:hover {
+    color: var(--as-accent);
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--meta);
+    margin: 0;
+    white-space: nowrap;
+  }
+  /* green, per the handoff's `active` colour — the dot inherits it */
+  .chip .up {
+    color: var(--live-green);
+  }
+  .chip .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 6px;
+    /* 5px against an 11px cap height needs nudging onto the optical centre */
+    vertical-align: 1px;
+  }
+  .chip .num {
+    color: var(--meta);
+  }
+
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+  }
+  .links a {
+    display: inline-flex;
+    color: var(--meta);
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+  .links a:hover {
+    color: var(--text-hi);
+  }
+  /* only the arrow lifts — the mark is a destination, the arrow is a direction */
+  .links a.live:hover {
+    transform: translate(1px, -1px);
+  }
+
+  .right {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .desc {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .why {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--meta);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .stack {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  /* ---- mobile (handoff 7b) ----
+     One column: the name and the icon pair share a header row, then the chip,
+     then the prose. 768px, not the handoff's 640px — every other page in the
+     site switches at 768, and two breakpoints would be a maintenance trap. */
+  @media (max-width: 768px) {
+    .spread {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 16px 0;
+    }
+    .left {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 4px 12px;
+    }
+    .name {
+      font-size: 19px;
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .links {
+      grid-column: 2;
+      grid-row: 1;
+      /* the padding has to sit on the anchors, not here — on the container it
+         grows the flex box and leaves each <a> a 14px target. Negative left
+         margin keeps the first glyph on the column edge despite its padding. */
+      gap: 0;
+      margin-left: -8px;
+    }
+    .links a {
+      padding: 15px 8px;
+      margin: -15px 0;
+    }
+    .links svg {
+      width: 14px;
+      height: 14px;
+    }
+    .chip {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 10.5px;
+    }
+    .right {
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .desc {
+      font-size: 14.5px;
+      line-height: 1.6;
+    }
+    .why {
+      font-size: 14px;
+    }
+    .stack {
+      font-size: 10.5px;
+    }
+  }
+</style>

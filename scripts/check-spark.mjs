@@ -32,8 +32,8 @@ const sampleFn = `(el) => {
 }`;
 
 // ---- HOME ----
-await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
-await page.waitForTimeout(400);
+await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2500);
 
 const hero = await page.$eval('as-spark[data-kind="hero"]', eval(sampleFn));
 const homeRows = await page.$$eval('as-spark:not([data-kind="hero"])', (els, fnSrc) => {
@@ -41,38 +41,60 @@ const homeRows = await page.$$eval('as-spark:not([data-kind="hero"])', (els, fnS
   return els.map((el) => ({ status: el.dataset.status, seed: el.dataset.seed, ...fn(el) }));
 }, sampleFn);
 
-// verify hero dataset matches prototype exactly: recompute seed-7 series in page & compare drawn polyline
+// The hero must draw the REAL contribution series and must NOT match the old
+// synthetic seed-7 curve. That fallback used to render an invented commit
+// history on every first paint (and permanently if /api/github failed); it's
+// gone, so a match here would be a regression, not a pass.
 const heroCheck = await page.evaluate(() => {
-  const mul = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  const rnd = mul(7), wk = [];
-  for (let w = 0; w < 52; w++) { let s = 0; for (let d = 0; d < 7; d++) s += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55); wk.push(s); }
-  const top = Math.max.apply(null, wk);
-  // expected canvas-space (2x) points
-  const pts = wk.map((v, w) => [w * (320 / 51) * 2, (20 - (v / top) * 17) * 2]);
-  const cv = document.querySelector('as-spark[data-kind="hero"] canvas');
+  const el = document.querySelector('as-spark[data-kind="hero"]');
+  const cv = el.querySelector('canvas');
   const x = cv.getContext('2d');
   const d = x.getImageData(0, 0, cv.width, cv.height).data;
-  // check stroke alpha near each expected point (within 3px radius)
-  let hit = 0;
-  for (const [ex, ey] of pts) {
-    let found = false;
-    for (let dy = -4; dy <= 4 && !found; dy++) for (let dx = -4; dx <= 4 && !found; dx++) {
-      const px = Math.round(ex + dx), py = Math.round(ey + dy);
-      if (px < 0 || py < 0 || px >= cv.width || py >= cv.height) continue;
-      if (d[(py * cv.width + px) * 4 + 3] > 40) found = true;
-    }
-    if (found) hit++;
-  }
-  return { hit, total: pts.length, top: +top.toFixed(4), wk0: +wk[0].toFixed(4), wk51: +wk[51].toFixed(4) };
+
+  const inkNear = (ex, ey) => {
+    for (let dy = -4; dy <= 4; dy++)
+      for (let dx = -4; dx <= 4; dx++) {
+        const px = Math.round(ex + dx), py = Math.round(ey + dy);
+        if (px < 0 || py < 0 || px >= cv.width || py >= cv.height) continue;
+        if (d[(py * cv.width + px) * 4 + 3] > 40) return true;
+      }
+    return false;
+  };
+  // the island's own geometry: w=320, h=22, bottom=h-2, usable=h-5, backing 2x
+  const hits = (series) => {
+    const top = Math.max(...series, 0.001);
+    return series.filter((v, i) =>
+      inkNear(i * (320 / (series.length - 1)) * 2, (20 - (v / top) * 17) * 2)
+    ).length;
+  };
+
+  const real = el.dataset.values ? JSON.parse(el.dataset.values) : null;
+
+  // the retired fallback, recomputed here purely to prove it is NOT on screen
+  const mul = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const rnd = mul(7), synth = [];
+  for (let w = 0; w < 52; w++) { let v = 0; for (let k = 0; k < 7; k++) v += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55); synth.push(v); }
+
+  return {
+    hasRealData: !!real,
+    realSum: real ? +real.reduce((a, c) => a + c, 0).toFixed(2) : null,
+    realHits: real ? hits(real) : 0,
+    realTotal: real ? real.length : 0,
+    syntheticHits: hits(synth),
+    syntheticTotal: synth.length,
+    verdict:
+      real && hits(real) / real.length > 0.9 && hits(synth) / synth.length < 0.7
+        ? 'real series drawn, synthetic absent'
+        : 'CHECK — see counts'
+  };
 });
 
 // ---- WORK ----
-await page.goto('http://localhost:4321/work', { waitUntil: 'networkidle' });
-await page.waitForTimeout(400);
-const workRows = await page.$$eval('as-spark', (els, fnSrc) => {
-  const fn = eval(fnSrc);
-  return els.map((el) => ({ status: el.dataset.status, seed: el.dataset.seed, ...fn(el) }));
-}, sampleFn);
+// The 6b handoff removed per-project sparklines from this page entirely, so the
+// assertion is now an absence: any <as-spark> here is a regression.
+await page.goto('http://localhost:4321/work', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(600);
+const workRows = { sparkCount: await page.locator('as-spark').count(), expected: 0 };
 
 console.log(JSON.stringify({ hero, heroCheck, homeRows, workRows }, null, 1));
 await browser.close();
