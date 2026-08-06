@@ -6,6 +6,10 @@ import Palette from '~/components/Palette.astro';
 import { site } from '~/config/site';
 import '@fontsource-variable/newsreader/opsz.css';
 import '@fontsource-variable/newsreader/opsz-italic.css';
+/* variable wght 400–900 in one file: body sits at 400 and .prose strong at 600.
+   The matching wght-italic.css is deliberately not loaded — every italic on the
+   site is serif (checked: 9 rules, all pair with --font-serif). */
+import '@fontsource-variable/schibsted-grotesk/wght.css';
 import '@fontsource/spline-sans-mono/400.css';
 import '@fontsource/spline-sans-mono/500.css';
 import '~/styles/global.css';
