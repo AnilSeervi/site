@@ -42,6 +42,8 @@ interface SpotifyLast {
 }
 interface SpotifyRes {
   disabled?: boolean;
+  /** upstream failed (token revoked, API down) — distinct from nothing playing */
+  error?: boolean;
   isPlaying?: boolean;
   now?: SpotifyNow | null;
   last?: SpotifyLast | null;
@@ -154,6 +156,8 @@ function contribLine(
 
 class AsLiveData extends HTMLElement {
   #phase = new LoadPhase(this);
+  /** drives the LISTENING head note: 'live' only if spotify actually answered */
+  #spotifyOk = true;
 
   connectedCallback() {
     this.#phase.start();
@@ -188,9 +192,10 @@ class AsLiveData extends HTMLElement {
       this.#applyGithub(alive(github));
       this.#applyMal(alive(mal));
       this.#applyWeather(alive(weather));
-      // the LISTENING phase note flips to 'live' once the section resolves
+      // the LISTENING phase note flips to 'live' once the section resolves —
+      // but only if it resolved; 'live' over a dead feed is a lie
       const note = this.querySelector<HTMLElement>('[data-live="phase-note"]');
-      if (note) note.textContent = 'live';
+      if (note) note.textContent = this.#spotifyOk ? 'live' : 'unavailable';
       this.#pruneSections();
     });
   }
@@ -226,6 +231,19 @@ class AsLiveData extends HTMLElement {
     // bars animate only while a track is actually playing
     const eq = this.querySelector('[data-eq]');
     if (eq) eq.classList.toggle('playing', s?.isPlaying === true);
+
+    // A failed fetch and a quiet evening arrive as the same empty payload, so
+    // the API flags the difference and the section says which it is. Silence
+    // isn't neutral here: #pruneSections deletes a section whose rows all
+    // vanish, so an unreported failure removes LISTENING from the page
+    // entirely — which is how a revoked refresh token went unnoticed.
+    // `disabled` is deliberate config, not failure: that one still prunes.
+    this.#spotifyOk = !!s && !s.error;
+    if (!this.#spotifyOk) {
+      this.#setParts('now', '', "spotify didn't answer — try later");
+      this.#hideRow('last');
+      return;
+    }
 
     if (s?.now) {
       this.#setParts('now', s.now.title, ` — ${s.now.artist}${s.now.context ? ' · ' : ''}`, s.now.context);

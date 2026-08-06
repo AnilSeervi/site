@@ -195,7 +195,10 @@ const ogImageURL = new URL(ogImage, site.url);
     font-size: 15px;
     color: var(--as-accent);
     cursor: pointer;
-    transition: border-color 180ms ease;
+    /* opacity animates the yield to an open <as-drawer> (see global.css) */
+    transition:
+      border-color 180ms ease,
+      opacity 200ms ease;
   }
   .cmd-chip:hover,
   .cmd-chip:focus-visible {

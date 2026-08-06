@@ -11,7 +11,7 @@ interface Props {
   title: string;
   description: string;
   slug: string;
-  /** mono meta line parts, joined with ` · ` — read% appended automatically */
+  /** mono meta line parts, joined with ` · ` */
   metaParts: string[];
   prev?: Cell;
   next?: Cell;
@@ -34,12 +34,14 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
   <a class="crumb" href="/writing">← ~/writing</a>
   <h1 transition:name={`title-${slug}`}>{title}</h1>
   {/* .views is filled client-side (' · 1.2k views' — separator included, so
-      nothing stray shows while the span is empty and hidden via :empty). */}
+      nothing stray shows while the span is empty and hidden via :empty).
+
+      No `NN% read` here any more. It sat in this line, which scrolls away with
+      the rest of the page — so the number was only legible while it still read
+      0%, and by the time it said anything it was off-screen. The 2px bar above
+      is position:fixed and says the same thing for the whole article. */}
   <div class="meta">
-    {metaParts.join(' · ')}<span class="views" data-views={slug}></span> · <span
-      class="read"
-      data-read-pct>0% read</span
-    >
+    {metaParts.join(' · ')}<span class="views" data-views={slug}></span>
   </div>
   <div class="prose">
     <slot />
@@ -114,9 +116,6 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
     font-size: 12.5px;
     color: var(--meta);
     margin-bottom: 44px;
-  }
-  .meta .read {
-    color: var(--as-accent);
   }
   .meta .views:empty {
     display: none;

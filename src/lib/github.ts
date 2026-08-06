@@ -97,11 +97,14 @@ export interface RepoStats {
   stars: number;
   /** stargazers of AnilSeervi/DevFolio */
   devfolioStars: number;
+  /** forks of AnilSeervi/DevFolio — /work quotes this next to the stars */
+  devfolioForks: number;
 }
 
 export async function getRepoStats(): Promise<RepoStats> {
   // GitHub caps per_page at 100 — paginate so 100+ repos count correctly
-  const repos: { fork: boolean; full_name: string; stargazers_count: number }[] = [];
+  const repos: { fork: boolean; full_name: string; stargazers_count: number; forks_count: number }[] =
+    [];
   for (let page = 1; page <= 5; page++) {
     const res = await fetch(`${REST}/users/${USER}/repos?per_page=100&page=${page}`, {
       headers: headers()
@@ -119,7 +122,8 @@ export async function getRepoStats(): Promise<RepoStats> {
   return {
     repoCount: repos.length,
     stars,
-    devfolioStars: devfolio?.stargazers_count ?? 0
+    devfolioStars: devfolio?.stargazers_count ?? 0,
+    devfolioForks: devfolio?.forks_count ?? 0
   };
 }
 

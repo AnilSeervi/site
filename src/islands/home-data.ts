@@ -27,6 +27,7 @@ interface GitHubData {
   repoCount?: number | null;
   stars?: number | null;
   devfolioStars?: number | null;
+  devfolioForks?: number | null;
   lastPush?: { repo: string; commits: number; ago: string } | null;
   sparks?: Record<string, number[]>;
   disabled?: boolean;
@@ -57,6 +58,9 @@ class AsHomeData extends HTMLElement {
     };
 
     if (typeof data.devfolioStars === 'number') set('stars', `★${data.devfolioStars}`);
+    // /work quotes DevFolio's forks beside its stars. Both were hardcoded and
+    // both had drifted — in opposite directions — so the page now asks GitHub.
+    if (typeof data.devfolioForks === 'number') set('forks', String(data.devfolioForks));
     if (typeof data.repoCount === 'number') set('repos', String(data.repoCount));
     if (typeof data.followers === 'number') set('followers', String(data.followers));
     // 'pull shark ×3' ([data-proof=shark]) stays static — no API for achievements.

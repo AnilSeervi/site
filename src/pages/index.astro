@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import Section from '~/components/Section.astro';
-import { site, projects } from '~/config/site';
+import { site, projects, srcUrl } from '~/config/site';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -96,7 +96,7 @@ const homeProjects = projects.filter((p) => p.home);
   </div>
 
   <div class="proof as-enter" style="animation-delay:.42s">
-    <span><span class="stars" data-proof="stars">★486</span> devfolio</span><span class="sep"
+    <span><span class="stars" data-proof="stars">★485</span> devfolio</span><span class="sep"
       >/</span
     >
     <span><span class="val" data-proof="repos">118</span> repos</span><span class="sep">/</span>
@@ -124,10 +124,19 @@ const homeProjects = projects.filter((p) => p.home);
             <as-spark data-status={p.status} data-seed={String(7 + i)} data-repo={p.repo}>
               <canvas class="spark" width="144" height="36" style="width:72px;height:18px" aria-hidden="true" />
             </as-spark>
-            <span class="ptag" data-status={p.status}>
-              <span class="pdot" aria-hidden="true" />
-              {p.status}
-            </span>
+            {/* `src ↗`, not a status word — see the note in work.astro. The
+                name goes to the running thing, this goes to the code. */}
+            {srcUrl(p) && (
+              <a
+                class="psrc"
+                href={srcUrl(p)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${p.name} source on GitHub`}
+              >
+                src ↗
+              </a>
+            )}
           </div>
         ))
       }
@@ -243,11 +252,20 @@ const homeProjects = projects.filter((p) => p.home);
     margin-bottom: 22px;
   }
 
+  /* one line of copy carrying the whole introduction. Body size, not display
+     size — the weight comes from the tighter leading and the narrow cap, which
+     break it into two balanced lines instead of one long ruler. Going bigger
+     puts it in competition with the h1 two rows above. */
   .intro {
     font-size: 17px;
-    line-height: 1.7;
+    line-height: 1.6;
     margin: 0 0 20px;
-    max-width: 30em;
+    /* 23em is measured, not chosen: it's the widest cap that still breaks this
+       line on its sentence boundary rather than mid-clause, before the number.
+       `balance` can't do it — the most even split is the one that orphans
+       "13 days later", so it picks that at every width. Re-measure if the copy
+       changes; a wrong cap only costs an uglier break, never a layout. */
+    max-width: 23em;
     text-wrap: pretty;
   }
 
@@ -362,32 +380,23 @@ const homeProjects = projects.filter((p) => p.home);
     /* prototype dims sparklines at the element level: .75 normal, .6 archived */
     opacity: 0.75;
   }
-  as-spark[data-status='archived'] canvas.spark {
-    opacity: 0.6;
-  }
-  .ptag {
+  /* the island hides itself when a repo's real 52-week series is empty —
+     see spark.ts. Nothing here keys off `status` any more. */
+
+  .psrc {
     font-family: var(--font-mono);
     font-size: 11px;
     white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .ptag[data-status='active'] {
-    color: var(--live-green);
-  }
-  .ptag[data-status='maintained'] {
-    color: var(--as-accent);
-  }
-  .ptag[data-status='archived'] {
-    color: var(--faint);
-  }
-  .pdot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: currentColor;
+    color: var(--meta);
+    text-decoration: none;
     display: inline-block;
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+  .psrc:hover {
+    color: var(--as-accent);
+    transform: translate(2px, -2px);
   }
 
   /* 5 · writing rows */
@@ -570,7 +579,7 @@ const homeProjects = projects.filter((p) => p.home);
     }
     .intro {
       font-size: 15px;
-      line-height: 1.7;
+      line-height: 1.6;
       margin: 0 0 16px;
     }
     .socials {
@@ -611,10 +620,13 @@ const homeProjects = projects.filter((p) => p.home);
       grid-row: 1;
       font-size: 18px;
     }
-    .ptag {
+    /* `src ↗` rides the name's line; padded out to a real tap target */
+    .psrc {
       grid-column: 2;
       grid-row: 1;
       font-size: 10.5px;
+      padding: 6px 0 6px 10px;
+      margin: -6px 0;
     }
     .pdesc {
       grid-column: 1 / -1;

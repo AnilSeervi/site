@@ -53,6 +53,7 @@ export const GET: APIRoute = async () => {
       repoCount: repo?.repoCount ?? null,
       stars: repo?.stars ?? null,
       devfolioStars: repo?.devfolioStars ?? null,
+      devfolioForks: repo?.devfolioForks ?? null,
       lastPush: push,
       sparks: sparks.status === 'fulfilled' ? sparks.value : {}
     },

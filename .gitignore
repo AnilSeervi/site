@@ -8,3 +8,8 @@ dist/
 .DS_Store
 .vercel
 .env*
+
+# private proof material — never publish (internal metrics, names)
+body-of-work.html
+resume-work-inventory.md
+resume-work-additions.md

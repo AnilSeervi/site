@@ -6,37 +6,15 @@
  *
  * Data: `data-values` JSON array of non-negative numbers — <as-home-data>
  * sets it from /api/github after mount, and attributeChangedCallback redraws.
- * Without (or with invalid) data-values it falls back to the prototype's
- * deterministic synthetic series (mulberry32 seed 7 + sin wave) so the visual
- * matches the design reference exactly.
+ * Without it, or with an all-zero series, the element hides instead of drawing:
+ * it used to substitute a deterministic synthetic wave to match the design
+ * reference, which put invented commit history on the page.
  *
  * Mobile (7a): the hero sparkline is a touch narrower (300px full-column vs
  * 320px). Row sparks are hidden below 768px, so only the hero re-sizes.
  */
 
 import { isMobile, onBreakpointChange } from './breakpoint';
-
-function mulberry(a: number) {
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** the prototype's synthetic 52-week series (drawSpark, seed 7) */
-function syntheticWeeks(seed = 7): number[] {
-  const rnd = mulberry(seed);
-  const wk: number[] = [];
-  for (let w = 0; w < 52; w++) {
-    let s = 0;
-    for (let d = 0; d < 7; d++) s += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55);
-    wk.push(s);
-  }
-  return wk;
-}
 
 /** resolve a theme token (:root custom property) to its hex, with a fallback */
 function cssHex(name: string, fallback: string): string {
@@ -96,17 +74,30 @@ class AsSpark extends HTMLElement {
     const cv = this.querySelector('canvas');
     if (!cv) return;
 
-    let values: number[] | null = null;
+    let parsed: number[] | null = null;
     try {
-      values = this.dataset.values ? JSON.parse(this.dataset.values) : null;
+      parsed = this.dataset.values ? JSON.parse(this.dataset.values) : null;
     } catch {
-      values = null;
+      parsed = null;
     }
-    if (!values || values.length < 2) {
-      // deterministic per-element seed so different rows don't render identically
-      const seed = this.dataset.seed ? Number(this.dataset.seed) : 7;
-      values = syntheticWeeks(seed);
+
+    // Draw nothing rather than draw a guess. This used to fall back to a
+    // synthetic mulberry32 wave whenever real data was missing, which meant an
+    // invented commit history rendered on every first paint — and would have
+    // stayed on screen permanently if /api/github ever failed. Fabricated
+    // activity on a page whose whole argument is receipts is not a fallback.
+    //
+    // An all-zero series is also nothing: five of the six repos have had no
+    // commit in 52 weeks, and a 1.5px flat line reads as a broken chart rather
+    // than as a quiet year. visibility, not display, so the column holds its
+    // width and the rest of the row keeps its alignment.
+    if (!parsed || parsed.length < 2 || Math.max(...parsed) <= 0) {
+      this.style.visibility = 'hidden';
+      cv.getContext('2d')?.clearRect(0, 0, cv.width, cv.height);
+      return;
     }
+    this.style.visibility = '';
+    let values: number[] = parsed;
 
     const hero = this.dataset.kind === 'hero';
     const w = hero ? (isMobile() ? 300 : 320) : 72;
@@ -129,7 +120,7 @@ class AsSpark extends HTMLElement {
         const from = Math.floor(b * per);
         const to = Math.max(from + 1, Math.floor((b + 1) * per));
         let sum = 0;
-        for (let i = from; i < to; i++) sum += values![i]!;
+        for (let i = from; i < to; i++) sum += values[i]!;
         return sum / (to - from);
       });
     }
@@ -146,7 +137,7 @@ class AsSpark extends HTMLElement {
     const usable = h - 5;
     x.beginPath();
     values.forEach((v, i) => {
-      const px = i * (w / (values!.length - 1));
+      const px = i * (w / (values.length - 1));
       const py = bottom - (v / top) * usable;
       if (i) x.lineTo(px, py);
       else x.moveTo(px, py);

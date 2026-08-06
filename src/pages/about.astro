@@ -53,7 +53,17 @@ const details = Object.entries(calendar.details);
     <div class="cal-grid">
       {
         calendar.years.map((y, i) => (
-          <span class="cal-year" style={`grid-row:${i + 1}`}>
+          /* `first`/`last` are explicit classes, not :first-child/:last-child —
+             the lane, milestone groups and cards are siblings rendered after
+             these, so no .cal-year is ever the grid's last child and the
+             structural selector silently matched nothing. */
+          <span
+            class:list={[
+              'cal-year',
+              { first: i === 0, last: i === calendar.years.length - 1 }
+            ]}
+            style={`grid-row:${i + 1}`}
+          >
             {y}
           </span>
         ))
@@ -72,56 +82,101 @@ const details = Object.entries(calendar.details);
         >
       </button>
       {
-        calendar.cards.map((c) => (
-          <button
-            class:list={['cal-card', { accent: c.accent }]}
-            type="button"
-            data-cal={c.key}
-            aria-expanded="false"
-            style={`grid-row:${yearRow(c.fromYear)}/${yearRow(c.toYear) + 1}`}
-          >
-            <span class="card-kicker">{c.kicker}</span>
-            <span class="card-title">{c.title}</span>
-            <span class="card-dates">{c.dates}</span>
-          </button>
-        ))
-      }
-      {
-        calendar.milestones.map((m) => (
-          <span class="cal-milestone" style={`grid-row:${yearRow(m.year)}`}>
-            <span class="dot" aria-hidden="true" />
-            {m.label}
-          </span>
-        ))
-      }
-    </div>
-    <div class="cal-panel">
-      <div class="cal-hint" data-cal-hint>
-        — <span class="desktop-only">click</span><span class="mobile-only">tap</span> a card or the
-        striped lane; what shipped there drops in here
-      </div>
-      {
-        details.map(([key, d]) => (
-          <div class="cal-detail" data-cal-detail={key} hidden>
-            <div class="detail-head">
-              <span class="detail-title">{d.title}</span>
-              <span class="detail-meta">{d.meta}</span>
-            </div>
-            <div class="detail-body">
-              <span class="detail-label">STUFF THAT SHIPPED</span>
-              {d.bullets.map((b) => (
-                <div class="detail-bullet">
-                  <span class="bullet-dot" aria-hidden="true">
-                    ·
-                  </span>
-                  <span>{b}</span>
-                </div>
+        calendar.cards.map((c) => {
+          /* the card subgrids the year rows it spans, so a tick placed in local
+             row N lines up with the same band's year numeral exactly */
+          const top = yearRow(c.fromYear);
+          const span = yearRow(c.toYear) + 1 - top;
+          return (
+            <button
+              class:list={['cal-card', { accent: c.accent }]}
+              type="button"
+              data-cal={c.key}
+              aria-expanded="false"
+              style={`grid-row:${top}/${top + span}`}
+            >
+              <span class="card-head">{c.head}</span>
+              {c.ticks.map((t) => (
+                <span class="card-tick" style={`grid-row:${yearRow(t.year) - top + 1}`}>
+                  <span class="tick-dot" aria-hidden="true" />
+                  {t.label}
+                </span>
               ))}
-            </div>
-          </div>
-        ))
+              <span class="card-foot" style={`grid-row:${span}`}>
+                <span class="card-kicker">{c.kicker}</span>
+                <span class="card-title">{c.title}</span>
+                <span class="card-dates">{c.dates}</span>
+              </span>
+            </button>
+          );
+        })
+      }
+      {
+        /* milestones grouped per year — several can share a band */
+        calendar.years.map((y, i) => {
+          const ms = calendar.milestones.filter((m) => m.year === y);
+          return ms.length > 0 ? (
+            <span class="cal-mgroup" style={`grid-row:${i + 1}`}>
+              {ms.map((m) => (
+                <span class="cal-milestone">
+                  <span class="dot" aria-hidden="true" />
+                  {m.label}
+                </span>
+              ))}
+            </span>
+          ) : null;
+        })
       }
     </div>
+    <div class="cal-hint">
+      — <span class="desktop-only">click</span><span class="mobile-only">tap</span> a card or the
+      striped lane; what shipped there slides up
+    </div>
+    <!-- vaul-style bottom sheet (vanilla) — the detail panel, drawn up on click -->
+    <as-drawer class="cal-drawer" hidden>
+      <div class="dw-overlay" data-dw-overlay></div>
+      <div
+        class="dw-sheet"
+        data-dw-sheet
+        role="dialog"
+        aria-modal="true"
+        aria-label="career calendar detail"
+      >
+        <div class="dw-handle" aria-hidden="true"></div>
+        <div class="dw-body" data-dw-body>
+          {
+            details.map(([key, d]) => (
+              <div class="cal-detail" data-cal-detail={key} hidden>
+                <div class="detail-head">
+                  <span class="detail-title">{d.title}</span>
+                  <span class="detail-meta">{d.meta}</span>
+                </div>
+                <div class="detail-body">
+                  <span class="detail-label">STUFF THAT SHIPPED</span>
+                  {d.bullets.map((b) => (
+                    <div class="detail-bullet">
+                      <span class="bullet-dot" aria-hidden="true">
+                        ·
+                      </span>
+                      <span>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+        <!-- drag/esc/overlay all close this, but every one of them is
+             invisible — the pill is the affordance that says so -->
+        <div class="dw-foot">
+          <button class="dw-nav" type="button" data-cal-step="-1" aria-label="previous entry">
+            ‹
+          </button>
+          <button class="dw-close" type="button" data-dw-close>close</button>
+          <button class="dw-nav" type="button" data-cal-step="1" aria-label="next entry">›</button>
+        </div>
+      </div>
+    </as-drawer>
   </as-calendar>
 
   <!-- colophon -->
@@ -230,33 +285,48 @@ const details = Object.entries(calendar.details);
   .cal-grid {
     display: grid;
     grid-template-columns: 56px 40px 300px 1fr;
-    grid-auto-rows: 48px;
+    /* year bands run much taller than the prototype's 48px — three milestones
+       sit comfortably in 92px, and a loaded year (2022 has four) stretches its
+       own band via the minmax ceiling without disturbing the others */
+    grid-auto-rows: minmax(92px, auto);
     column-gap: 22px;
   }
 
+  /* The numeral and its rule sit at the BOTTOM of the band. Time runs upward
+     here — 2020 at the foot, 2026 at the head — so read chronologically the
+     label introduces the year above it, and the rule under it is that year's
+     January boundary. (It also puts each year beside the thing that started
+     in it: a card's foot carries its start date and lands on the same line.) */
   .cal-year {
     grid-column: 1 / -1;
+    display: flex;
+    align-items: flex-end;
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--faint);
-    border-top: 1px solid rgba(237, 230, 218, 0.05);
-    padding-top: 10px;
+    border-bottom: 1px solid rgba(237, 230, 218, 0.05);
+    padding-bottom: 10px;
     pointer-events: none;
   }
-  .cal-year:first-child {
+  /* most recent year reads brightest; the last rule closes the grid */
+  .cal-year.first {
     color: var(--meta);
-    border-top-color: rgba(237, 230, 218, 0.09);
+  }
+  .cal-year.last {
+    border-bottom-color: rgba(237, 230, 218, 0.09);
   }
 
   .cal-lane {
     grid-column: 2;
     margin: 10px 0 4px;
     padding: 0;
-    border: 1px solid var(--hair-card);
+    /* green, not brass — the lane is a different KIND of thing from the job
+       cards, and a second accent says so before the label is even read */
+    border: 1px solid color-mix(in srgb, var(--live-green) 22%, transparent);
     border-radius: 4px;
     background: repeating-linear-gradient(
       45deg,
-      rgba(237, 230, 218, 0.09) 0 3px,
+      color-mix(in srgb, var(--live-green) 16%, transparent) 0 3px,
       transparent 3px 9px
     );
     display: flex;
@@ -266,7 +336,7 @@ const details = Object.entries(calendar.details);
     transition: border-color 180ms ease;
   }
   .cal-lane:hover {
-    border-color: rgba(237, 230, 218, 0.3);
+    border-color: color-mix(in srgb, var(--live-green) 55%, transparent);
   }
 
   .cal-lane-label {
@@ -275,7 +345,7 @@ const details = Object.entries(calendar.details);
     font-family: var(--font-mono);
     font-size: 10.5px;
     letter-spacing: 2px;
-    color: var(--meta);
+    color: color-mix(in srgb, var(--live-green) 70%, var(--meta));
     background: var(--bg);
     padding: 8px 1px;
   }
@@ -283,11 +353,16 @@ const details = Object.entries(calendar.details);
   .cal-card {
     grid-column: 3;
     border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 3px;
-    padding: 16px 18px;
+    /* subgrid, not flex: the card's interior rows ARE the year bands it spans,
+       which is what lets a tick sit on its own year. Horizontal padding lives
+       on the children — padding here would inset the tracks out of alignment. */
+    display: grid;
+    grid-template-rows: subgrid;
+    padding: 0;
+    /* Breathing room between stacked cards. Safe with subgrid: a margin insets
+       only the item's FIRST and LAST tracks, so interior grid lines — the ones
+       the ticks hang off — stay aligned with the parent's bands. */
+    margin: 5px 0;
     cursor: pointer;
     font: inherit;
     text-align: left;
@@ -297,16 +372,58 @@ const details = Object.entries(calendar.details);
       border-color 180ms ease;
   }
   .cal-card.accent {
-    margin: 10px 0 22px;
     border: 1px solid color-mix(in srgb, var(--as-accent) 40%, transparent);
     background: color-mix(in srgb, var(--as-accent) 7%, transparent);
+  }
+
+  /* top edge of the span — where it stands today */
+  .card-head {
+    grid-row: 1;
+    align-self: start;
+    padding: 14px 18px 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--meta);
+  }
+  .cal-card.accent .card-head {
+    color: var(--as-accent);
+  }
+
+  /* a turn in the span, pinned to its year band — bottom-aligned to land on
+     the same line as that year's numeral (padding matches .cal-year's) */
+  .card-tick {
+    align-self: end;
+    padding: 0 18px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-tick .tick-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+
+  /* bottom edge of the span — where it began */
+  .card-foot {
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 18px 16px;
+    min-width: 0;
   }
   .cal-card.accent:hover {
     background: color-mix(in srgb, var(--as-accent) 13%, transparent);
     border-color: color-mix(in srgb, var(--as-accent) 65%, transparent);
   }
   .cal-card:not(.accent) {
-    margin: 2px 0 4px;
     border: 1px solid rgba(237, 230, 218, 0.14);
     background: rgba(237, 230, 218, 0.025);
   }
@@ -341,30 +458,39 @@ const details = Object.entries(calendar.details);
     color: var(--meta);
   }
 
-  .cal-milestone {
+  /* A year's milestones stack inside its band, bottom-aligned like the numeral
+     that labels it — so the earliest one lands on the year's own line and a
+     sparse band doesn't leave its entries floating away from their year. */
+  .cal-mgroup {
     grid-column: 4;
-    padding-top: 12px;
+    align-self: end;
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+  /* Deliberately quiet: these are annotations on the cards, not competitors to
+     them. Uppercase + small + --faint keeps a dense column of them from
+     out-shouting the two things the section is actually about. */
+  .cal-milestone {
     font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--text-muted);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
     display: inline-flex;
     align-items: flex-start;
     gap: 8px;
   }
   .cal-milestone .dot {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    background: var(--as-accent);
+    background: color-mix(in srgb, var(--as-accent) 55%, transparent);
     display: inline-block;
-    margin-top: 5px;
+    margin-top: 4px;
     flex: none;
-  }
-
-  /* ---- detail panel (space reserved — no reflow on open) ---- */
-  .cal-panel {
-    min-height: 150px;
-    margin-bottom: 44px;
   }
 
   .cal-hint {
@@ -372,12 +498,102 @@ const details = Object.entries(calendar.details);
     font-size: 11.5px;
     color: var(--faint);
     padding-top: 16px;
+    margin-bottom: 44px;
+  }
+
+  /* ---- detail drawer (vaul-style bottom sheet, ~/islands/drawer.ts) ---- */
+  .cal-drawer {
+    display: block;
+  }
+  .cal-drawer[hidden] {
+    display: none;
+  }
+  .dw-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    background: rgba(8, 7, 6, 0.78);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .cal-drawer[data-open] .dw-overlay {
+    opacity: 1;
+  }
+  .dw-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 121;
+    /* the island animates transform; start off-screen so the first frame
+       after [hidden] lifts never flashes the sheet in place */
+    transform: translateY(100%);
+    background: #12100e;
+    border-top: 1px solid rgba(237, 230, 218, 0.14);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.55);
+    will-change: transform;
+    outline: none;
+  }
+  .dw-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(237, 230, 218, 0.2);
+    margin: 10px auto 4px;
+  }
+  .dw-body {
+    /* wide enough that title + meta share the head line (640 wraps the title) */
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 6px 28px calc(30px + env(safe-area-inset-bottom));
+    max-height: 74dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dw-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(237, 230, 218, 0.08);
+  }
+  .dw-nav,
+  .dw-close {
+    font-family: var(--font-mono);
+    background: none;
+    color: var(--meta);
+    border: 1px solid var(--hair-input);
+    border-radius: 99px;
+    cursor: pointer;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+  .dw-nav:hover,
+  .dw-close:hover {
+    color: var(--text-hi);
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+  .dw-nav {
+    /* ≥44px touch target, per the mobile pass */
+    width: 44px;
+    height: 32px;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .dw-close {
+    height: 32px;
+    padding: 0 20px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 
   .cal-detail {
-    border-top: 1px solid var(--hair-rule);
-    margin-top: 14px;
-    padding-top: 18px;
+    padding-top: 14px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -491,11 +707,26 @@ const details = Object.entries(calendar.details);
        the desktop milestone column (col 4) has no place — hide it (locked
        decision: follow 7e exactly). */
     .cal-grid {
-      grid-template-columns: 34px 44px 1fr;
-      grid-auto-rows: 40px;
-      column-gap: 16px;
+      /* every px here comes off the card, and the card is the content: a 330px
+         column can't afford a 34px stripe and a 44px slot for four digits. */
+      grid-template-columns: 22px 30px 1fr;
+      /* 70px is what a card foot measures (kicker + title + dates + padding);
+         at 60 the two footer bands stretched and the year ladder read uneven.
+         The auto ceiling stays load-bearing all the same: the foot lives in the
+         span's last row, so a hard height would overflow it into the ticks. */
+      grid-auto-rows: minmax(70px, auto);
+      column-gap: 12px;
     }
-    .cal-milestone {
+    .card-head,
+    .card-tick {
+      font-size: 10.5px;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+    .card-foot {
+      padding: 0 14px 12px;
+    }
+    .cal-mgroup {
       display: none;
     }
     .cal-lane {
@@ -504,20 +735,36 @@ const details = Object.entries(calendar.details);
     .cal-lane-label {
       font-size: 9.5px;
     }
-    /* year numerals sit in the gutter (col 2), clear of the lane and cards */
+    /* the numeral spans the full row, so it clears the lane with padding
+       rather than a column: 22px lane + 12px gap puts it in the gutter */
     .cal-year {
       font-size: 10.5px;
-      padding-top: 8px;
-      padding-left: 50px;
+      padding-bottom: 8px;
+      padding-left: 34px;
     }
-    .cal-card {
-      padding: 12px 14px;
+    .card-tick {
+      padding-bottom: 8px;
     }
+    /* NB: no padding on .cal-card — see the desktop rule. Padding here insets
+       the subgrid's first and last tracks and doubles up with the children's
+       own, which cost the card 28px of text width and wrapped every line. */
     .card-title {
       font-size: 16px;
     }
-    .cal-panel {
-      min-height: 130px;
+    .cal-hint {
+      margin-bottom: 36px;
+    }
+    .dw-body {
+      padding: 6px 22px calc(26px + env(safe-area-inset-bottom));
+    }
+    /* the nowrap meta starves the title in a 330px row — stack them */
+    .detail-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    .detail-title {
+      font-size: 17px;
     }
     .colophon {
       font-size: 13.5px;
@@ -528,6 +775,7 @@ const details = Object.entries(calendar.details);
 
 <script>
   import '~/islands/ascii-portrait';
+  import '~/islands/drawer';
 
   if (!customElements.get('as-facts')) {
     customElements.define(
@@ -553,29 +801,62 @@ const details = Object.entries(calendar.details);
     customElements.define(
       'as-calendar',
       class extends HTMLElement {
-        #open: string | null = null;
-        #onClick = (e: Event) => {
-          const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-cal]');
-          if (!trigger || !this.contains(trigger)) return;
-          const key = trigger.dataset.cal ?? null;
-          this.#setOpen(this.#open === key ? null : key);
-        };
-        #setOpen(key: string | null) {
-          this.#open = key;
-          const hint = this.querySelector<HTMLElement>('[data-cal-hint]');
-          if (hint) hint.hidden = key !== null;
+        /** detail keys in document order — the ‹ › buttons walk this, wrapping */
+        #keys: string[] = [];
+        #i = -1;
+
+        #show(key: string) {
+          const at = this.#keys.indexOf(key);
+          if (at < 0) return;
+          this.#i = at;
           this.querySelectorAll<HTMLElement>('[data-cal-detail]').forEach((d) => {
             d.hidden = d.dataset.calDetail !== key;
           });
           this.querySelectorAll<HTMLElement>('[data-cal]').forEach((t) => {
             t.setAttribute('aria-expanded', String(t.dataset.cal === key));
           });
+          const body = this.querySelector<HTMLElement>('[data-dw-body]');
+          if (body) body.scrollTop = 0;
         }
+
+        // the drawer covers the triggers, so a click can only ever open —
+        // closing belongs to the drawer (drag/esc/overlay/pill), reported back
+        // through its bubbling close event
+        #onClick = (e: Event) => {
+          const target = e.target as HTMLElement;
+
+          // ‹ › step between entries without closing the sheet
+          const step = target.closest<HTMLElement>('[data-cal-step]');
+          if (step && this.contains(step)) {
+            const d = Number(step.dataset.calStep);
+            if (this.#keys.length) {
+              this.#show(this.#keys[(this.#i + d + this.#keys.length) % this.#keys.length]!);
+            }
+            return;
+          }
+
+          const trigger = target.closest<HTMLElement>('[data-cal]');
+          if (!trigger || !this.contains(trigger)) return;
+          const key = trigger.dataset.cal;
+          if (!key) return;
+          this.#show(key);
+          this.querySelector<HTMLElement & { open(): void }>('as-drawer')?.open();
+        };
+        #onClose = () => {
+          this.querySelectorAll<HTMLElement>('[data-cal]').forEach((t) => {
+            t.setAttribute('aria-expanded', 'false');
+          });
+        };
         connectedCallback() {
+          this.#keys = Array.from(this.querySelectorAll<HTMLElement>('[data-cal-detail]')).map(
+            (d) => d.dataset.calDetail ?? ''
+          );
           this.addEventListener('click', this.#onClick);
+          this.addEventListener('as-drawer:close', this.#onClose);
         }
         disconnectedCallback() {
           this.removeEventListener('click', this.#onClick);
+          this.removeEventListener('as-drawer:close', this.#onClose);
         }
       }
     );

@@ -3,7 +3,11 @@ import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
 import Section from '~/components/Section.astro';
-import { experience, projects } from '~/config/site';
+import { contributions, experience, projects, srcUrl } from '~/config/site';
+
+/** each row links to the public search that produced its number */
+const prSearch = (repo: string) =>
+  `https://github.com/${repo}/pulls?q=${encodeURIComponent('is:pr author:AnilSeervi')}`;
 ---
 
 <Base
@@ -17,23 +21,51 @@ import { experience, projects } from '~/config/site';
   <div class="xp-list">
     {
       experience.map((job) => (
-        <div class="xp-row">
-          <span>
-            <span class="xp-name">{job.name}</span>
-            <span class="xp-desc">{job.desc}</span>
-          </span>
-          <span class="xp-meta">{job.meta}</span>
-        </div>
+        <article class="xp-row">
+          <div class="xp-head">
+            <h2 class="xp-name">{job.name}</h2>
+            <span class="xp-meta">{job.meta}</span>
+          </div>
+          <p class="xp-ladder">{job.ladder}</p>
+          <ul class="xp-bullets">
+            {job.bullets.map((b) => (
+              <li>{b}</li>
+            ))}
+          </ul>
+        </article>
       ))
     }
   </div>
+
+  <Section
+    label="CONTRIBUTIONS"
+    meta={`${contributions.meta} ↗`}
+    metaMobile="259 prs ↗"
+    metaHref={contributions.href}
+    external
+    mb={12}
+  />
+  <p class="lede">{contributions.lede}</p>
+  <div class="cb-list">
+    {
+      contributions.repos.map((c) => (
+        <a class="cb-row" href={prSearch(c.repo)} target="_blank" rel="noopener noreferrer">
+          <span class="cb-repo">{c.repo}</span>
+          <span class="cb-note">{c.note}</span>
+          <span class="cb-count">{c.prs}</span>
+        </a>
+      ))
+    }
+  </div>
+  <p class="cb-tail">{contributions.tail}</p>
 
   <!-- reuses the home fetcher: fills any <as-spark data-repo> in this page's main -->
   <as-home-data aria-hidden="true"></as-home-data>
   <as-whyslot>
     <Section
-      label="OPEN SOURCE"
-      meta="118 repos on github ↗"
+      label="PROJECTS"
+      meta="sources on github ↗"
+      metaMobile="sources ↗"
       metaHref="https://github.com/AnilSeervi?tab=repositories"
       external
       mb={12}
@@ -46,7 +78,18 @@ import { experience, projects } from '~/config/site';
             <a class="os-name" href={project.href} target="_blank" rel="noopener noreferrer">
               {project.name}
             </a>
-            <span class="os-desc">{project.work}</span>
+            <span class="os-desc">
+              {project.work}
+              {/* SSR values are last-known fallbacks — as-home-data overwrites
+                  both from /api/github, so the brag can't go stale again. The ★
+                  lives INSIDE the span: the island writes `★N`, matching the
+                  home proof strip, so a glyph out here would double it. */}
+              {project.live === 'devfolio' && (
+                <span class="os-num">
+                  {' '}<span data-proof="stars">★486</span> · <span data-proof="forks">165</span> forks.
+                </span>
+              )}
+            </span>
             <as-spark data-status={project.status} data-seed={String(7 + i)} data-repo={project.repo}>
               <canvas
                 class="spark"
@@ -57,10 +100,22 @@ import { experience, projects } from '~/config/site';
                 aria-hidden="true"
               />
             </as-spark>
-            <span class:list={['status', `status--${project.status}`]}>
-              <span class="dot" aria-hidden="true" />
-              {project.status}
-            </span>
+            {/* the row's second link. active/maintained/archived used to sit
+                here, but it was the one thing on the page nobody could check —
+                and it contradicted its neighbours: "archived" beside copy that
+                says the site is still serving, "maintained" beside a repo with
+                no commit in two years. A link either works or it doesn't. */}
+            {srcUrl(project) && (
+              <a
+                class="os-src"
+                href={srcUrl(project)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${project.name} source on GitHub`}
+              >
+                src ↗
+              </a>
+            )}
           </div>
         ))
       }
@@ -81,25 +136,63 @@ import { experience, projects } from '~/config/site';
   }
 
   .xp-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px;
-    padding: 15px 0;
-    align-items: baseline;
+    padding: 4px 0 2px;
   }
   .xp-row + .xp-row {
     border-top: 1px solid var(--hair-row);
+    padding-top: 18px;
+    margin-top: 18px;
+  }
+
+  .xp-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: baseline;
   }
 
   .xp-name {
     font-family: var(--font-serif);
+    font-weight: 400;
     font-size: 20px;
     color: var(--text-hi);
+    margin: 0;
   }
 
-  .xp-desc {
+  /* the row header can only hold one title — the ladder holds the other two */
+  .xp-ladder {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--meta);
+    margin: 7px 0 14px;
+  }
+
+  .xp-bullets {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .xp-bullets li {
+    position: relative;
+    padding-left: 16px;
     font-size: 15px;
+    line-height: 1.6;
     color: var(--text-muted);
+  }
+  /* same 4px accent square the /about milestones use — one vocabulary for
+     "a thing that happened" across both pages */
+  .xp-bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 4px;
+    height: 4px;
+    background: color-mix(in srgb, var(--as-accent) 55%, transparent);
   }
 
   .xp-meta {
@@ -107,6 +200,71 @@ import { experience, projects } from '~/config/site';
     font-size: 12.5px;
     color: var(--meta);
     white-space: nowrap;
+  }
+
+  /* ---- CONTRIBUTIONS ---- */
+  /* same voice as .why-slot below: a serif italic line is this page's narrator */
+  .lede {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: var(--quote);
+    margin: 0 0 18px;
+  }
+
+  .cb-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cb-row {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 20px;
+    padding: 12px 0;
+    align-items: baseline;
+    text-decoration: none;
+    color: inherit;
+    transition: background 180ms ease;
+  }
+  .cb-row:not(:last-child) {
+    border-bottom: 1px solid var(--hair-row);
+  }
+  .cb-row:hover {
+    background: rgba(237, 230, 218, 0.035);
+  }
+
+  .cb-repo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-hi);
+    transition: color 180ms ease;
+  }
+  .cb-row:hover .cb-repo {
+    color: var(--as-accent);
+  }
+
+  .cb-note {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--faint);
+  }
+
+  /* tabular so the column reads as a column, not seven separate numbers */
+  .cb-count {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--meta);
+    text-align: right;
+  }
+
+  .cb-tail {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--faint);
+    margin: 16px 0 56px;
   }
 
   /* ---- OPEN SOURCE ---- */
@@ -167,33 +325,24 @@ import { experience, projects } from '~/config/site';
     display: block;
     opacity: 0.75;
   }
-  .spark[data-status='archived'] {
-    opacity: 0.6;
-  }
+  /* the island hides itself when the repo's real 52-week series is empty —
+     see spark.ts. Nothing here keys off `status` any more. */
 
-  .status {
+  .os-src {
     font-family: var(--font-mono);
     font-size: 11px;
     white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .status .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: currentColor;
+    color: var(--meta);
+    text-decoration: none;
     display: inline-block;
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
   }
-  .status--active {
-    color: var(--live-green);
-  }
-  .status--maintained {
+  .os-src:hover {
     color: var(--as-accent);
-  }
-  .status--archived {
-    color: var(--faint);
+    /* same ↗ lift the Section metas use */
+    transform: translate(2px, -2px);
   }
 
   /* frame 6b: footer rule sits 64px below the last row. Footer's default is
@@ -208,24 +357,71 @@ import { experience, projects } from '~/config/site';
     .xp-list {
       margin-bottom: 40px;
     }
-    .xp-row {
-      padding: 13px 0;
-    }
     .xp-name {
       font-size: 18px;
     }
-    .xp-desc {
-      display: block;
+    .xp-ladder {
+      font-size: 10.5px;
+      margin: 6px 0 12px;
+    }
+    .xp-bullets {
+      gap: 8px;
+    }
+    .xp-bullets li {
       font-size: 13.5px;
-      line-height: 1.6;
+      line-height: 1.55;
+      padding-left: 14px;
+    }
+    .xp-bullets li::before {
+      top: 8px;
     }
     .xp-meta {
       font-size: 11px;
     }
 
-    /* why-line sits above the list; tap a row to fill it (JS below) */
+    .lede {
+      font-size: 14.5px;
+      margin-bottom: 14px;
+    }
+    /* repo + count share the first line; the gloss wraps under both */
+    .cb-row {
+      grid-template-columns: 1fr auto;
+      gap: 3px 12px;
+      padding: 11px 0;
+    }
+    .cb-repo {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 12px;
+    }
+    .cb-count {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: 12px;
+    }
+    .cb-note {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    /* an empty gloss would still open a 2nd row and double the row height */
+    .cb-note:empty {
+      display: none;
+    }
+    .cb-tail {
+      font-size: 12.5px;
+      margin: 14px 0 44px;
+    }
+
+    /* The why-line sits ABOVE the list, so any growth when it fills shoves the
+       whole list down. 45px is exactly two lines at 14.5px/1.55 (2 × 22.475),
+       which is what the longest `why` now needs — every project measured 0px of
+       shift at that height. The old 42px was under even a two-line fill, so all
+       five nudged 2.93px and DevFolio, then 114 chars and three lines, jumped
+       25.41px. Keep every `why` under ~90 chars or this floor stops holding. */
     .why-slot {
-      min-height: 42px;
+      min-height: 45px;
       font-size: 14.5px;
       line-height: 1.55;
       margin: 0 0 10px;
@@ -247,10 +443,13 @@ import { experience, projects } from '~/config/site';
       grid-row: 1;
       font-size: 18px;
     }
-    .status {
+    /* `src ↗` rides the name's line; 44px tall so it's a real tap target */
+    .os-src {
       grid-column: 2;
       grid-row: 1;
       font-size: 10.5px;
+      padding: 6px 0 6px 10px;
+      margin: -6px 0;
     }
     .os-desc {
       grid-column: 1 / -1;

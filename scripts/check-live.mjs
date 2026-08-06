@@ -70,19 +70,33 @@ if (mal.reading?.title) {
   check('reading row hidden (null feed)', await page.locator('[data-row="reading"]').isHidden());
 }
 
-// spotify — now row only exists while something is playing
-if (spotify.now) {
-  const want = `${spotify.now.title} — ${spotify.now.artist}${spotify.now.context ? ` · ${spotify.now.context}` : ''}`;
-  const got = await text(page.locator('[data-live="now"]'));
-  check('now row matches /api/spotify now', got === want, got);
+// spotify — three states, and they must stay distinguishable: playing, quiet,
+// and upstream-failed. The last one used to render as the second one, which
+// pruned the whole section and hid a revoked refresh token.
+if (spotify.error) {
+  check(
+    'upstream failed → section survives with an honest row',
+    (await text(page.locator('[data-live="now"]'))) === "spotify didn't answer — try later" &&
+      (await page.locator('[data-section="spotify"]').isVisible()),
+    await text(page.locator('[data-live="now"]'))
+  );
+  const note = await text(page.locator('[data-live="phase-note"]'));
+  check('head note says unavailable, not live', note === 'unavailable', note);
+  check('last row hidden while degraded', await page.locator('[data-row="last"]').isHidden());
 } else {
-  check('now row hidden (nothing playing)', await page.locator('[data-row="now"]').isHidden());
-}
-if (spotify.last) {
-  const got = await text(page.locator('[data-live="last"]'));
-  check('last played matches /api/spotify last', got === `${spotify.last.title} — ${spotify.last.artist}`, got);
-} else {
-  check('last row hidden (null feed)', await page.locator('[data-row="last"]').isHidden());
+  if (spotify.now) {
+    const want = `${spotify.now.title} — ${spotify.now.artist}${spotify.now.context ? ` · ${spotify.now.context}` : ''}`;
+    const got = await text(page.locator('[data-live="now"]'));
+    check('now row matches /api/spotify now', got === want, got);
+  } else {
+    check('now row hidden (nothing playing)', await page.locator('[data-row="now"]').isHidden());
+  }
+  if (spotify.last) {
+    const got = await text(page.locator('[data-live="last"]'));
+    check('last played matches /api/spotify last', got === `${spotify.last.title} — ${spotify.last.artist}`, got);
+  } else {
+    check('last row hidden (null feed)', await page.locator('[data-row="last"]').isHidden());
+  }
 }
 const playState = await page
   .locator('[data-eq] span')

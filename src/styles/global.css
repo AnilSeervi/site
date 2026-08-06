@@ -103,6 +103,15 @@ a {
   }
 }
 
+/* An open <as-drawer> owns the bottom edge, but it can't out-stack the ❯ chip:
+   the sheet lives inside .page (a z-index:1 stacking context) while the chip is
+   a body child at z-index 90 — so the chip yields instead. Lives here because a
+   scoped rule in either component couldn't name the other's element. */
+body:has(as-drawer[data-open]) .cmd-chip {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* dot-grid background layer — lives on a transition:persist element in Base */
 .dot-grid {
   position: fixed;
