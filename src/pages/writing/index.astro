@@ -4,6 +4,7 @@ import Base from '~/layouts/Base.astro';
 import Footer from '~/components/Footer.astro';
 import PageTitle from '~/components/PageTitle.astro';
 import Section from '~/components/Section.astro';
+import { site } from '~/config/site';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -101,7 +102,7 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
       </div>
     </div>
 
-    <Footer left="rss available">
+    <Footer left="rss available" leftHref={site.socials.rss}>
       <a class="chain" href="/live">~/live →</a>
     </Footer>
   </as-search>
