@@ -32,8 +32,18 @@ const sampleFn = `(el) => {
 }`;
 
 // ---- HOME ----
+// 4s, not 2.5s: the hero now boots in sequence with the typed name — caption
+// while /api/github is in flight, then a 900ms draw-on — so the earliest a
+// complete polyline exists is ~2.2s after load, plus whatever the fetch costs.
+// The sequence itself is covered by check-spark-loader.mjs; this only needs the
+// finished line. Poll rather than sleep blind.
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(2500);
+await page
+  .waitForFunction(() => document.querySelector('as-spark[data-kind="hero"]')?.dataset.values, null, {
+    timeout: 8000
+  })
+  .catch(() => {});
+await page.waitForTimeout(1400);
 
 const hero = await page.$eval('as-spark[data-kind="hero"]', eval(sampleFn));
 const homeRows = await page.$$eval('as-spark:not([data-kind="hero"])', (els, fnSrc) => {

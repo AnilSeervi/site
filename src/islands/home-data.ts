@@ -15,10 +15,13 @@
  * fresh on every view-transition arrival, so each home view refetches
  * (cheap — the endpoint is CDN-cached via s-maxage).
  *
- * Degradation: fetch failure or {disabled:true} → do nothing; the SSR
- * placeholders remain. Null fields are skipped individually, except
- * lastPush: null, which hides the whole `pushed …` chip (pulse included)
- * because "pushed <nothing>" would be worse than absence.
+ * Degradation: fetch failure or {disabled:true} → the SSR placeholders remain,
+ * with one exception — the hero sparkline is always told the fetch is over, so
+ * its boot loader can drop the caption instead of blinking a fetch caret at a
+ * request that will never answer (see #settleSpark and design_handoff_loader).
+ * Null fields are skipped individually, except lastPush: null, which hides the
+ * whole `pushed …` chip (pulse included) because "pushed <nothing>" would be
+ * worse than absence.
  */
 
 interface GitHubData {
@@ -41,16 +44,35 @@ class AsHomeData extends HTMLElement {
     this.#ran = true;
     this.#load().catch(() => {
       /* leave the SSR placeholders — never break the page */
+      this.#settleSpark(null);
     });
+  }
+
+  /**
+   * Hand the hero sparkline its series, or `[]` for "asked, nothing to draw".
+   * The distinction the loader needs is *answered* vs *still in flight*, and an
+   * absent attribute is the latter — so every exit from #load comes through here.
+   */
+  #settleSpark(weeks: number[] | null | undefined) {
+    const usable = Array.isArray(weeks) && weeks.length > 1 ? weeks : [];
+    (this.closest('main') ?? document)
+      .querySelector('as-spark[data-kind="hero"]')
+      ?.setAttribute('data-values', JSON.stringify(usable));
   }
 
   async #load() {
     const root: ParentNode = this.closest('main') ?? document;
 
     const res = await fetch('/api/github');
-    if (!res.ok) return;
+    if (!res.ok) {
+      this.#settleSpark(null);
+      return;
+    }
     const data = (await res.json()) as GitHubData;
-    if (data.disabled) return;
+    if (data.disabled) {
+      this.#settleSpark(null);
+      return;
+    }
 
     const set = (key: string, text: string) => {
       const el = root.querySelector<HTMLElement>(`[data-proof=${key}]`);
@@ -80,11 +102,7 @@ class AsHomeData extends HTMLElement {
       }
     }
 
-    if (Array.isArray(data.weeks) && data.weeks.length > 1) {
-      root
-        .querySelector('as-spark[data-kind="hero"]')
-        ?.setAttribute('data-values', JSON.stringify(data.weeks));
-    }
+    this.#settleSpark(data.weeks);
 
     const sparks = data.sparks ?? {};
     root.querySelectorAll<HTMLElement>('as-spark[data-repo]').forEach((el) => {

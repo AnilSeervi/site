@@ -60,6 +60,12 @@ const homeProjects = projects.filter((p) => p.home);
       <as-spark data-kind="hero" class="as-enter" style="animation-delay:.12s">
         <canvas class="spark-hero" width="640" height="44" style="width:320px;height:22px"
           aria-hidden="true"></canvas>
+        <!-- boot caption (design_handoff_loader): overlays the canvas while
+             /api/github is in flight, and only after the name finishes typing.
+             The island fades it via data-cap; it is never shown without JS. -->
+        <span class="spark-cap" aria-hidden="true"
+          ><span class="accent">❯</span>git log --since=1y<span class="cap-caret"></span></span
+        >
       </as-spark>
       <div class="role as-enter" style="animation-delay:.18s">{site.role}</div>
       <p class="intro as-enter" style="animation-delay:.24s">{site.intro}</p>
@@ -246,9 +252,53 @@ const homeProjects = projects.filter((p) => p.home);
     animation: as-caret 1.1s steps(1) infinite;
   }
 
+  /* ---- hero sparkline + its boot caption (design_handoff_loader) ----
+     The margin lives on the wrapper, not the canvas: the wrapper is the
+     positioning context for the caption and reserves the 22px box from first
+     paint, so nothing shifts when the line finally draws. */
+  .hero as-spark {
+    position: relative;
+    margin: 2px 0 12px;
+  }
   .spark-hero {
     display: block;
-    margin: 2px 0 12px;
+  }
+  .spark-cap {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+  }
+  /* the transition is armed by the island (data-seq) rather than declared here,
+     so the caption can never fade *out* of view on first paint — see spark.ts */
+  as-spark[data-seq] .spark-cap {
+    transition: opacity 0.25s ease;
+  }
+  as-spark[data-cap='on'] .spark-cap {
+    opacity: 1;
+  }
+  /* the blinking block is the "working" signal — which is why the copy has no
+     ellipsis. Same keyframes and cadence as the name caret above it. */
+  .cap-caret {
+    width: 7px;
+    height: 12px;
+    background: var(--as-accent);
+    animation: as-caret 1.1s steps(1) infinite;
+  }
+  /* reduced motion skips the sequence entirely (the island draws the line in
+     one shot), so the caption has nothing to narrate */
+  @media (prefers-reduced-motion: reduce) {
+    .spark-cap {
+      display: none;
+    }
   }
 
   .role {
@@ -579,7 +629,7 @@ const homeProjects = projects.filter((p) => p.home);
     .now {
       grid-column: 1 / -1;
     }
-    .spark-hero {
+    .hero as-spark {
       margin: 2px 0 14px;
     }
     .intro {
