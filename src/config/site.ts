@@ -197,7 +197,10 @@ export const experience = [
 		meta: "jan 22 — now",
 		bullets: [
 			"Own the frontend platform — build tooling, error architecture, the release process",
-			"Built Status Pages end-to-end — dashboard, public SPA, and the rich-text editor package behind it",
+			// Was "Built Status Pages end-to-end". Other engineers commit into it
+			// now, so the claim is origination plus present ownership — which is
+			// the stronger one anyway, and can't be walked back in an interview.
+			"Built Status Pages, still own what ships — dashboard, public SPA, rich-text editor package",
 			"600+ PRs reviewed across web, mobile and backend — the frontend review gate",
 		],
 	},
@@ -320,18 +323,26 @@ export const calendar = {
 	 * which reads as a bullet-point generator rather than a person. Same facts,
 	 * same numbers, said the way you'd say them out loud: first person, varied
 	 * sentence shapes, and the reason a thing happened kept next to what it was.
+	 *
+	 * Ownership is claimed by the sentence, not by a possessive: six of these
+	 * sixteen lines used to hang on my/mine, which stops reading as ownership
+	 * and starts reading as a tic. Say what was done instead, and vary how each
+	 * line opens — noun, verb, "I", a number — so no two neighbours share a shape.
+	 * Keep every line ≤90 chars: one line on desktop, two on mobile.
 	 */
 	details: {
 		zd: {
 			title: "Founding Engineer → Staff · Zenduty → Xurrent",
 			meta: "full-time · jan 24, 2022 — now",
 			bullets: [
-				"Status Pages is mine end to end: dashboard, public site, and the editor package under both.",
+				// origination in the past, ownership in the present — other engineers
+				// commit into Status Pages now, and "what ships" covers their code too
+				"I built Status Pages — dashboard, public site, editor package — and still own what ships.",
 				"Deleted webpack in one PR. App 45% faster, builds 62% faster, TypeScript came free.",
-				"react-query was my idea, so I own the layer it made: 100+ typed hooks, web and mobile.",
-				"The monorepo was my pitch. 497 files moved, 28,000 lines of forked duplicates gone.",
+				"I left react-query in a review comment; it's now 100+ typed hooks, web and mobile.",
+				"Convinced the team to go monorepo: 497 files moved, 28,000 duplicate lines gone.",
 				"antd had to go. I argued for radix, we built enso, and I gatekept every PR after.",
-				"When it crashes it's my problem. One Sentry overhaul cut 41,000 lines from 493 files.",
+				"I own the crashes too. One Sentry overhaul cut 41,000 lines from 493 files.",
 				"Two weeks in I was redesigning the platform. 237 commits later it shipped.",
 				"600+ PRs reviewed, plenty in languages I don't write. Three engineers report to me.",
 			],
@@ -341,7 +352,7 @@ export const calendar = {
 			meta: "2020 — jan 22 · the classroom years",
 			bullets: [
 				"Couldn't get hired yet, so I worked on other people's code: ~220 merged PRs, 111 to MDN.",
-				"DevFolio was meant to be my portfolio. Hundreds of other developers run it now.",
+				"DevFolio started as a portfolio for one person. Hundreds of developers run it now.",
 				"QP Hoard came out of exam week — every past paper, searchable, offline. Still up.",
 				"The last of those PRs went to Zenduty's SDK. They hired me 13 days later.",
 			],
@@ -350,7 +361,7 @@ export const calendar = {
 			title: "Side projects & OSS",
 			meta: "2020 — now · the constant lane",
 			bullets: [
-				"259 PRs into repos that aren't mine — MDN, GitHub Docs, Gatsby, Deno, npm, web.dev.",
+				"259 PRs into repos I don't maintain — MDN, GitHub Docs, Gatsby, Deno, npm, web.dev.",
 				"Atmos, Pomodorox, Recipes Counter: one app for each thing I wanted to learn properly.",
 				"This site is the sandbox. Anything I'm curious about gets built here first.",
 				"The unglamorous half is the point — DevFolio issues still get answered, five years on.",
