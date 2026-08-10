@@ -1,0 +1,80 @@
+# Keeps the READING · HARDCOVER shelf current.
+#
+# The site renders from a committed snapshot (src/data/hardcover.json + the
+# covers beside it) rather than calling Hardcover at request time, so the shelf
+# only moves when something commits a new snapshot. That used to be me, by hand.
+# This does it every morning instead.
+#
+# Nothing here touches the site's runtime: if this job fails, the last good
+# snapshot is still in the repo and the page keeps rendering it.
+name: sync hardcover
+
+on:
+  schedule:
+    # 03:27 UTC ≈ 08:57 IST. Off the hour on purpose — GitHub queues scheduled
+    # jobs hardest at :00, and this is not urgent enough to sit in that queue.
+    - cron: '27 3 * * *'
+  workflow_dispatch:
+
+# a slow run must never race the next morning's
+concurrency:
+  group: sync-hardcover
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: fail early if the token is missing
+        env:
+          HARDCOVER_TOKEN: ${{ secrets.HARDCOVER_TOKEN }}
+        run: |
+          if [ -z "$HARDCOVER_TOKEN" ]; then
+            echo "::error::HARDCOVER_TOKEN is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # sharp is what resizes the covers; it's a devDependency, so no --prod
+      - run: pnpm install --frozen-lockfile
+
+      - name: sync the shelf
+        env:
+          HARDCOVER_TOKEN: ${{ secrets.HARDCOVER_TOKEN }}
+        run: node scripts/sync-hardcover.mjs
+
+      - name: summarise
+        run: |
+          node -e '
+            const s = require("./src/data/hardcover.json");
+            const missing = [...s.reading, ...s.finished].filter((b) => !b.cover);
+            console.log(`- reading: **${s.reading.length}**`);
+            console.log(`- finished: **${s.finished.length}**`);
+            console.log(missing.length ? `- no cover: ${missing.map((b) => b.title).join(", ")}` : "- every book has a cover");
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: commit the snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # -A so pruned covers are staged as the deletions they are
+          git add -A src/data/hardcover.json public/covers
+          if git diff --cached --quiet; then
+            echo 'shelf unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'chore(reading): sync hardcover shelf'
+          git push
