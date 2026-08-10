@@ -23,15 +23,19 @@ export interface MALWatching {
   updatedAt: string;
 }
 
+export interface MALManga {
+  title: string;
+  /** chapters read; MAL tracks these separately from volumes */
+  ch: number;
+  chTotal: number | null;
+  vol: number;
+}
+
 export interface MALShelf {
   anime: number;
   episodes: number;
   days: number;
   mean: number;
-}
-
-export interface MALReading {
-  title: string;
 }
 
 export async function getAccessToken(): Promise<string> {
@@ -89,6 +93,36 @@ export async function getWatching(accessToken: string): Promise<MALWatching | nu
 }
 
 /** Lifetime anime statistics. */
+/**
+ * Most recently updated 'reading' manga.
+ *
+ * Manga is MAL's job, not Hardcover's — the Hardcover shelf is books, and the
+ * sixteen volumes that used to sit on it were deleted from that account so the
+ * two sources can't disagree about what's been read.
+ */
+export async function getManga(accessToken: string): Promise<MALManga | null> {
+  const data = await malFetch<{
+    data?: Array<{
+      node?: { title?: string; num_chapters?: number };
+      list_status?: { num_chapters_read?: number; num_volumes_read?: number };
+    }>;
+  }>(
+    '/users/@me/mangalist?status=reading&sort=list_updated_at&fields=list_status,num_chapters&limit=1',
+    accessToken
+  );
+
+  const entry = data.data?.[0];
+  if (!entry?.node?.title) return null;
+
+  return {
+    title: entry.node.title,
+    ch: entry.list_status?.num_chapters_read ?? 0,
+    // 0 means "still running" in MAL's data, same as with episode counts
+    chTotal: entry.node.num_chapters ? entry.node.num_chapters : null,
+    vol: entry.list_status?.num_volumes_read ?? 0
+  };
+}
+
 export async function getShelf(accessToken: string): Promise<MALShelf | null> {
   const data = await malFetch<{
     anime_statistics?: {
@@ -110,13 +144,3 @@ export async function getShelf(accessToken: string): Promise<MALShelf | null> {
   };
 }
 
-/** Most recently updated 'reading' manga, or null if the list is empty. */
-export async function getReading(accessToken: string): Promise<MALReading | null> {
-  const data = await malFetch<{ data?: Array<{ node?: { title?: string } }> }>(
-    '/users/@me/mangalist?status=reading&sort=list_updated_at&limit=1',
-    accessToken
-  );
-
-  const title = data.data?.[0]?.node?.title;
-  return title ? { title } : null;
-}

@@ -6,6 +6,7 @@ import Section from '~/components/Section.astro';
 import Globe from '~/components/live/Globe.astro';
 import Moving from '~/components/live/Moving.astro';
 import Guestbook from '~/components/live/Guestbook.astro';
+import Reading from '~/components/live/Reading.astro';
 ---
 
 <Base
@@ -37,14 +38,8 @@ import Guestbook from '~/components/live/Guestbook.astro';
             <span class="nlabel">coords</span>
             <span class="nval">12.97° N · 77.59° E</span>
           </div>
-          <div class="nrow" data-row="reading">
-            <span class="nlabel">reading</span>
-            <span class="nvcell">
-              <span class="sk sk-faint" data-sk style="height:14px;width:52%"></span>
-              <span class="reading" data-val data-live="reading"><em data-part="title"></em><span
-                  data-part="tail"></span></span>
-            </span>
-          </div>
+          <!-- the one-line `reading` vital retired here: it earned a section of
+               its own (design_handoff_reading), below the vitals. -->
         </div>
       </div>
       <div class="globe-col">
@@ -52,6 +47,8 @@ import Guestbook from '~/components/live/Guestbook.astro';
         <span class="globe-cap">bengaluru — home</span>
       </div>
     </div>
+
+    <Reading />
 
     <section data-section="spotify">
       <Section label="LISTENING · SPOTIFY" phaseNote />
@@ -108,13 +105,23 @@ import Guestbook from '~/components/live/Guestbook.astro';
     <Moving />
 
     <section class="watching-sec" data-section="mal">
-      <Section label="WATCHING · MYANIMELIST" meta="weeb stats, worn proudly" metaMobile="" />
+      <Section label="AIRING NOW · MYANIMELIST" meta="weeb stats, worn proudly" metaMobile="" />
       <div class="rows">
         <div class="lrow" data-row="watching">
-          <span class="rlabel">airing now</span>
+          <span class="rlabel">anime</span>
           <span class="tcell">
             <span class="sk" data-sk aria-hidden="true" style="height:13px;width:60%"></span>
             <span class="track hi" data-val data-live="watching"><em data-part="title"></em><span
+                data-part="tail"></span></span>
+          </span>
+        </div>
+        <!-- manga lives here, not on the Hardcover shelf: those sixteen volumes
+             were deleted from that account so the two sources can't disagree -->
+        <div class="lrow" data-row="manga">
+          <span class="rlabel">manga</span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:52%"></span>
+            <span class="track hi" data-val data-live="manga"><em data-part="title"></em><span
                 data-part="tail"></span></span>
           </span>
         </div>
@@ -187,16 +194,6 @@ import Guestbook from '~/components/live/Guestbook.astro';
   .nval.hi {
     color: var(--text-hi);
   }
-  .reading {
-    font-size: 14.5px;
-    color: var(--text-muted);
-  }
-  .reading em {
-    font-family: var(--font-serif);
-    font-size: 16px;
-    color: var(--text);
-  }
-
   .globe-col {
     display: flex;
     flex-direction: column;
@@ -455,13 +452,6 @@ import Guestbook from '~/components/live/Guestbook.astro';
     .nval {
       font-size: 12px;
     }
-    .reading {
-      font-size: 13.5px;
-    }
-    .reading em {
-      font-size: 15px;
-    }
-
     /* listening + watching rows: label above value (7d) */
     .rows {
       margin-bottom: 40px;
@@ -501,4 +491,5 @@ import Guestbook from '~/components/live/Guestbook.astro';
   import '~/islands/contrib';
   import '~/islands/live-data';
   import '~/islands/moving';
+  import '~/islands/reading';
 </script>

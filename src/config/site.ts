@@ -370,6 +370,28 @@ export const calendar = {
 	},
 }
 
+/**
+ * READING · HARDCOVER (/live, design_handoff_reading) — the two calls the API
+ * can't make for us.
+ *
+ * `now`: Hardcover has five books at status_id 2 at once, and "currently
+ * reading" on a shelf that size is a claim about attention, not about which row
+ * the API touched last. Name the one that's actually in hand. An unknown slug
+ * (or none) falls back to the most recent status-2 book that has a usable
+ * cover, so the section never breaks over a typo.
+ *
+ * `notes`: hand-written, keyed by the Hardcover slug — the API gives facts, and
+ * these are the opinions. A book with no note renders without the italic line
+ * and its caption falls back to `title — author`; nothing is invented to fill
+ * the slot. Slugs are in src/data/hardcover.json.
+ */
+export const reading = {
+	/** Hardcover handle — the corner link on the section */
+	handle: "kazenil",
+	now: "the-psychology-of-money",
+	notes: {} as Record<string, string>,
+}
+
 /** Command palette (frame 6g) */
 export const paletteActions = [
 	{ label: "pbcopy email", hint: "⌘C", action: "copy-email" },

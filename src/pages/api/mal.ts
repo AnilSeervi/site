@@ -1,11 +1,5 @@
 import type { APIRoute } from 'astro';
-import {
-  isMALConfigured,
-  getAccessToken,
-  getWatching,
-  getShelf,
-  getReading
-} from '../../lib/mal';
+import { isMALConfigured, getAccessToken, getWatching, getManga, getShelf } from '../../lib/mal';
 
 export const prerender = false;
 
@@ -24,23 +18,23 @@ export const GET: APIRoute = async () => {
   try {
     accessToken = await getAccessToken();
   } catch {
-    return json({ watching: null, shelf: null, reading: null }, 60);
+    return json({ watching: null, manga: null, shelf: null }, 60);
   }
 
   // `undefined` marks an upstream failure; a legit empty list resolves to null.
-  const [watching, shelf, reading] = await Promise.all([
+  const [watching, manga, shelf] = await Promise.all([
     getWatching(accessToken).catch(() => undefined),
-    getShelf(accessToken).catch(() => undefined),
-    getReading(accessToken).catch(() => undefined)
+    getManga(accessToken).catch(() => undefined),
+    getShelf(accessToken).catch(() => undefined)
   ]);
 
-  const failed = watching === undefined || shelf === undefined || reading === undefined;
+  const failed = watching === undefined || manga === undefined || shelf === undefined;
 
   return json(
     {
       watching: watching ?? null,
-      shelf: shelf ?? null,
-      reading: reading ?? null
+      manga: manga ?? null,
+      shelf: shelf ?? null
     },
     failed ? 60 : 300
   );

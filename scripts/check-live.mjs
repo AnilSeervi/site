@@ -158,17 +158,37 @@ if (Array.isArray(github.days)) {
   check('github section hidden (null feed)', await page.locator('[data-section="github"]').isHidden());
 }
 
-// mal — watching + shelf
+// mal — anime + manga + shelf
 if (mal.watching) {
   const tail = mal.watching.epTotal == null ? `episode ${mal.watching.ep}` : `episode ${mal.watching.ep} of ${mal.watching.epTotal}`;
+  // frame 6d italicizes the base title only: a trailing season/part suffix
+  // stays upright and lowercase, so the em holds less than the full title
+  const split = mal.watching.title.match(
+    /^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i
+  );
+  const base = split ? split[1] : mal.watching.title;
+  const suffix = split ? ` ${split[2].toLowerCase()}` : '';
   const got = await text(page.locator('[data-live="watching"]'));
-  check('watching row matches /api/mal watching', got === `${mal.watching.title} — ${tail}`, got);
+  check('anime row matches /api/mal watching', got === `${base}${suffix} — ${tail}`, got);
   check(
-    'watching title is the italic-serif em',
-    (await text(page.locator('[data-live="watching"] em'))) === mal.watching.title
+    'anime title is the italic-serif em, suffix outside it',
+    (await text(page.locator('[data-live="watching"] em'))) === base
   );
 } else {
-  check('watching row hidden (null feed)', await page.locator('[data-row="watching"]').isHidden());
+  check('anime row hidden (null feed)', await page.locator('[data-row="watching"]').isHidden());
+}
+// manga is MAL's now — the volumes were deleted from Hardcover so the shelf
+// and this row can't disagree about what has been read
+if (mal.manga) {
+  const chapters =
+    mal.manga.chTotal == null
+      ? `chapter ${mal.manga.ch}`
+      : `chapter ${mal.manga.ch} of ${mal.manga.chTotal}`;
+  const want = `${mal.manga.title} — ${chapters}${mal.manga.vol ? `, vol ${mal.manga.vol}` : ''}`;
+  const got = await text(page.locator('[data-live="manga"]'));
+  check('manga row matches /api/mal manga', got === want, got);
+} else {
+  check('manga row hidden (null feed)', await page.locator('[data-row="manga"]').isHidden());
 }
 if (mal.shelf) {
   const got = await text(page.locator('[data-live="shelf"]'));

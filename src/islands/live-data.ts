@@ -6,7 +6,7 @@
  * design's own values — the page looks right immediately) for real values.
  *
  * Fill hooks — value elements carry data-live="…":
- *   weather · now · last · watching · shelf · reading · contrib-total
+ *   weather · now · last · watching · manga · shelf · contrib-total
  * Styled fragments inside a value (italic serif title, mono ctx suffix,
  * accent mean) are pre-rendered children tagged data-part="title|tail|ctx|
  * head|mean" so Astro's scoped classes survive the swap — the island only
@@ -60,8 +60,8 @@ interface GithubRes {
 interface MalRes {
   disabled?: boolean;
   watching?: { title: string; ep: number; epTotal: number | null; updatedAt: string } | null;
+  manga?: { title: string; ch: number; chTotal: number | null; vol: number } | null;
   shelf?: { anime: number; episodes: number; days: number; mean: number } | null;
-  reading?: { title: string } | null;
 }
 interface WeatherRes {
   disabled?: boolean;
@@ -350,14 +350,6 @@ class AsLiveData extends HTMLElement {
   };
 
   #applyMal(m: MalRes | null) {
-    if (m?.reading?.title) {
-      // ' — the long haul' is flavor copy tied to Berserk; other titles render bare
-      const tail = m.reading.title === 'Berserk' ? ' — the long haul' : '';
-      this.#setParts('reading', m.reading.title, tail);
-    } else {
-      this.#hideRow('reading');
-    }
-
     if (m?.watching) {
       const { title, ep, epTotal } = m.watching;
       // frame 6d italicizes only the base title — a trailing season/part
@@ -369,6 +361,16 @@ class AsLiveData extends HTMLElement {
       this.#setParts('watching', base, `${suffix}${eps}`);
     } else {
       this.#hideRow('watching');
+    }
+
+    // Manga is MAL's, not Hardcover's: the volumes were deleted from that
+    // account, so this row is the only place a manga can be claimed as read.
+    if (m?.manga) {
+      const { title, ch, chTotal, vol } = m.manga;
+      const chapters = chTotal == null ? `chapter ${ch}` : `chapter ${ch} of ${chTotal}`;
+      this.#setParts('manga', title, ` — ${chapters}${vol ? `, vol ${vol}` : ''}`);
+    } else {
+      this.#hideRow('manga');
     }
 
     if (m?.shelf) {

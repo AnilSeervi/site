@@ -1,0 +1,817 @@
+---
+/**
+ * READING · HARDCOVER (design_handoff_reading, frame 10a).
+ *
+ * Two halves: the book in hand — a 172×250 cover that leans toward the cursor —
+ * and one shelf's worth of finished spines you can tip and pick up.
+ *
+ * Everything renders from src/data/hardcover.json, a committed snapshot written
+ * by scripts/sync-hardcover.mjs. No fetch at request time, no token in the
+ * runtime, and a build with no network still ships the last good shelf.
+ *
+ * Each spine is three nested boxes: the <button> is shelf space (lift, lean,
+ * dim, z-order), .hold carries the idle float, and .inner is the 3D book —
+ * spine face, page block and jacket, `preserve-3d` around a `left bottom`
+ * pivot. Picking one swings it round to show its cover; the note never renders
+ * on the book, it lives in the caption slot under the plank.
+ */
+import Section from '~/components/Section.astro';
+import snapshot from '~/data/hardcover.json';
+import { fitShelf, SHELF_FIT, SHELF_GAP, SHELF_HEIGHT, type Book } from '~/lib/hardcover';
+import { reading as cfg } from '~/config/site';
+
+const open = snapshot.reading as Book[];
+const now =
+  open.find((b) => b.slug === cfg.now) ?? open.find((b) => b.cover) ?? open[0] ?? null;
+
+/**
+ * The shelf carries both statuses in two groups, divided by a bookend: what's
+ * open on the left, what's finished on the right. Hardcover has five books at
+ * status 2 and the section can only show one at a time, so the other four had
+ * nowhere to live — now they're on the shelf, and clicking one brings it up
+ * into the current-read slot instead of taking it down like a finished book.
+ *
+ * The in-progress group is fitted first and the finished group gets what's
+ * left, minus the divider: the books you're actually reading shouldn't be the
+ * ones that fall off the end of the plank.
+ */
+const DIVIDER = 30;
+const readingSpines = fitShelf(open, 240);
+const readingWidth = readingSpines.reduce((n, s, i) => n + s.w + (i ? SHELF_GAP : 0), 0);
+const spines = fitShelf(
+  snapshot.finished as Book[],
+  SHELF_FIT - (readingWidth ? readingWidth + DIVIDER : 0)
+);
+
+/* the whole feed being empty is the one case that collapses to a line */
+const dead = !now && spines.length === 0;
+
+/** author · N pages — page counts are the only number Hardcover reliably has */
+const bylineOf = (b: Book) =>
+  [b.author, b.page && b.pages ? `p. ${b.page} of ${b.pages}` : b.pages && `${b.pages} pages`]
+    .filter(Boolean)
+    .join(' · ');
+
+const shelf = [
+  ...readingSpines.map((s) => ({ ...s, group: 'reading' as const })),
+  ...spines.map((s) => ({ ...s, group: 'finished' as const }))
+];
+---
+
+<section class="reading" data-section="reading">
+  <Section
+    label="READING · HARDCOVER"
+    meta={`@${cfg.handle} ↗`}
+    metaHref={`https://hardcover.app/@${cfg.handle}`}
+    external
+  />
+
+  {
+    dead ? (
+      <p class="dead">reading — hardcover didn't answer</p>
+    ) : (
+      <as-reading style={`--shelf-h:${SHELF_HEIGHT}px`}>
+        {now && (
+          <div class="current" data-current>
+            <div class="cover-col">
+              {/* perspective wrapper: the tilt happens on .cover inside it */}
+              <div class="cover-stage" data-stage>
+                <div class="cover" data-cover>
+                  {/* house rule: never render a cover you don't have — the img
+                      is dropped, not blanked, and the dim block with a cream
+                      page edge stands in. The island swaps both on promote. */}
+                  <img
+                    src={now.cover ?? ''}
+                    width="172"
+                    height="250"
+                    alt={`${now.title} — cover`}
+                    hidden={!now.cover}
+                    data-now-img
+                  />
+                  <span class="no-cover" aria-hidden="true" hidden={!!now.cover} data-now-blank />
+                  <span class="page-edge" aria-hidden="true" />
+                  <span class="sheen" data-sheen aria-hidden="true" />
+                </div>
+              </div>
+              <p class="prog" hidden={now.progress == null} data-now-prog>
+                <span class="track" aria-hidden="true">
+                  <span class="fill" style={`width:${now.progress ?? 0}%`} data-now-fill />
+                </span>
+                <span class="pct" data-now-pct>{now.progress ?? 0}%</span>
+              </p>
+            </div>
+
+            <div class="current-meta">
+              <p class="when" data-now-when>now — {now.since ? `since ${now.since}` : 'in hand'}</p>
+              <h3 class="title" data-now-title>{now.title}</h3>
+              <p class="byline" hidden={!bylineOf(now)} data-now-byline>{bylineOf(now)}</p>
+              <p class="note" hidden={!cfg.notes[now.slug]} data-now-note>{cfg.notes[now.slug] ?? ''}</p>
+            </div>
+          </div>
+        )}
+
+        {shelf.length > 0 && (
+          <>
+            <div class="shelf-head">
+              <span class="sh-label">the shelf — in progress, then finished</span>
+              <span class="sh-rule" aria-hidden="true" />
+              <span class="sh-meta">status_id 2 · 3 — newest first</span>
+            </div>
+
+            <div class="row" data-row>
+              {shelf.map((s, i) => (
+                <>
+                  {/* bookend between the two groups — the shelf reads as two
+                      runs of books, not one long one */}
+                  {i > 0 && s.group === 'finished' && shelf[i - 1]!.group === 'reading' && (
+                    <span class="divider" aria-hidden="true" />
+                  )}
+                  <button
+                    class="book"
+                    type="button"
+                    data-book={i}
+                    data-group={s.group}
+                    data-slug={s.slug}
+                    data-title={s.title}
+                    data-author={s.author ?? ''}
+                    data-note={cfg.notes[s.slug] ?? ''}
+                    data-cover={s.cover ?? ''}
+                    data-byline={bylineOf(s)}
+                    data-since={s.since ?? ''}
+                    data-progress={s.progress ?? ''}
+                    aria-current={s.group === 'reading' && s.slug === now?.slug ? 'true' : undefined}
+                    aria-label={
+                      s.group === 'reading'
+                        ? `${s.title}${s.author ? ` by ${s.author}` : ''} — bring forward`
+                        : `${s.title}${s.author ? ` by ${s.author}` : ''} — take down`
+                    }
+                    style={`--w:${s.w}px;--h:${s.h}px;--casing:${s.casing}${s.cover ? `;--cover:url(${s.cover})` : ''}`}
+                  >
+                    {/* three boxes: the <button> is shelf space (lift, lean,
+                        dim, z), .hold carries the idle float, .inner is the 3D
+                        book. The float has to sit on its own box — on the outer
+                        one it overrides the transform transition and every
+                        re-placement snaps; inside .inner it composites the 3D
+                        subtree and children stop repainting. */}
+                    <span class="hold">
+                      <span class="inner" data-inner>
+                        <span class="face spine">
+                          <span class="stitle">{s.label}</span>
+                          <span class="press" aria-hidden="true" />
+                        </span>
+                        <span class="face pagetop" aria-hidden="true" />
+                        {/* The face you read when the book is in hand: the real
+                            cover if we cached one, otherwise a typographic
+                            title card — never a stretched thumbnail or a blank. */}
+                        <span class:list={['face', 'jacket', { art: !!s.cover }]}>
+                          {!s.cover && (
+                            <>
+                              <em>{s.title}</em>
+                              <span class="jacket-author">{s.author}</span>
+                            </>
+                          )}
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                </>
+              ))}
+            </div>
+
+            <p class="caption">
+              <span class="cap-text" data-caption data-idle={`the last ${spines.length} — tip a spine; click to take one down`}>
+                the last {spines.length} — tip a spine; click to take one down
+              </span>
+              <span class="cap-right">spine width ∝ pages</span>
+            </p>
+
+            {/* reduced motion has no pickup, so the notes that live in the
+                caption slot get a plain list instead (handoff §Rules) */}
+            {shelf.some((s) => cfg.notes[s.slug]) && (
+              <ul class="rm-notes">
+                {shelf
+                  .filter((s) => cfg.notes[s.slug])
+                  .map((s) => (
+                    <li>
+                      <em>{s.title}</em> — {cfg.notes[s.slug]}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </>
+        )}
+      </as-reading>
+    )
+  }
+</section>
+
+<style>
+  .reading {
+    /* picked books lift out of the 170px row on purpose */
+    overflow: visible;
+    margin-bottom: 52px;
+  }
+  .dead {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+    margin: 0;
+  }
+  as-reading {
+    display: block;
+  }
+
+  /* ---------------- current read ---------------- */
+
+  .current {
+    display: grid;
+    grid-template-columns: 172px 1fr;
+    gap: 48px;
+    margin-bottom: 62px;
+    transition: opacity 200ms ease;
+  }
+  /* promoting another in-progress book swaps five elements at once — the dip
+     makes that read as one change of subject instead of four twitches */
+  .current[data-swapping] {
+    opacity: 0.25;
+  }
+
+  .cover-stage {
+    perspective: 900px;
+  }
+  .cover {
+    position: relative;
+    width: 172px;
+    height: 250px;
+    transform-style: preserve-3d;
+    /* the island overwrites this while the pointer is inside; the long curve is
+       the settle it falls back to on leave */
+    transition: transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 500ms ease;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    border-radius: 2px 3px 3px 2px;
+    background: var(--surface);
+  }
+  .cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+  /* an author `display` beats the UA's [hidden] rule, so every element this
+     component hides by attribute has to say so itself */
+  .cover img[hidden],
+  .prog[hidden] {
+    display: none;
+  }
+  .no-cover {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(150deg, #1b1815, #14110f);
+    border: 1px solid var(--hair-card);
+  }
+  /* the cream block of page edges down the fore-edge — the one thing that says
+     "book" while the art is missing, and the reason the box never sits empty */
+  .page-edge {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    right: -4px;
+    width: 5px;
+    border-radius: 0 2px 2px 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      #cfc6b6 0 1px,
+      #9d947f 1px 2px
+    );
+    opacity: 0.72;
+  }
+  .sheen {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+    background: radial-gradient(
+      300px circle at var(--sx, 50%) var(--sy, 50%),
+      rgba(237, 230, 218, 0.2),
+      transparent 62%
+    );
+  }
+
+  .prog {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 0;
+  }
+  .prog .track {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(237, 230, 218, 0.1);
+    overflow: hidden;
+  }
+  .prog .fill {
+    display: block;
+    height: 100%;
+    background: var(--as-accent);
+  }
+  .prog .pct {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--as-accent);
+  }
+
+  .when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+    margin: 0 0 10px;
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 1.2;
+    color: var(--text-hi);
+    margin: 0 0 8px;
+    text-wrap: pretty;
+  }
+  .byline {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+    margin: 0;
+  }
+  .note {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 17.5px;
+    line-height: 1.55;
+    color: var(--quote);
+    max-width: 26em;
+    margin: 20px 0 0;
+    text-wrap: pretty;
+  }
+
+  /* ---------------- shelf ---------------- */
+
+  .shelf-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .sh-label,
+  .sh-meta {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .sh-label {
+    color: var(--text-muted);
+  }
+  .sh-meta {
+    color: var(--faint);
+  }
+  .sh-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--hair-rule);
+  }
+
+  .row {
+    display: flex;
+    gap: 5px;
+    align-items: flex-end;
+    height: var(--shelf-h);
+    padding: 0 8px;
+    border-bottom: 1px solid rgba(237, 230, 218, 0.22);
+    /* a picked book leaves the row's box — it must not be clipped */
+    overflow: visible;
+  }
+
+  /* outer box: shelf space only (lift, lean, dim, z) */
+  .book {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--w);
+    height: var(--h);
+    /* board depth — a book is about two thirds as deep as it is tall */
+    --bw: calc(var(--h) * 0.62);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transition:
+      transform 720ms cubic-bezier(0.3, 0.55, 0.25, 1),
+      opacity 400ms ease;
+  }
+  .book:focus-visible {
+    outline: 1px solid var(--as-accent);
+    outline-offset: 3px;
+  }
+
+  /* bookend between the open books and the finished ones */
+  .divider {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 46px;
+    position: relative;
+  }
+  .divider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to top, rgba(237, 230, 218, 0.28), transparent);
+  }
+
+  /* the in-progress group wears a brass headband; the one showing above also
+     stands a little proud of the shelf, the way a book you keep picking up does */
+  .book[data-group='reading'] .spine::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--as-accent);
+    opacity: 0.75;
+  }
+  .book[aria-current='true'] {
+    transform: translateY(-7px);
+  }
+  .book[aria-current='true'] .spine::after {
+    opacity: 1;
+  }
+
+  /* float box: a flat 2D wrapper between shelf space and the 3D book. It owns
+     the idle bob, and it owns the perspective — per book rather than per row,
+     because one shared vanishing point had every spine away from centre seen at
+     an angle, and a 16° tip then sheared its page block across its neighbour. */
+  .hold {
+    position: absolute;
+    inset: 0;
+    display: block;
+    perspective: 620px;
+    perspective-origin: 50% 78%;
+  }
+
+  /* inner box: the 3D book itself, hinged at its base like a real headcap tip */
+  .inner {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: left bottom;
+    transition: transform 240ms cubic-bezier(0.2, 0.7, 0.3, 1.1);
+  }
+  .face {
+    position: absolute;
+    display: block;
+    backface-visibility: hidden;
+  }
+  /* Everything except the spine is hidden on the shelf: the page block shows
+     when a book is tipped, the jacket only once one is in hand. */
+  .pagetop,
+  .jacket {
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .spine {
+    inset: 0;
+    border-radius: 1px 1px 0 0;
+    /* casing + the curvature you get from a rounded spine, plus wear at the
+       head and tail where a shelved book takes its knocks */
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.42),
+        rgba(0, 0, 0, 0) 12%,
+        rgba(0, 0, 0, 0) 86%,
+        rgba(0, 0, 0, 0.5)
+      ),
+      linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.45),
+        rgba(255, 255, 255, 0.09) 38%,
+        rgba(255, 255, 255, 0.03) 62%,
+        rgba(0, 0, 0, 0.42)
+      ),
+      var(--casing);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 9px 0 8px;
+    overflow: hidden;
+  }
+  .stitle {
+    writing-mode: vertical-rl;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.2px;
+    color: rgba(237, 230, 218, 0.82);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: calc(var(--h) - 30px);
+  }
+  /* the brass stamp near the tail — every publisher's little badge */
+  .press {
+    position: absolute;
+    left: 50%;
+    bottom: 7px;
+    width: 9px;
+    height: 2px;
+    transform: translateX(-50%);
+    background: var(--as-accent);
+    opacity: 0.8;
+  }
+
+  /* The block of page tops, lying flat behind the spine's head. Kept shallow on
+     purpose: a face at full board depth projects a pale slab up and out past
+     the spine's own width, seen from 620px away. 16px reads as the top edge of
+     a book. It exists for the hover tip only — once the book has swung round to
+     face you, a page block hanging off its head is just a flap. */
+  .pagetop {
+    top: 0;
+    left: 0;
+    width: var(--w);
+    height: 16px;
+    transform-origin: top center;
+    transform: rotateX(90deg);
+    background: linear-gradient(to bottom, #b3aa96, #6f6858);
+  }
+  /* The face you read when a book is in hand. The front board that used to
+     hinge open in front of this is gone: it spent most of the animation
+     edge-on, and once every book carries its real jacket there is nothing for
+     a blank board to add. */
+  .jacket {
+    top: 0;
+    left: 100%;
+    width: var(--bw, 96px);
+    height: 100%;
+    transform-origin: left center;
+    transform: rotateY(90deg);
+    background: #e6decc;
+    color: #2a251e;
+    padding: 16px 12px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+    font-family: var(--font-serif);
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0;
+  }
+  .jacket em {
+    font-style: italic;
+    font-size: 12px;
+  }
+  .jacket-author {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    color: #6b6354;
+  }
+  /* the real jacket, cached at build — the cream title card above is what a
+     book with no usable art falls back to */
+  .jacket.art {
+    /* longhands, not the shorthand: a var() anywhere in a `background`
+       shorthand defers validation, and one bad substitution drops every
+       longhand it set — including the colour underneath. Split, a missing
+       --cover costs the image and nothing else. */
+    background-color: var(--casing);
+    background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.22)),
+      var(--cover);
+    background-size: cover, cover;
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
+    padding: 0;
+  }
+
+  /* ---- states (driven by the island) ---- */
+
+  /* hover/focus tips the book off the headcap — a fingertip, not a jump */
+  .row:not([data-holding]) .book:hover .inner,
+  .book:focus-visible .inner {
+    transform: rotateX(-16deg);
+  }
+  /* tipping shows the page block — and only tipping */
+  .row:not([data-holding]) .book:hover .pagetop,
+  .book:focus-visible .pagetop {
+    opacity: 0.9;
+  }
+  /* A book in hand floats at 1.5× over the middle of the shelf, so its faces
+     cover the spines behind it. Only the jacket — the face you're actually
+     looking at — keeps its hit area, and clicking it puts the book back. The
+     rest would otherwise swallow clicks aimed at the shelf, which is how you'd
+     pick the second book the handoff allows. */
+  .book[data-state] .spine,
+  .book[data-state] .pagetop {
+    pointer-events: none;
+  }
+
+  /* everything that isn't in hand recedes while one is */
+  .row[data-holding] .book:not([data-state]) {
+    opacity: 0.4;
+  }
+  /* The two immediate neighbours lean into the gap, pivoting on the corner
+     nearest it — a quiet 3.5°, and nothing else on the shelf moves. The name is
+     the side of the gap the book sits on: `left` tips its head rightwards. */
+  .book[data-lean='left'] {
+    transform: rotate(3.5deg);
+    transform-origin: right bottom;
+    transition: transform 400ms cubic-bezier(0.3, 0.1, 0.3, 1.08);
+  }
+  .book[data-lean='right'] {
+    transform: rotate(-3.5deg);
+    transform-origin: left bottom;
+    transition: transform 400ms cubic-bezier(0.3, 0.1, 0.3, 1.08);
+  }
+  /* the returning book nudges them upright a beat after it lands */
+  .row[data-settling] .book[data-lean] {
+    transition-delay: 240ms;
+  }
+
+  .book[data-state='out'] {
+    /* --tx/--ty are written per book: x to the row's centre, y up out of it.
+       Transform stays a *transition* here so a re-place glides — see .hold
+       below for where the idle bob had to go, and why. */
+    transform: translate3d(var(--tx, 0), var(--ty, -30px), 0) scale(1.5);
+    z-index: 30;
+  }
+  /* The bob lives on .hold, not out here. On the outer box an animation on
+     `transform` beats the transition on the same property, so every re-place —
+     a second book joining, or the oldest being sent home — snapped to its new
+     x instead of gliding. */
+  .book[data-state='out'] .hold {
+    animation: as-float 3.6s ease-in-out 700ms infinite;
+  }
+  .book[data-state='out'] .inner {
+    animation: as-pick 700ms cubic-bezier(0.45, 0.05, 0.55, 0.6) forwards;
+  }
+  .book[data-state='out'] .jacket {
+    opacity: 1;
+  }
+  /* mid-reshelve: stays above its neighbours until it has slid home */
+  .book[data-state='back'] {
+    z-index: 20;
+  }
+  .book[data-state='back'] .inner {
+    animation: as-shelve 620ms cubic-bezier(0.3, 0.2, 0.2, 1) forwards;
+  }
+
+  @keyframes as-pick {
+    0% {
+      transform: rotateX(-16deg);
+    }
+    38% {
+      /* deepen the tip while sliding free of the neighbours */
+      transform: rotateX(-20deg) rotateY(-18deg) translate3d(3px, -7px, 44px);
+    }
+    100% {
+      /* swing to face you */
+      transform: rotateY(-86deg) translate3d(8px, -12px, 18px);
+    }
+  }
+  @keyframes as-shelve {
+    0% {
+      transform: rotateY(-86deg) translate3d(8px, -12px, 18px);
+    }
+    55% {
+      transform: rotateX(-16deg) rotateY(-20deg) translate3d(3px, -6px, 40px);
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes as-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-5px) rotate(1.2deg);
+    }
+  }
+
+  /* ---------------- caption ---------------- */
+
+  .caption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin: 12px 0 0;
+  }
+  .cap-text {
+    transition: color 200ms ease;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cap-text[data-active] {
+    color: var(--quote);
+  }
+  .cap-right {
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  /* the plain-list fallback only exists for reduced motion */
+  .rm-notes {
+    display: none;
+  }
+
+  /* ---------------- reduced motion ---------------- */
+
+  @media (prefers-reduced-motion: reduce) {
+    /* no tilt, no pull-out: the cover sits flat and the shelf stays a shelf.
+       Spines keep their focus ring — focus drives the caption like hover. */
+    .cover,
+    .book,
+    .inner {
+      transition: none;
+    }
+    .row:not([data-holding]) .book:hover .inner {
+      transform: none;
+    }
+    .book[data-state='out'] .hold,
+    .book[data-state='out'] .inner,
+    .book[data-state='back'] .inner {
+      animation: none;
+    }
+    .sheen {
+      display: none;
+    }
+    .rm-notes {
+      display: block;
+      list-style: none;
+      padding: 0;
+      margin: 18px 0 0;
+      font-family: var(--font-serif);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--meta);
+    }
+    .rm-notes li + li {
+      margin-top: 6px;
+    }
+    .rm-notes em {
+      font-style: italic;
+      color: var(--text);
+    }
+  }
+
+  /* ---------------- mobile (≤768px) ---------------- */
+
+  @media (max-width: 768px) {
+    .current {
+      grid-template-columns: 140px 1fr;
+      gap: 22px;
+      margin-bottom: 44px;
+    }
+    .cover,
+    .cover-stage {
+      width: 140px;
+    }
+    .cover {
+      height: 204px;
+    }
+    .title {
+      font-size: 21px;
+    }
+    .note {
+      font-size: 15.5px;
+      margin-top: 14px;
+    }
+    .when,
+    .byline,
+    .sh-label,
+    .sh-meta {
+      font-size: 11px;
+    }
+    .sh-meta {
+      display: none;
+    }
+    .row {
+      padding: 0 4px;
+    }
+    .caption {
+      font-size: 10.5px;
+    }
+    .cap-right {
+      display: none;
+    }
+  }
+</style>

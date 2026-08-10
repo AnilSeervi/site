@@ -43,6 +43,7 @@
     "drizzle-kit": "^0.31.10",
     "playwright": "^1.61.1",
     "satori": "^0.29.0",
+    "sharp": "^0.35.3",
     "typescript": "^5.9.3"
   }
 }
