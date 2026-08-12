@@ -19,14 +19,9 @@ export const site = {
 		{ label: "live", href: "/live" },
 		{ label: "about", href: "/about" },
 	],
-	// `❯ now — …` status line (home) — edit in one place
+	// `❯ now — …` status line on the home page
 	now: "status pages at xurrent · oss bench quiet",
 	role: "staff software engineer · zenduty → xurrent · bengaluru",
-	/**
-	 * A headline, not a bio. The role line above it already gives the title,
-	 * the company and the city; the proof strip below gives the numbers — so
-	 * this line only has to be worth reading.
-	 */
 	intro:
 		"Fixed a stranger's SDK. Got hired 13 days later. Still fixing things.",
 } as const
@@ -35,62 +30,29 @@ export interface Project {
 	name: string
 	/** short description used on the home digest */
 	home?: string
-	/** the spread's description on /work (handoff 6b, right column) */
+	/** the spread's description on /work */
 	work: string
 	/** always-visible italic line under the description; starts "Why:" */
 	why: string
-	/**
-	 * Real stack, dot-separated. The handoff shipped placeholders and flagged
-	 * them as such — they were wrong in every row (DevFolio was listed as
-	 * next.js/styled-components/vercel; it is SCSS + HTML served from js.org).
-	 * These come from the GitHub languages + topics APIs and the live host.
-	 */
+	/** real stack, dot-separated */
 	stack: string[]
-	/**
-	 * `spread` gets the editorial treatment; `archive` gets a compact row under
-	 * FROM THE ARCHIVE. The tier is the honest claim — archive means "I'm not
-	 * saying anything more about this", which is different from "it's dead".
-	 */
+	/** `spread` = editorial treatment on /work; `archive` = compact row */
 	tier: "spread" | "archive"
 	/** one-liner for an archive row, where there's no room for `work` + `why` */
 	blurb?: string
-	/**
-	 * Extra text on the chip, after the `active` dot. A number, never a status
-	 * word — that was the one thing here a reader could not check, and it
-	 * contradicted its own neighbours. DevFolio's numbers come from the API
-	 * instead (see `live`).
-	 */
+	/** extra text on the chip after the `active` dot — a number, never a status word */
 	metric?: string
-	/**
-	 * The deployed thing responds — renders as a green dot + `active` on the
-	 * chip, and it is the ONLY status this page makes. That's what makes it
-	 * sayable: it describes the SITE, not the repo. The old
-	 * active/maintained/archived field described intent, couldn't be checked,
-	 * and contradicted its own neighbours — "archived" beside copy saying the
-	 * site still serves, "maintained" beside a repo two years cold. It's gone.
-	 * All five verified 200 on 2026-08-06; re-check with
-	 * `curl -sSL -o /dev/null -w '%{http_code}' <href>` before trusting it.
-	 */
+	/** the deployed site responds — renders the green `active` dot on the chip */
 	siteUp?: boolean
 	/** owner/repo — drives both the source link and the home sparkline */
 	repo?: string
 	/** the running thing: the app, the npm page. The source link is derived. */
 	href: string
-	/**
-	 * Fills the chip from /api/github rather than baking counts into a string.
-	 * The hardcoded "★485 · 166 forks" had drifted from the real 486/165 in
-	 * both directions at once, which is what hardcoded brags do.
-	 */
+	/** fills the chip from /api/github instead of a hardcoded count string */
 	live?: "devfolio"
 }
 
-/**
- * /work shows all six — the five `spread` tiers in this order, then the
- * `archive` rows. The home digest is whichever have `home` copy: four, and
- * deliberately not the same four as the top of this list. `this site` is
- * excluded because the digest renders on it, and Inspirational Quotes because
- * the digest shouldn't promote what /work puts in the archive.
- */
+/** /work renders the `spread` tiers in this order, then `archive`; the home digest is the entries with `home` copy. */
 export const projects: Project[] = [
 	{
 		name: "DevFolio",
@@ -139,25 +101,19 @@ export const projects: Project[] = [
 	},
 	{
 		name: "this site",
-		/* no `home` copy — the digest sits on this very page, so a row telling
-		   you about it is the one project a visitor doesn't need pointing at */
 		work: "Astro islands over live Spotify, GitHub & MAL feeds. Source in the open — you're in it right now.",
 		why: "Why: the sandbox where every new API or platform trick lands first.",
 		stack: ["astro", "islands", "vercel"],
 		tier: "spread",
 		siteUp: true,
 		repo: "AnilSeervi/site",
-		/* the deployed site, even though you're standing in it — otherwise `href`
-		   and the derived source URL collide, srcUrl() returns null, and the row
-		   renders a single ↗ that leads to GitHub. Both icons, both honest. */
+		/* the deployed site, not the repo: if `href` matched the derived GitHub URL,
+		   srcUrl() would return null and the row would render only one link */
 		href: "https://anil.vercel.app",
 	},
 	{
-		/* display name, not the package id — `inspirational-quotes` breaks at its
-		   own hyphen in a narrow column and reads as two half-words */
+		/* display name, not the package id — `inspirational-quotes` wraps at its hyphen */
 		name: "Inspirational Quotes",
-		/* no `home` copy — it's the archive tier on /work, and the digest should
-		   agree with the page it links to rather than promote what that page demotes */
 		work: "An npm package that hands you a random quote. Typed, scoped, and still being pulled three years on.",
 		why: "Why: I wanted to know what publishing to a registry actually involved. Turns out: versioning discipline.",
 		/* the archive tier has no chip, so the install count rides the blurb */
@@ -169,13 +125,7 @@ export const projects: Project[] = [
 	},
 ]
 
-/**
- * Source link for a row, derived from the same owner/repo the sparkline uses so
- * there is one place to be wrong. `href` points at the running thing — the app,
- * the npm page — and this points at the code, so the two icons always land
- * somewhere predictable. Null when they would be the same link: `this site` has
- * no "try it" that isn't the page you're already on.
- */
+/** GitHub source link for a row, derived from `repo`; null when it would equal `href`. */
 export const srcUrl = (p: Project): string | null => {
 	if (!p.repo) return null
 	const url = `https://github.com/${p.repo}`
@@ -185,11 +135,7 @@ export const srcUrl = (p: Project): string | null => {
 export const spreads = projects.filter((p) => p.tier === "spread")
 export const archive = projects.filter((p) => p.tier === "archive")
 
-/**
- * /work — the day job. One entry, because there is one job: the `ladder` line
- * carries the progression that a single row header can't, and the bullets are
- * scope owned rather than tasks done.
- */
+/** /work — the day job. */
 export const experience = [
 	{
 		name: "Zenduty → Xurrent",
@@ -197,8 +143,6 @@ export const experience = [
 		meta: "jan 22 — now",
 		bullets: [
 			"Own the frontend platform — build tooling, error architecture, the release process",
-			// Frontend, not the whole product — the three things named are all frontend,
-			// and ownership is already claimed by the line above, so this one just scopes.
 			"Built the Status Pages frontend — dashboard, public SPA, rich-text editor package",
 			"600+ PRs reviewed across web, mobile and backend — the frontend review gate",
 		],
@@ -206,15 +150,8 @@ export const experience = [
 ]
 
 /**
- * /work — PRs to other people's repos, 2020 → now.
- *
- * `prs` is PRs opened to that repo; the section meta carries the merged total
- * (~220 of 259), because per-repo merge rates differ and rounding each one
- * would overstate the small ones. Every row links to the public search that
- * produced it, so the number is checkable rather than claimed.
- *
- * Static, not fetched: a build-time count would add a token dependency and a
- * rate limit to a figure that moves when a PR lands, not when a page renders.
+ * /work — PRs to other people's repos. `prs` counts PRs opened, not merged;
+ * the merged total lives in `meta`. Static by design — no build-time fetch.
  */
 export const contributions = {
 	meta: "259 prs · ~220 merged",
@@ -236,13 +173,7 @@ export const contributions = {
 	tail: "…and singles in npm/cli, actions/setup-node, web.dev, cloudflare-docs, sentry-docs, swr-site, create-t3-app, tamagui, simple-icons, browser-compat-data, yari, js.org",
 }
 
-/**
- * About — click-to-reveal facts (frame 6e).
- *
- * These sit directly above the calendar, so they answer what it can't: the
- * calendar shows the title ladder and the ships, these say the scope, the
- * habits and the person. Nothing here restates a milestone or a card face.
- */
+/** About — click-to-reveal facts. */
 export const facts = [
 	{ key: "role", value: "staff engineer · frontend platform" },
 	{
@@ -256,14 +187,12 @@ export const facts = [
 	{ key: "fuel", value: "filter coffee · lo-fi · long manga arcs" },
 ]
 
-/** About — career calendar (frame 6e). Yearly rails 2026 → 2020. */
+/** About — career calendar. Yearly rails 2026 → 2020. */
 export const calendar = {
 	years: [2026, 2025, 2024, 2023, 2022, 2021, 2020],
 	/**
-	 * A card spans its years, so its two edges are its two dates: the footer
-	 * (kicker/title/dates) sits at the bottom = the start, and `head` labels the
-	 * top = where the span stands now. `ticks` mark the turns in between, each
-	 * pinned to its own year band — the span's dead middle carries the ladder.
+	 * A card spans `fromYear` → `toYear`: the footer dates are the start, `head`
+	 * labels the top of the span, and each `ticks` entry pins to its own year band.
 	 */
 	cards: [
 		{
@@ -293,18 +222,7 @@ export const calendar = {
 			accent: false,
 		},
 	],
-	/**
-	 * The bar: something that shipped, that a stranger would recognize as a
-	 * turn in the story, and that no other element on the page already says.
-	 * In-progress work, internal tooling and line-count trivia don't clear it —
-	 * they live in `details` below, where there's room to earn them.
-	 *
-	 * Nothing here repeats a card's `ticks` or footer either: the promotions and
-	 * the hire are the Zenduty card's own edges and would only be said twice.
-	 *
-	 * Ordered latest-first within each year, like `years` above — the calendar
-	 * runs newest at the top, so reading it upward is reading it forward in time.
-	 */
+	/** Ordered latest-first within each year, matching `years` above. */
 	milestones: [
 		{ year: 2026, label: "status pages ship, end to end" }, // jun–jul 26
 		{ year: 2025, label: "xurrent acquires zenduty" }, // feb 25
@@ -316,27 +234,12 @@ export const calendar = {
 		{ year: 2021, label: "devfolio ships — ★485" },
 		{ year: 2020, label: "qp hoard — the first pwa" },
 	],
-	/**
-	 * Written as talking, not as a résumé. Every one of these used to open with
-	 * a verb and end with a metric after an em-dash — eight times in a row,
-	 * which reads as a bullet-point generator rather than a person. Same facts,
-	 * same numbers, said the way you'd say them out loud: first person, varied
-	 * sentence shapes, and the reason a thing happened kept next to what it was.
-	 *
-	 * Ownership is claimed by the sentence, not by a possessive: six of these
-	 * sixteen lines used to hang on my/mine, which stops reading as ownership
-	 * and starts reading as a tic. Say what was done instead, and vary how each
-	 * line opens — noun, verb, "I", a number — so no two neighbours share a shape.
-	 * Keep every line ≤90 chars: one line on desktop, two on mobile.
-	 */
+	/** Every bullet must stay ≤90 chars: one line on desktop, two on mobile. */
 	details: {
 		zd: {
 			title: "Founding Engineer → Staff · Zenduty → Xurrent",
 			meta: "full-time · jan 24, 2022 — now",
 			bullets: [
-				// Scoped to the frontend on purpose: the three things named here are all
-				// frontend, other engineers commit into the product now, and the narrow
-				// claim is the one that survives someone asking about the backend.
 				"I built the Status Pages frontend — dashboard, public site, editor package — and own it.",
 				"Deleted webpack in one PR. App 45% faster, builds 62% faster, TypeScript came free.",
 				"I left react-query in a review comment; it's now 100+ typed hooks, web and mobile.",
@@ -371,19 +274,8 @@ export const calendar = {
 }
 
 /**
- * READING · HARDCOVER (/live, design_handoff_reading) — the two calls the API
- * can't make for us.
- *
- * `now`: Hardcover has five books at status_id 2 at once, and "currently
- * reading" on a shelf that size is a claim about attention, not about which row
- * the API touched last. Name the one that's actually in hand. An unknown slug
- * (or none) falls back to the most recent status-2 book that has a usable
- * cover, so the section never breaks over a typo.
- *
- * `notes`: hand-written, keyed by the Hardcover slug — the API gives facts, and
- * these are the opinions. A book with no note renders without the italic line
- * and its caption falls back to `title — author`; nothing is invented to fill
- * the slot. Slugs are in src/data/hardcover.json.
+ * `now`: Hardcover keeps several books at status_id 2; this slug picks the one in
+ * hand (unknown → newest status-2 book with a cover). `notes` keyed by that slug.
  */
 export const reading = {
 	/** Hardcover handle — the corner link on the section */
@@ -392,7 +284,7 @@ export const reading = {
 	notes: {} as Record<string, string>,
 }
 
-/** Command palette (frame 6g) */
+/** Command palette */
 export const paletteActions = [
 	{ label: "pbcopy email", hint: "⌘C", action: "copy-email" },
 	{ label: "open src ↗", action: "open-src" },
