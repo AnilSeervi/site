@@ -6,6 +6,9 @@
  *   <canvas …></canvas></as-ascii-portrait>
  * CSS box (cols·4 × rows·4) and 2× backing store are set in JS from the active
  * cell grid, so the mobile size follows the breakpoint, not the markup.
+ *
+ * Loading: data-load goes idle → waiting → arrived, and the canvas draws the
+ * noise field while waiting, then dissolves into the portrait.
  */
 
 import { isMobile, onBreakpointChange } from './breakpoint';
@@ -13,6 +16,10 @@ import { isMobile, onBreakpointChange } from './breakpoint';
 const GW = 60;
 const GH = 75;
 const RAMP = ' .·:-=+*#%@';
+/** hold the empty box this long before drawing noise — a cached image beats it
+    and lands straight on the portrait, so a fast load shows no loading state */
+const GRACE_MS = 180;
+const DISSOLVE_MS = 420;
 
 let lumPromise: Promise<{ L: Float32Array; gw: number; gh: number } | null> | null = null;
 
@@ -66,6 +73,10 @@ class AsAsciiPortrait extends HTMLElement {
   #queued = false;
   #lum: { L: Float32Array; gw: number; gh: number } | null = null;
   #unsub: (() => void) | null = null;
+  /** 0 = pure noise, 1 = pure portrait; the dissolve drives it between them */
+  #mix = 0;
+  #grace: ReturnType<typeof setTimeout> | null = null;
+  #raf = 0;
 
   #onMove = (e: PointerEvent) => {
     const r = this.#cv!.getBoundingClientRect();
@@ -119,23 +130,67 @@ class AsAsciiPortrait extends HTMLElement {
       this.#draw();
     });
 
-    this.#lum = await loadPortrait();
-    if (!this.isConnected) return;
-    this.#draw();
+    this.dataset.load = 'idle';
+    // held, not started: an image already in cache resolves inside GRACE_MS and
+    // the noise never paints, so a warm load has no loading state to flicker
+    this.#grace = setTimeout(() => {
+      this.#grace = null;
+      if (!this.isConnected || this.dataset.load === 'arrived') return;
+      this.dataset.load = 'waiting';
+      this.#mix = 0;
+      this.#draw();
+      this.#shimmer();
+    }, GRACE_MS);
 
-    // 90ms shimmer — skipped under reduced motion (static render stays)
-    if (this.#loop) return; // re-entry guard (mirrors the prototype's startHalfLoop)
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.#loop = setInterval(() => {
-        this.#frame++;
-        this.#draw();
-      }, 90);
+    const lum = await loadPortrait();
+    if (!this.isConnected) return;
+    if (this.#grace) clearTimeout(this.#grace);
+    this.#grace = null;
+    this.#lum = lum;
+    // no image means the noise field IS the portrait, so it never dissolves
+    if (!lum) this.dataset.fallback = '';
+    const wasWaiting = this.dataset.load === 'waiting';
+    this.dataset.load = 'arrived';
+
+    if (lum && wasWaiting && !this.#reduced()) this.#dissolve();
+    else {
+      this.#mix = 1;
+      this.#draw();
     }
+    this.#shimmer();
+  }
+
+  #reduced() {
+    return matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /** 90ms shimmer — skipped under reduced motion (the static render stays) */
+  #shimmer() {
+    if (this.#loop || this.#reduced()) return; // re-entry guard: two callers now
+    this.#loop = setInterval(() => {
+      this.#frame++;
+      this.#draw();
+    }, 90);
+  }
+
+  /** noise → portrait over DISSOLVE_MS; the shimmer keeps running underneath */
+  #dissolve() {
+    const t0 = performance.now();
+    const step = () => {
+      const p = Math.min(1, (performance.now() - t0) / DISSOLVE_MS);
+      this.#mix = 1 - (1 - p) ** 3;
+      this.#draw();
+      if (p < 1 && this.isConnected) this.#raf = requestAnimationFrame(step);
+    };
+    this.#raf = requestAnimationFrame(step);
   }
 
   disconnectedCallback() {
     if (this.#loop) clearInterval(this.#loop);
     this.#loop = null;
+    if (this.#grace) clearTimeout(this.#grace);
+    this.#grace = null;
+    cancelAnimationFrame(this.#raf);
     this.#unsub?.();
     this.#unsub = null;
     this.#cv?.removeEventListener('pointermove', this.#onMove);
@@ -158,7 +213,10 @@ class AsAsciiPortrait extends HTMLElement {
     x.textBaseline = 'middle';
     const src = this.#lum;
     const m = this.#mouse;
-    // mulberry(21) reseeded per render; consumed only by the no-portrait fallback
+    const mix = src ? this.#mix : 0;
+    // mulberry(21) reseeded per render; drives the waiting field and the
+    // no-portrait fallback. Drawn for every cell whenever it is visible at all,
+    // so the sequence stays in step across frames and the field doesn't crawl.
     let a = 21;
     const rnd = () => {
       a |= 0;
@@ -172,15 +230,24 @@ class AsAsciiPortrait extends HTMLElement {
         const px = 2 + ix * 4;
         const py = 2 + iy * 4;
         let lum: number;
-        if (src) {
+        if (mix >= 1) {
           lum =
-            src.L[
-              Math.min(src.gh - 1, Math.floor((iy * src.gh) / rows)) * src.gw +
-                Math.min(src.gw - 1, Math.floor((ix * src.gw) / cols))
+            src!.L[
+              Math.min(src!.gh - 1, Math.floor((iy * src!.gh) / rows)) * src!.gw +
+                Math.min(src!.gw - 1, Math.floor((ix * src!.gw) / cols))
             ]!;
         } else {
           const dC = Math.hypot(px - W / 2, py - H * 0.4);
-          lum = Math.max(0, 1 - dC / (H * 0.55)) * 0.75 + rnd() * 0.2;
+          const noise = Math.max(0, 1 - dC / (H * 0.55)) * 0.75 + rnd() * 0.2;
+          if (!src) lum = noise;
+          else {
+            const real =
+              src.L[
+                Math.min(src.gh - 1, Math.floor((iy * src.gh) / rows)) * src.gw +
+                  Math.min(src.gw - 1, Math.floor((ix * src.gw) / cols))
+              ]!;
+            lum = noise + (real - noise) * mix;
+          }
         }
         let t = 0;
         if (m) {

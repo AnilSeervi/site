@@ -33,7 +33,7 @@ const REGION = `(args) => {
 
 async function checkPage(ctx, url, key) {
   const page = await ctx.newPage();
-  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(400); // let portrait load + first draws happen
   const sel = 'as-ascii-portrait canvas';
 
@@ -89,7 +89,7 @@ async function checkPage(ctx, url, key) {
     };
   });
   const page = await ctx.newPage();
-  await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(400);
   const count90 = () =>
     page.evaluate(() => [...window.__ivals.values()].filter((d) => d === 90).length);
@@ -115,7 +115,7 @@ async function checkPage(ctx, url, key) {
     reducedMotion: 'reduce'
   });
   const page = await ctx.newPage();
-  await page.goto('http://localhost:4321/about', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:4321/about', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(500);
   const sel = 'as-ascii-portrait canvas';
   const r1 = await page.evaluate(eval(SAMPLE), sel);
@@ -128,6 +128,59 @@ async function checkPage(ctx, url, key) {
   };
   await ctx.close();
 }
+
+// ---- loading behaviour: idle -> waiting -> arrived ----
+// Records every data-load transition from document_start, so the sequence is
+// observable even when a phase lasts a single frame.
+const PHASE_SPY = () => {
+  window.__phases = [];
+  new MutationObserver((ms) => {
+    for (const m of ms) {
+      if (m.target.tagName === 'AS-ASCII-PORTRAIT') window.__phases.push(m.target.dataset.load);
+    }
+    // `document`, not documentElement — an init script runs before the <html>
+    // element exists, and observe(null) throws.
+  }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-load'] });
+};
+
+async function loadCase(key, { delayMs = 0, abort = false } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await ctx.addInitScript(PHASE_SPY);
+  const page = await ctx.newPage();
+  await page.route('**/portrait.jpg', async (route) => {
+    if (abort) return route.abort();
+    if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
+    return route.continue();
+  });
+  // domcontentloaded, not networkidle — the whole point is a still-pending image
+  await page.goto('http://localhost:4321/about', { waitUntil: 'domcontentloaded' });
+  const sel = 'as-ascii-portrait canvas';
+
+  await page.waitForTimeout(100); // inside the 180ms grace
+  const early = await page.evaluate(eval(SAMPLE), sel);
+  await page.waitForTimeout(300); // past it
+  const mid = await page.evaluate(eval(SAMPLE), sel);
+  const midPhase = await page.evaluate(() => document.querySelector('as-ascii-portrait')?.dataset.load);
+  await page.waitForTimeout(delayMs + 900);
+  const late = await page.evaluate(eval(SAMPLE), sel);
+
+  out[key] = {
+    phases: await page.evaluate(() => window.__phases),
+    blankAt100ms: early ? early.distinct <= 1 : null, // still inside the grace
+    midPhase,
+    midPainted: mid ? mid.distinct > 10 : null,
+    latePainted: late ? late.distinct > 10 : null,
+    noiseDiffersFromFinal: mid && late ? mid.hash !== late.hash : null,
+    fallbackFlag: await page.evaluate(
+      () => document.querySelector('as-ascii-portrait')?.dataset.fallback !== undefined
+    )
+  };
+  await ctx.close();
+}
+
+await loadCase('slowImage', { delayMs: 1200 });
+await loadCase('fastImage');
+await loadCase('failedImage', { abort: true });
 
 console.log(JSON.stringify(out, null, 2));
 await browser.close();
