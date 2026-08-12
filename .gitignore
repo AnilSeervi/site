@@ -13,3 +13,21 @@ dist/
 body-of-work.html
 resume-work-inventory.md
 resume-work-additions.md
+
+# design handoffs stay local — they were purged from history on 2026-08-11 and
+# this keeps `git add -A` from walking 44M of prototype HTML and screenshots
+# back in. Delete the directories, not this line, if you ever want them gone.
+design_handoff_*/
+
+# also purged on 2026-08-11, also still on disk. Setup notes are local because
+# they read as internal runbooks; these six scripts are spent scaffolding —
+# screenshot capture and two migrations that have already run. The check-*.mjs
+# probes and sync-hardcover.mjs stay tracked: the first are the test suite, the
+# second is what the daily workflow runs.
+docs/
+scripts/shot.mjs
+scripts/mshot.mjs
+scripts/shot-loading.mjs
+scripts/mcheck.mjs
+scripts/migrate-phase6.mjs
+scripts/migrate-views-slugs.mjs

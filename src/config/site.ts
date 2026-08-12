@@ -197,10 +197,9 @@ export const experience = [
 		meta: "jan 22 — now",
 		bullets: [
 			"Own the frontend platform — build tooling, error architecture, the release process",
-			// Was "Built Status Pages end-to-end". Other engineers commit into it
-			// now, so the claim is origination plus present ownership — which is
-			// the stronger one anyway, and can't be walked back in an interview.
-			"Built Status Pages, still own what ships — dashboard, public SPA, rich-text editor package",
+			// Frontend, not the whole product — the three things named are all frontend,
+			// and ownership is already claimed by the line above, so this one just scopes.
+			"Built the Status Pages frontend — dashboard, public SPA, rich-text editor package",
 			"600+ PRs reviewed across web, mobile and backend — the frontend review gate",
 		],
 	},
@@ -335,16 +334,17 @@ export const calendar = {
 			title: "Founding Engineer → Staff · Zenduty → Xurrent",
 			meta: "full-time · jan 24, 2022 — now",
 			bullets: [
-				// origination in the past, ownership in the present — other engineers
-				// commit into Status Pages now, and "what ships" covers their code too
-				"I built Status Pages — dashboard, public site, editor package — and still own what ships.",
+				// Scoped to the frontend on purpose: the three things named here are all
+				// frontend, other engineers commit into the product now, and the narrow
+				// claim is the one that survives someone asking about the backend.
+				"I built the Status Pages frontend — dashboard, public site, editor package — and own it.",
 				"Deleted webpack in one PR. App 45% faster, builds 62% faster, TypeScript came free.",
 				"I left react-query in a review comment; it's now 100+ typed hooks, web and mobile.",
 				"Convinced the team to go monorepo: 497 files moved, 28,000 duplicate lines gone.",
 				"antd had to go. I argued for radix, we built enso, and I gatekept every PR after.",
 				"I own the crashes too. One Sentry overhaul cut 41,000 lines from 493 files.",
 				"Two weeks in I was redesigning the platform. 237 commits later it shipped.",
-				"600+ PRs reviewed, plenty in languages I don't write. Three engineers report to me.",
+				"I lead three engineers and gate 600+ PRs, plenty in languages I don't write.",
 			],
 		},
 		self: {
