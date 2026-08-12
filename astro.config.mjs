@@ -4,11 +4,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 
-/**
- * "The Complete Minimal" code theme — token colors taken from the design's
- * article code block (frame 6f): strings brass, numerals green, functions
- * cream, builtins meta-gray, comments faint.
- */
+/** Article code-block theme: strings brass, numerals green, functions cream. */
 const warmTheme = {
   name: 'complete-minimal',
   type: 'dark',

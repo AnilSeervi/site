@@ -8,6 +8,14 @@ import { site, facts, calendar } from '~/config/site';
 /** year → 1-indexed grid row; calendar.years is ordered newest-first */
 const yearRow = (y: number) => calendar.years.indexOf(y) + 1;
 const details = Object.entries(calendar.details);
+
+/* This page is prerendered, so frontmatter runs at build time and this is the
+   deploy time. Opting the page into SSR would silently turn it into request
+   time, i.e. always "today". */
+const deployedAt = new Date();
+const deployLabel = deployedAt
+  .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  .toLowerCase();
 ---
 
 <Base
@@ -176,11 +184,12 @@ const details = Object.entries(calendar.details);
   <!-- colophon -->
   <Section label="COLOPHON" />
   <div class="colophon">
-    Set in <em>Newsreader</em> and <span class="mono">Spline Sans Mono</span>. Built with Astro —
-    islands for the live feeds, view transitions between every page. Deployed on Vercel ▲<span
-      class="desktop-only"
-      >, <span data-deploy>last deploy 2h ago</span>. Live data from Spotify, GitHub and
-      MyAnimeList</span
+    Set in <em>Newsreader</em>, Schibsted Grotesk and <span class="mono">Spline Sans Mono</span> —
+    each name in its own face. Built with Astro — islands for the live feeds, view transitions
+    between every page. Deployed on Vercel ▲<span class="desktop-only"
+      >, <time data-deploy datetime={deployedAt.toISOString().slice(0, 10)}
+        >last deploy {deployLabel}</time
+      >. Live data from Spotify, GitHub, MyAnimeList, Garmin, Hardcover and Open-Meteo</span
     >. Source at <a href={site.repo} target="_blank" rel="noopener noreferrer"
       >github.com/AnilSeervi/site</a
     >.
