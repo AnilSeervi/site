@@ -1,8 +1,6 @@
 /**
- * Turso (libSQL) + drizzle singleton. Server-only — secrets never reach the client.
- *
- * Check `isDbConfigured` before calling `db()`; endpoints must degrade to
- * 200 {"disabled":true} when the env vars are missing rather than throwing.
+ * Turso (libSQL) + drizzle singleton. Server-only.
+ * Check `isDbConfigured` before `db()`; endpoints must degrade to 200 {"disabled":true}, not throw.
  */
 import { createClient } from '@libsql/client';
 import { drizzle, type LibSQLDatabase } from 'drizzle-orm/libsql';

@@ -1,30 +1,5 @@
 ---
-/**
- * MOVING · GARMIN (frame 6d) — route etching + vitals + 90-day consistency
- * strip. Self-contained: mount <Moving /> and import '~/islands/moving' —
- * the <as-moving> island fetches /api/moving + /api/fitness (both Garmin
- * Connect), fills the pre-rendered fragments and reveals the section.
- *
- * Loading states (design_handoff_loading_states, "8 · waiting"):
- *   - waiting: the section shows its shell — a dashed-ellipse route placeholder,
- *     four skeleton vitals bars (the resting-hr row keeps a static grey dot,
- *     no beat) and a single flat strip bar. Captions read `waiting on garmin…`
- *     / empty legend. The island's LoadPhase gates all of this behind the
- *     180ms/400ms timing so fast responses never flash a skeleton.
- *   - arrived: the real polyline draws itself (as-draw), the start dot fades in
- *     after the draw and the perpetual runner then loops; vitals fade in
- *     staggered 60ms; the strip rises. Values only ever replace their own slot.
- *   - didn't answer → the whole block hides (no zeros). indoor / no-GPS → the
- *     route is dropped, the vitals stay. Missing vitals drop their own row.
- *
- * Feed history: the route/activity data came from Strava originally; Strava's
- * API now requires a paid tier, so activities + GPS tracks are sourced from
- * Garmin Connect (src/lib/moving.ts + garmin.ts) alongside the vitals.
- *
- * SSR ships `hidden` + `data-load="idle"`; the island un-hides on connect and
- * drives data-load idle → waiting → arrived. The value fragments start empty
- * (never a faked km / bpm) — the island fills them before revealing.
- */
+/** MOVING · GARMIN — route etching, vitals, 90-day strip. Ships hidden; the <as-moving> island (import '~/islands/moving') fills it and un-hides. */
 import Section from '~/components/Section.astro';
 ---
 
@@ -32,9 +7,6 @@ import Section from '~/components/Section.astro';
   <Section label="MOVING · GARMIN" />
 
   <div class="mgrid" data-mgrid>
-    <!-- route: a brass dot searches at centre (pinging like a watch acquiring a
-         gps fix), locks onto the real start point, then the route unfurls from
-         it. No fake placeholder shape. -->
     <div class="etch" data-etch>
       <svg
         class="route"
@@ -71,7 +43,6 @@ import Section from '~/components/Section.astro';
       <span class="etch-cap" data-live="etch-cap">acquiring gps…</span>
     </div>
 
-    <!-- vitals rows -->
     <div class="vitals">
       <div class="vrow" data-row="lastrun">
         <span class="vlabel" data-live="lastrun-label">last run</span>
@@ -111,13 +82,10 @@ import Section from '~/components/Section.astro';
     </div>
   </div>
 
-  <!-- consistency strip — flat-bar placeholder while waiting; the island
-       replaces it with the day bars and fires the rise-in stagger -->
   <div class="strip" data-strip role="img" aria-label="daily activity, last 90 days">
     <span class="strip-sk" data-sk aria-hidden="true"></span>
   </div>
-  <!-- one reserved line, two tenants: the legend by default, and the hovered
-       day's detail in its place (see #showDay). Never both, so no reflow. -->
+  <!-- legend and hover readout share this one line, never both — no reflow -->
   <div class="strip-meta">
     <span class="meta-slot" data-val
       ><span data-legend
@@ -136,7 +104,7 @@ import Section from '~/components/Section.astro';
   as-moving {
     display: block;
   }
-  /* our display:block would out-cascade the UA [hidden] rule — restate it */
+  /* the display:block above out-cascades the UA [hidden] rule — restate it */
   as-moving[hidden] {
     display: none;
   }
@@ -180,7 +148,7 @@ import Section from '~/components/Section.astro';
     padding: 12px 0;
     border-bottom: 1px solid var(--hair-row);
     align-items: center;
-    /* reserve the row height so the skeleton → value swap never reflows (8a) */
+    /* reserve the row height so the skeleton → value swap never reflows */
     min-height: 44px;
   }
   .vrow:last-child {
@@ -222,8 +190,7 @@ import Section from '~/components/Section.astro';
     background: var(--live-green);
   }
 
-  /* ---- waiting skeletons (8a) ---- */
-  /* resting-hr skeleton keeps a static grey dot beside the bar, no beat */
+  /* ---- waiting skeletons ---- */
   as-moving[data-load='waiting'] .sk-rhr {
     display: inline-flex;
     align-items: center;
@@ -236,7 +203,6 @@ import Section from '~/components/Section.astro';
     border-radius: 50%;
     background: rgba(237, 230, 218, 0.14);
   }
-  /* strip placeholder is a "larger block" — breathe at 1.9s */
   as-moving[data-load='waiting'] .strip-sk {
     animation: as-breathe 1.9s ease-in-out infinite;
   }
@@ -248,12 +214,11 @@ import Section from '~/components/Section.astro';
   }
 
   /* ---- route — GPS-acquire ---- */
-  /* base route hidden until it unfurls from the locked dot */
+  /* hidden until the unfurl animation runs dashoffset 1 → 0 */
   [data-route-base] {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
   }
-  /* the fix dot slides from its searching position onto the real start point */
   .fix {
     transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -262,7 +227,6 @@ import Section from '~/components/Section.astro';
     transform-origin: center;
     opacity: 0;
   }
-  /* ping while acquiring (waiting) and through the lock slide (.locking) */
   as-moving[data-load='waiting'] .fix-ring,
   as-moving.locking .fix-ring {
     animation: as-ping 1.5s ease-out infinite;
@@ -277,7 +241,6 @@ import Section from '~/components/Section.astro';
       opacity: 0;
     }
   }
-  /* the route unfurls from the locked dot; the runner laps once it settles */
   .runner {
     opacity: 0;
   }
@@ -288,7 +251,6 @@ import Section from '~/components/Section.astro';
     opacity: 1;
     animation: as-run 7s linear infinite;
   }
-  /* vitals fade in staggered 60ms down the group */
   as-moving[data-load='arrived'] .vitals .vrow:nth-of-type(2) [data-val] {
     animation-delay: 0.06s;
   }
@@ -299,7 +261,7 @@ import Section from '~/components/Section.astro';
     animation-delay: 0.18s;
   }
 
-  /* consistency strip — 90 island-built spans (:global — they carry no scope attr) */
+  /* :global — the island builds these spans, so they carry no scope attribute */
   .strip {
     display: flex;
     align-items: flex-end;
@@ -313,8 +275,7 @@ import Section from '~/components/Section.astro';
     transform-origin: bottom;
     transition: filter 120ms ease;
   }
-  /* the bars are ~6px wide — an outline would swamp one, so the hovered day
-     just brightens while its detail fills the legend line below */
+  /* bars are ~6px wide — brighten on hover, an outline would swamp one */
   @media (hover: hover) and (pointer: fine) {
     .strip {
       cursor: crosshair;
@@ -328,8 +289,7 @@ import Section from '~/components/Section.astro';
     transform: scaleY(0);
   }
   .strip.rise :global(span) {
-    /* per-bar animation-delay (index × 16ms) is inline; `both` keeps
-       un-delayed bars hidden until their turn */
+    /* per-bar animation-delay is inline; `both` holds a bar down until its turn */
     animation: as-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
   /* the flat-bar placeholder must not be pushed to scaleY(0) by the rules above */
@@ -346,7 +306,7 @@ import Section from '~/components/Section.astro';
     font-size: 11.5px;
     color: var(--faint);
     margin-bottom: 48px;
-    /* hold the legend line so its empty → text swap never reflows (8a) */
+    /* hold the line so the empty → text swap never reflows */
     min-height: 16px;
   }
   .meta-slot {
@@ -357,13 +317,11 @@ import Section from '~/components/Section.astro';
     text-overflow: ellipsis;
   }
 
-  /* the hovered day reads a notch brighter than the legend it replaces */
   .readout {
     color: var(--text-muted);
   }
 
-  /* :global — these classes are shared by the SSR legend and the spans the
-     island builds for the readout, which carry no scope attribute */
+  /* :global — the readout spans are island-built and carry no scope attribute */
   .strip-meta :global(.k-run) {
     color: var(--as-accent);
   }
@@ -380,18 +338,16 @@ import Section from '~/components/Section.astro';
     color: var(--faint);
   }
 
-  /* reduced motion: route draws instantly (global 0.01ms override), the runner
-     lap is hidden, the strip renders full-height and the RHR dot is static.
-     (Skeletons sit static at .34 via the global [data-sk] rule in global.css.) */
+  /* reduced motion: hide the perpetual runner lap outright; the global
+     0.01ms duration override covers the one-shot animations */
   @media (prefers-reduced-motion: reduce) {
     .runner {
       display: none;
     }
   }
 
-  /* ================= mobile (7d) ================= */
+  /* ================= mobile ================= */
   @media (max-width: 768px) {
-    /* route etch stacks above the vitals, full column width */
     .mgrid {
       grid-template-columns: 1fr;
       gap: 18px;

@@ -1,9 +1,10 @@
+// check-ascii-portrait.mjs — <as-ascii-portrait> render/shimmer/hover on / and /about, 90ms
+// interval leaks over 3 soft navs, reduced-motion static. Run: node scripts/check-ascii-portrait.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
 const out = {};
 
-// ---- shared page helpers -------------------------------------------------
 const SAMPLE = `(sel) => {
   const cv = document.querySelector(sel);
   if (!cv) return null;
@@ -40,14 +41,13 @@ async function checkPage(ctx, url, key) {
   await page.waitForTimeout(200);
   const s2 = await page.evaluate(eval(SAMPLE), sel);
 
-  // hover develop: move real pointer to canvas center
   const box = await page.locator(sel).boundingBox();
   const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
   const baseline = await page.evaluate(eval(REGION), { sel, half: 60 });
   await page.mouse.move(cx, cy);
   await page.waitForTimeout(250);
   const hovered = await page.evaluate(eval(REGION), { sel, half: 60 });
-  // leave: move pointer far away (fires pointerleave)
+  // move off the canvas so pointerleave actually fires
   await page.mouse.move(5, 5);
   await page.waitForTimeout(250);
   const afterLeave = await page.evaluate(eval(REGION), { sel, half: 60 });
@@ -65,7 +65,6 @@ async function checkPage(ctx, url, key) {
   await page.close();
 }
 
-// ---- 1. normal-motion context: render / shimmer / hover on / and /about ---
 {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await checkPage(ctx, 'http://localhost:4321/', 'home');
@@ -73,7 +72,6 @@ async function checkPage(ctx, url, key) {
   await ctx.close();
 }
 
-// ---- 2. leak check: patch setInterval, client-side nav home->work->home x3
 {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.addInitScript(() => {
@@ -111,7 +109,6 @@ async function checkPage(ctx, url, key) {
   await ctx.close();
 }
 
-// ---- 3. reduced motion: art rendered, no shimmer ---------------------------
 {
   const ctx = await browser.newContext({
     viewport: { width: 1400, height: 900 },

@@ -1,27 +1,6 @@
 /**
- * <as-drawer> — a vaul-style bottom sheet, vanilla.
- *
- * Same interaction grammar as Emil Kowalski's vaul (the reference the design
- * asked for), without shipping a React runtime for one dialog: slides up with
- * vaul's spring curve, drags with the pointer, resists upward overdrag, and
- * dismisses on either sufficient distance (>25% of the sheet) or a downward
- * flick (velocity), whichever the release satisfies. Esc and the overlay both
- * close it. Focus moves into the sheet on open and returns to the trigger on
- * close; body scroll is locked while it's up.
- *
- * Markup contract (children, all required):
- *   [data-dw-overlay]  — the scrim
- *   [data-dw-sheet]    — the sheet (role="dialog"; gets tabindex="-1")
- *   [data-dw-body]     — scrollable content region inside the sheet
- *
- * Touch drags use touch events with preventDefault (the palette-sheet pattern)
- * because a pull-down at scrollTop 0 would otherwise be claimed by overscroll
- * and cancel the pointer stream; mouse drags ride pointer events. A drag only
- * begins when the body is scrolled to the top, so flicks over scrolled content
- * scroll natively instead of closing.
- *
- * Owners call open()/close(); `as-drawer:close` fires (bubbling) once a close
- * settles, so the owner can reset its trigger state whatever caused it.
+ * <as-drawer> — bottom sheet. Required children: [data-dw-overlay], [data-dw-sheet], [data-dw-body].
+ * open()/close(); a settled close fires bubbling `as-drawer:close`. Locks body scroll while open.
  */
 
 const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'; // vaul's curve
@@ -36,11 +15,11 @@ class AsDrawer extends HTMLElement {
   #sheet!: HTMLElement;
   #body!: HTMLElement;
   #openState = false;
-  /** element that had focus before open — focus returns there on close */
+  /** pre-open focus owner — focus must return here on close */
   #returnTo: HTMLElement | null = null;
   #closeT: ReturnType<typeof setTimeout> | null = null;
 
-  // drag state — y samples carry timestamps so release velocity is real
+  // drag state — y samples are timestamped for release velocity
   #dragging = false;
   #startY = 0;
   #lastMoves: Array<{ t: number; y: number }> = [];
@@ -52,19 +31,16 @@ class AsDrawer extends HTMLElement {
     this.#sheet.setAttribute('tabindex', '-1');
 
     this.#overlay.addEventListener('click', () => this.close());
-    // any [data-dw-close] inside the sheet dismisses it — drag, Esc and the
-    // overlay are all invisible affordances, so a real button earns its place
     this.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-dw-close]')) this.close();
     });
     document.addEventListener('keydown', this.#onKey);
 
-    // touch drag (preventDefault path — see header)
+    // touchmove must stay non-passive: it preventDefaults to hold the drag
     this.#sheet.addEventListener('touchstart', this.#onTouchStart, { passive: true });
     this.#sheet.addEventListener('touchmove', this.#onTouchMove, { passive: false });
     this.#sheet.addEventListener('touchend', this.#onTouchEnd);
     this.#sheet.addEventListener('touchcancel', this.#onTouchEnd);
-    // mouse drag
     this.#sheet.addEventListener('pointerdown', this.#onPointerDown);
   }
 
@@ -72,7 +48,7 @@ class AsDrawer extends HTMLElement {
     document.removeEventListener('keydown', this.#onKey);
     if (this.#closeT) clearTimeout(this.#closeT);
     this.#closeT = null;
-    // a view transition can swap the page away mid-open — release the lock
+    // a view transition can unmount this mid-open — release the scroll lock
     if (this.#openState) document.documentElement.style.overflow = '';
   }
 
@@ -89,7 +65,7 @@ class AsDrawer extends HTMLElement {
     this.hidden = false;
     this.#sheet.style.transition = 'none';
     this.#sheet.style.transform = 'translateY(100%)';
-    // two frames: one to commit the hidden→shown layout, one to transition from it
+    // two frames required: commit the hidden→shown layout, then transition from it
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         this.#sheet.style.transition = `transform ${OPEN_MS}ms ${EASE}`;
@@ -112,8 +88,7 @@ class AsDrawer extends HTMLElement {
     this.#sheet.style.transform = 'translateY(100%)';
     document.documentElement.style.overflow = '';
 
-    // transitionend is unreliable when reduced-motion zeroes durations — a
-    // fixed timer covers both worlds (the global override makes it instant)
+    // transitionend never fires when reduced-motion zeroes the duration — use a timer
     this.#closeT = setTimeout(() => {
       if (this.#openState) return; // reopened mid-close
       this.hidden = true;
@@ -135,7 +110,7 @@ class AsDrawer extends HTMLElement {
   // ---- drag ----------------------------------------------------------------
 
   #beginDrag(y: number): boolean {
-    // only from the top of the content — otherwise the gesture is a scroll
+    // only from scrollTop 0, else the gesture belongs to the scroller
     if (!this.#openState || this.#body.scrollTop > 0) return false;
     this.#dragging = true;
     this.#startY = y;
@@ -144,7 +119,7 @@ class AsDrawer extends HTMLElement {
     return true;
   }
 
-  /** translate for a drag delta — downward follows, upward rubber-bands */
+  /** downward follows the pointer 1:1, upward rubber-bands at 1/8 */
   #applyDrag(y: number) {
     const dy = y - this.#startY;
     this.#lastMoves.push({ t: performance.now(), y });
@@ -157,7 +132,7 @@ class AsDrawer extends HTMLElement {
     this.#dragging = false;
     const dy = y - this.#startY;
 
-    // velocity over the last ~100ms of movement
+    // px/ms over the last ~100ms of movement
     const now = performance.now();
     const past = this.#lastMoves.filter((m) => now - m.t <= 110);
     const first = past[0] ?? this.#lastMoves[0]!;
@@ -168,7 +143,6 @@ class AsDrawer extends HTMLElement {
       this.close();
       return;
     }
-    // spring back
     this.#sheet.style.transition = `transform 320ms ${EASE}`;
     this.#sheet.style.transform = 'translateY(0)';
   }
@@ -178,7 +152,7 @@ class AsDrawer extends HTMLElement {
   };
   #onTouchMove = (e: TouchEvent) => {
     if (!this.#dragging) return;
-    // claiming the gesture stops overscroll from cancelling the drag
+    // claim the gesture, or overscroll cancels the drag
     if (e.touches[0]!.clientY - this.#startY > 0) e.preventDefault();
     this.#applyDrag(e.touches[0]!.clientY);
   };

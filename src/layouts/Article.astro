@@ -33,13 +33,6 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
   <as-progress></as-progress>
   <a class="crumb" href="/writing">← ~/writing</a>
   <h1 transition:name={`title-${slug}`}>{title}</h1>
-  {/* .views is filled client-side (' · 1.2k views' — separator included, so
-      nothing stray shows while the span is empty and hidden via :empty).
-
-      No `NN% read` here any more. It sat in this line, which scrolls away with
-      the rest of the page — so the number was only legible while it still read
-      0%, and by the time it said anything it was off-screen. The 2px bar above
-      is position:fixed and says the same thing for the whole article. */}
   <div class="meta">
     {metaParts.join(' · ')}<span class="views" data-views={slug}></span>
   </div>
@@ -153,7 +146,7 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
     color: var(--text-hi);
   }
 
-  /* ---- mobile (7f) ---- */
+  /* ---- mobile ---- */
   @media (max-width: 768px) {
     .crumb {
       font-size: 11.5px;
@@ -185,7 +178,7 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
 </style>
 
 <style is:global>
-  /* ---- article prose (frame 6f) ---- */
+  /* ---- article prose ---- */
   .prose {
     font-size: 17px;
     line-height: 1.85;
@@ -357,7 +350,7 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
     padding: 0;
   }
 
-  /* ---- prose mobile (7f) ---- */
+  /* ---- prose mobile ---- */
   @media (max-width: 768px) {
     .prose {
       font-size: 15.5px;
@@ -388,9 +381,8 @@ const { ogImage = `/og/writing/${slug}.png` } = Astro.props;
 <script>
   import '~/islands/progress';
 
-  // view count in the meta line — GET /api/views + current path (normalized
-  // the same way as the tracking island). 0 / disabled / error → span stays
-  // empty, so `.views:empty { display: none }` keeps the meta separator-clean.
+  // path is normalized the same way as the tracking island; the text carries
+  // its own ' · ' separator, and 0/disabled/error leaves the span :empty
   const compact = new Intl.NumberFormat('en', {
     notation: 'compact',
     maximumFractionDigits: 1

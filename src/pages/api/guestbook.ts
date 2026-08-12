@@ -1,15 +1,5 @@
-/**
- * /api/guestbook — the guestbook.
- *
- *   GET    → {entries: [{id, body, doodle, created_by, created_at}]} — latest
- *            50, NEVER exposes email. s-maxage=30; DB down → {entries:null}.
- *   POST   → session required (401). JSON {body?} (trimmed, ≤500 chars) or
- *            {doodle?} (data:image/png;base64 URL ≤80KB, decode-validated
- *            base64 + PNG magic bytes). Inserts with the session's
- *            email/name. → {entry}.
- *   DELETE → session required. JSON {id}; the session email must match the
- *            row's email (403 otherwise). → {ok:true}.
- */
+// GET latest 50, never selecting email (s-maxage=30). POST/DELETE need a session;
+// DELETE only removes rows whose email matches the session.
 import type { APIRoute } from 'astro';
 import { desc, eq } from 'drizzle-orm';
 import { db, isDbConfigured } from '~/lib/db';

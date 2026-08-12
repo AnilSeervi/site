@@ -1,21 +1,6 @@
-/**
- * check-guestbook.mjs — Phase 6 verification for the guestbook (frame 6d).
- *
- * Pass 1 (signed out): header meta links to /api/auth/github, say-something
- *   input hidden, GET /api/guestbook entries replace the SSR design quotes.
- * Pass 2 (fetch fails): /api/guestbook intercepted with entries:null → the
- *   two SSR design quotes stay.
- * Pass 3 (signed in, forged session cookie): meta reads 'signed in as
- *   <login>', input visible, ↵ posts a text entry (optimistic prepend +
- *   server reconcile), drawing on the pad + 'ink it →' posts a doodle entry
- *   rendered as a data-URL <img>. Rows are then DELETEd via the API and the
- *   3 real rows are confirmed intact.
- *
- * Usage: node scripts/check-guestbook.mjs <session-token-file> [base-url] [path]
- *   (token file: a jose-signed as-session JWT; default page path /live)
- *   NOTE: posts + deletes real rows against the configured base — the 3
- *   original guestbook rows are asserted intact at the end.
- */
+// check-guestbook.mjs — guestbook passes: signed out, GET failure, signed in via a forged session.
+// Usage: node scripts/check-guestbook.mjs <session-token-file> [base-url] [path]  (jose-signed as-session JWT)
+// Posts AND deletes real rows on the target base; the 3 original rows are asserted intact at the end.
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
@@ -37,7 +22,6 @@ const text = async (loc) => (await loc.textContent())?.replace(/\s+/g, ' ').trim
 
 const browser = await chromium.launch();
 
-// ---------------- pass 1 · signed out, real entries ----------------
 console.log('\npass 1 · signed out');
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
@@ -56,7 +40,6 @@ console.log('\npass 1 · signed out');
   await page.close();
 }
 
-// ---------------- pass 2 · guestbook fetch fails → design quotes stay ----------------
 console.log('\npass 2 · fetch fails, placeholders kept');
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
@@ -74,7 +57,6 @@ console.log('\npass 2 · fetch fails, placeholders kept');
   await page.close();
 }
 
-// ---------------- pass 3 · signed in: post text + doodle ----------------
 console.log('\npass 3 · signed in');
 const created = [];
 {
@@ -93,7 +75,6 @@ const created = [];
   check('meta no longer a link', (await auth.getAttribute('href')) === null);
   check('say input visible', await page.locator('[data-gb-say] input').isVisible());
 
-  // text post via ↵
   const before = await page.locator('[data-gb-entries] .gb-entry').count();
   await page.fill('[data-gb-input]', 'playwright says hi');
   const postRes = page.waitForResponse(
@@ -117,7 +98,6 @@ const created = [];
   );
   check('input cleared after post', (await page.inputValue('[data-gb-input]')) === '');
 
-  // doodle: draw a stroke with the mouse, then ink it
   const canvas = page.locator('as-doodle canvas');
   const box = await canvas.boundingBox();
   check('canvas display size 320×140', box.width === 320 && box.height === 140, `${box.width}×${box.height}`);
@@ -153,7 +133,6 @@ const created = [];
     return false;
   })));
 
-  // ink with an empty pad → no POST fired
   let extraPost = false;
   page.on('request', (r) => {
     if (r.url().endsWith('/api/guestbook') && r.method() === 'POST') extraPost = true;
@@ -165,7 +144,6 @@ const created = [];
   await context.close();
 }
 
-// ---------------- cleanup · DELETE test rows via API ----------------
 console.log('\ncleanup');
 for (const id of created) {
   const r = await fetch(`${BASE}/api/guestbook`, {

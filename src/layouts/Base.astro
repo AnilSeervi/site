@@ -6,9 +6,7 @@ import Palette from '~/components/Palette.astro';
 import { site } from '~/config/site';
 import '@fontsource-variable/newsreader/opsz.css';
 import '@fontsource-variable/newsreader/opsz-italic.css';
-/* variable wght 400–900 in one file: body sits at 400 and .prose strong at 600.
-   The matching wght-italic.css is deliberately not loaded — every italic on the
-   site is serif (checked: 9 rules, all pair with --font-serif). */
+/* only the non-italic wght file is loaded — every italic on the site is serif */
 import '@fontsource-variable/schibsted-grotesk/wght.css';
 import '@fontsource/spline-sans-mono/400.css';
 import '@fontsource/spline-sans-mono/500.css';
@@ -140,7 +138,6 @@ const ogImageURL = new URL(ogImage, site.url);
   .brand:hover {
     color: var(--text-hi);
   }
-  /* brand shortens to ~/anil on mobile */
   .brand-short {
     display: none;
   }
@@ -192,7 +189,6 @@ const ogImageURL = new URL(ogImage, site.url);
     justify-content: center;
     border-radius: 13px;
     background: #12100e;
-    /* brass edge from the accent token (not a hardcoded rgba) */
     border: 1px solid color-mix(in srgb, var(--as-accent) 45%, transparent);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     font-family: var(--font-mono);

@@ -1,29 +1,6 @@
-/**
- * <as-live-data> — the single data-plumbing island for ~/live (frame 6d).
- *
- * On connect it fetches /api/spotify, /api/github, /api/mal and /api/weather
- * in parallel (Promise.allSettled) and swaps the SSR placeholder copy (the
- * design's own values — the page looks right immediately) for real values.
- *
- * Fill hooks — value elements carry data-live="…":
- *   weather · now · last · watching · manga · shelf · contrib-total
- * Styled fragments inside a value (italic serif title, mono ctx suffix,
- * accent mean) are pre-rendered children tagged data-part="title|tail|ctx|
- * head|mean" so Astro's scoped classes survive the swap — the island only
- * writes textContent, never fresh elements.
- *
- * GitHub days grid (52×7) is handed to <as-contrib> by writing its
- * data-values attribute as JSON; as-contrib observes the attribute and
- * repaints (same contract as <as-spark>).
- *
- * Equalizer: the bars' animation runs only while spotify.isPlaying — the
- * island toggles the `playing` class on [data-eq], and the page CSS gates
- * animation-play-state on it.
- *
- * Degradation (design rule: drop missing rows, no zeros): a row whose feed
- * came back null / {disabled:true} / unreachable is hidden entirely; a
- * section whose rows all vanished is hidden with them.
- */
+// <as-live-data> — fetches /api/{spotify,github,mal,weather} and fills the [data-live] values.
+// Only textContent of pre-rendered [data-part] children is written: creating fresh
+// elements would lose Astro's scoped classes.
 
 import { LoadPhase } from './loadphase';
 import type { ContribCell } from './contrib';
@@ -42,7 +19,7 @@ interface SpotifyLast {
 }
 interface SpotifyRes {
   disabled?: boolean;
-  /** upstream failed (token revoked, API down) — distinct from nothing playing */
+  /** upstream failed — distinct from nothing playing */
   error?: boolean;
   isPlaying?: boolean;
   now?: SpotifyNow | null;
@@ -52,7 +29,7 @@ interface GithubRes {
   disabled?: boolean;
   total?: number | null;
   days?: number[][] | null;
-  /** 52 weekly totals — the readout's "N that week" */
+  /** 52 weekly totals */
   weeks?: number[] | null;
   /** ISO date of days[0][0]; <as-contrib> derives every cell's date from it */
   from?: string | null;
@@ -75,7 +52,7 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** unwrap a settled fetch; rejected or {disabled:true} → null (feed is dead) */
+/** unwrap a settled fetch; rejected or {disabled:true} → null */
 function alive<T extends { disabled?: boolean }>(r: PromiseSettledResult<T>): T | null {
   return r.status === 'fulfilled' && !r.value.disabled ? r.value : null;
 }
@@ -88,7 +65,7 @@ const MONTHS_SHORT = [
   'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
 ] as const;
 
-/** 'thu jul 30' from an ISO date (the grid's dates are plain calendar days) */
+/** 'thu jul 30' from an ISO date — read as UTC so it stays a plain calendar day */
 function shortDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
@@ -97,36 +74,27 @@ function shortDate(iso: string): string {
 }
 
 /**
- * The unbroken run of contributing days containing `index`, as [position, length]
- * — `day 4 of a 6-day streak`. Walks both directions: a streak the hovered day
- * sits in the middle of is still a streak, and stopping at the cursor would
- * report it as shorter than it is.
- *
- * Runs off the flattened grid, where index = week * 7 + weekday is chronological
- * because the calendar is contiguous and Sunday-aligned.
+ * Unbroken run of contributing days containing `index`, as [position, length].
+ * Walks both directions; index = week * 7 + weekday, valid only because the grid is Sunday-aligned.
  */
 function runAt(flat: number[], index: number): [number, number] {
   if ((flat[index] ?? 0) <= 0) return [0, 0];
   let start = index;
   while (start > 0 && (flat[start - 1] ?? 0) > 0) start--;
   let end = index;
-  // stop at the last day that actually happened — the padded tail is zeros
+  // the grid's trailing pad is zeros, so this stops at the last real day
   while (end + 1 < flat.length && (flat[end + 1] ?? 0) > 0) end++;
   return [index - start + 1, end - start + 1];
 }
 
-/**
- * The two halves of a readout line: the figures, and the dim clause after them.
- * Everything here is computed from the grid — GitHub's calendar carries no repo
- * names or messages per day, so context is derived rather than fetched.
- */
+/** The two halves of a readout line: the figures, and the dim clause after them. */
 function contribLine(
   cell: ContribCell,
   ctx: {
     weekTotal: number;
     best: number;
     bestWeek: number;
-    /** whether the peak is held by a single day / week — see below */
+    /** peak held by exactly one day / week; a tied peak prints no superlative */
     bestIsUnique: boolean;
     bestWeekIsUnique: boolean;
     run: [number, number];
@@ -137,14 +105,8 @@ function contribLine(
 
   const n = cell.count;
   let main = `${head} — ${n} contribution${n === 1 ? '' : 's'}`;
-  // only when the week holds more than this one day; `1 contribution · 1 that
-  // week` spends a clause to repeat itself
   if (ctx.weekTotal > n) main += ` · ${ctx.weekTotal} that week`;
 
-  // One closing clause, most-interesting first — a day can qualify for several
-  // at once and stacking them turns a glance into a paragraph. Superlatives are
-  // claimed only when the peak is unique: on a quiet year several days tie the
-  // maximum, and calling each of them "busiest" is just wrong.
   const [pos, len] = ctx.run;
   let tail = '';
   if (ctx.bestIsUnique && n === ctx.best) tail = ' — busiest day of the year';
@@ -156,14 +118,13 @@ function contribLine(
 
 class AsLiveData extends HTMLElement {
   #phase = new LoadPhase(this);
-  /** drives the LISTENING head note: 'live' only if spotify actually answered */
+  /** the LISTENING head note reads 'live' only if spotify actually answered */
   #spotifyOk = true;
 
   connectedCallback() {
     this.#phase.start();
     void this.#load();
-    // bound once here rather than when the feed lands, so a second #applyGithub
-    // can never stack a duplicate pair; the handlers no-op until #grid is set
+    // bound here, not when the feed lands, so a re-apply can't stack duplicate listeners
     const contrib = this.querySelector('as-contrib');
     contrib?.addEventListener('contrib:day', this.#onContribDay);
     contrib?.addEventListener('contrib:leave', this.#onContribLeave);
@@ -183,17 +144,14 @@ class AsLiveData extends HTMLElement {
       getJson<MalRes>('/api/mal'),
       getJson<WeatherRes>('/api/weather')
     ]);
-    // view transition may have swapped this subtree away mid-flight
+    // a view transition may have swapped this subtree away mid-flight
     if (!this.isConnected) return;
 
-    // hold the skeletons until min-show, then fill + fade the values in
     this.#phase.settle(() => {
       this.#applySpotify(alive(spotify));
       this.#applyGithub(alive(github));
       this.#applyMal(alive(mal));
       this.#applyWeather(alive(weather));
-      // the LISTENING phase note flips to 'live' once the section resolves —
-      // but only if it resolved; 'live' over a dead feed is a lie
       const note = this.querySelector<HTMLElement>('[data-live="phase-note"]');
       if (note) note.textContent = this.#spotifyOk ? 'live' : 'unavailable';
       this.#pruneSections();
@@ -201,8 +159,7 @@ class AsLiveData extends HTMLElement {
   }
 
   #hideRow(name: string) {
-    // inline display:none, not [hidden] — the rows' display:grid class would
-    // out-cascade the UA hidden rule
+    // inline display:none, not [hidden]: the row's display:grid out-cascades the UA hidden rule
     const row = this.querySelector<HTMLElement>(`[data-row="${name}"]`);
     if (row) row.style.display = 'none';
   }
@@ -228,16 +185,11 @@ class AsLiveData extends HTMLElement {
   }
 
   #applySpotify(s: SpotifyRes | null) {
-    // bars animate only while a track is actually playing
     const eq = this.querySelector('[data-eq]');
     if (eq) eq.classList.toggle('playing', s?.isPlaying === true);
 
-    // A failed fetch and a quiet evening arrive as the same empty payload, so
-    // the API flags the difference and the section says which it is. Silence
-    // isn't neutral here: #pruneSections deletes a section whose rows all
-    // vanish, so an unreported failure removes LISTENING from the page
-    // entirely — which is how a revoked refresh token went unnoticed.
-    // `disabled` is deliberate config, not failure: that one still prunes.
+    // A dead feed and nothing-playing arrive as the same empty payload, so failure must
+    // surface here: silence lets #pruneSections drop LISTENING entirely. `disabled` still prunes.
     this.#spotifyOk = !!s && !s.error;
     if (!this.#spotifyOk) {
       this.#setParts('now', '', "spotify didn't answer — try later");
@@ -258,8 +210,7 @@ class AsLiveData extends HTMLElement {
     const wrap = this.querySelector<HTMLElement>('[data-contrib]');
     const el = this.querySelector<HTMLElement>('[data-live="contrib-total"]');
 
-    // didn't answer → the empty dot-grid stays, the caption says why (8b).
-    // (the contribution grid is never faked — no zeros, no synthetic field.)
+    // no answer → keep the empty dot-grid; never synthesise zeros into the calendar
     if (!g || !Array.isArray(g.days)) {
       if (el) el.textContent = 'github is quiet — try later';
       return;
@@ -269,24 +220,20 @@ class AsLiveData extends HTMLElement {
     const contrib = this.querySelector('as-contrib');
     if (contrib) {
       contrib.setAttribute('data-values', JSON.stringify(days));
-      // the calendar anchor: read lazily by the hit-test, so NOT observed —
-      // setting it must not trigger a second repaint
+      // data-from is read lazily by the hit-test and deliberately not observed,
+      // so setting it after data-values cannot trigger a second repaint
       if (g.from) contrib.setAttribute('data-from', g.from);
     }
-    // reveal the real canvas (fade), drop the dot-field placeholder
     wrap?.classList.add('arrived');
 
     const total =
       typeof g.total === 'number' ? g.total : days.flat().reduce((a, b) => a + (b || 0), 0);
     if (el) {
       const base = `${total.toLocaleString('en-US')} contributions in the last year`;
-      // the "brass runs hotter" clause is desktop-only (7d trims it so the
-      // short total + "23 weeks shown" fit one row)
       el.textContent = matchMedia('(max-width: 768px)').matches
         ? base
         : `${base} — brass runs hotter where the weeks did`;
     }
-    // stats the hover readout derives its context from
     const flat = days.flat();
     const weekTotals =
       g.weeks?.length === days.length ? g.weeks : days.map((w) => w.reduce((a, b) => a + (b || 0), 0));
@@ -297,7 +244,6 @@ class AsLiveData extends HTMLElement {
       weekTotals,
       best,
       bestWeek,
-      // a peak shared by several days isn't a superlative worth printing
       bestIsUnique: best > 0 && flat.filter((v) => v === best).length === 1,
       bestWeekIsUnique: bestWeek > 0 && weekTotals.filter((v) => v === bestWeek).length === 1
     };
@@ -305,7 +251,7 @@ class AsLiveData extends HTMLElement {
 
   // ---- contribution grid hover readout -------------------------------------
 
-  /** grid stats for the readout — set once the GitHub feed lands */
+  /** grid stats for the readout; null until the GitHub feed lands */
   #grid: {
     flat: number[];
     weekTotals: number[];
@@ -320,8 +266,7 @@ class AsLiveData extends HTMLElement {
     const g = this.#grid;
     const out = this.querySelector<HTMLElement>('[data-contrib-readout]');
     if (!g || !out) return;
-    // no date → the pad appended to the current week: days that haven't
-    // happened, not days with nothing in them. Say nothing about them.
+    // a cell with no date is pad for a day that hasn't happened, not an empty day
     if (!cell?.date) return this.#onContribLeave();
 
     const main = out.querySelector<HTMLElement>('[data-part="main"]');
@@ -352,8 +297,7 @@ class AsLiveData extends HTMLElement {
   #applyMal(m: MalRes | null) {
     if (m?.watching) {
       const { title, ep, epTotal } = m.watching;
-      // frame 6d italicizes only the base title — a trailing season/part
-      // suffix stays upright and lowercase ('Sousou no Frieren 2nd season')
+      // only the base title is italicised; a trailing season/part suffix stays upright + lowercase
       const split = title.match(/^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i);
       const base = split ? split[1]! : title;
       const suffix = split ? ` ${split[2]!.toLowerCase()}` : '';
@@ -363,8 +307,6 @@ class AsLiveData extends HTMLElement {
       this.#hideRow('watching');
     }
 
-    // Manga is MAL's, not Hardcover's: the volumes were deleted from that
-    // account, so this row is the only place a manga can be claimed as read.
     if (m?.manga) {
       const { title, ch, chTotal, vol } = m.manga;
       const chapters = chTotal == null ? `chapter ${ch}` : `chapter ${ch} of ${chTotal}`;
@@ -386,7 +328,7 @@ class AsLiveData extends HTMLElement {
     }
   }
 
-  /** a section whose data rows all vanished keeps only its head — drop it whole */
+  /** hide any section whose data rows have all been hidden */
   #pruneSections() {
     this.querySelectorAll<HTMLElement>('[data-section]').forEach((sec) => {
       if (sec.style.display === 'none') return;

@@ -1,15 +1,4 @@
-/**
- * <as-progress> — 2px reading-progress line pinned to the viewport top
- * (frame 6f). Custom element: re-initialises automatically after
- * view-transition swaps.
- *
- * There used to be a `NN% read` readout in the article meta line as well. It
- * lived in normal page flow, so it scrolled out of view almost immediately —
- * readable only while it still said 0%, gone by the time the number meant
- * anything. The fixed bar carries the same information for the whole article,
- * so the readout was dropped rather than made sticky: two indicators saying one
- * thing is one too many.
- */
+/** <as-progress> — 2px reading-progress bar; re-inits after view-transition swaps. */
 class AsProgress extends HTMLElement {
   #raf = 0;
   #fill: HTMLElement | null = null;
@@ -37,9 +26,8 @@ class AsProgress extends HTMLElement {
   #update() {
     if (!this.#fill) return;
     const max = document.documentElement.scrollHeight - innerHeight;
-    // Nothing to scroll — an article shorter than the viewport is neither 0%
-    // nor 100% read, so the bar makes no claim at all. It used to report 100%
-    // here, painting a full brass line on a page the reader hadn't moved on.
+    // Nothing to scroll: a page shorter than the viewport makes no claim —
+    // reporting 100% here would paint a full bar before any scrolling.
     if (max <= 0) {
       this.#fill.style.width = '0%';
       this.hidden = true;

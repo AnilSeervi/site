@@ -1,7 +1,6 @@
 /**
- * Guestbook session — a jose-signed HS256 JWT in the `as-session` httpOnly
- * cookie (30d). Secret: SESSION_SECRET, falling back to NEXTAUTH_SECRET
- * (carried over from the old site). Server-only.
+ * Guestbook session — jose-signed HS256 JWT in the httpOnly `as-session` cookie (30d).
+ * Server-only. Secret: SESSION_SECRET, falling back to NEXTAUTH_SECRET.
  */
 import type { AstroCookies } from 'astro';
 import { SignJWT, jwtVerify } from 'jose';

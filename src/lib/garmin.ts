@@ -1,16 +1,8 @@
 /**
- * Garmin Connect — Astro-facing wrapper around src/lib/garmin-core.ts.
- *
- * Binds the environment-agnostic core to this app: credentials from
- * import.meta.env (GARMIN_EMAIL / GARMIN_PASSWORD) and a TokenStore over the
- * Turso `kv` table via the drizzle singleton. Server-only — never import from
- * client code, and never log token or credential values.
- *
- * The interactive bootstrap (scripts/garmin-bootstrap.mjs) uses garmin-core
- * directly with process.env + @libsql/client; this module is the read/refresh
- * path the server uses forever after. MFA can never be answered here — the
- * core throws MFA_REQUIRED_MESSAGE and /api/fitness degrades to the file
- * fallback.
+ * Astro-facing wrapper around src/lib/garmin-core.ts: credentials from
+ * import.meta.env, TokenStore over the Turso `kv` table. Server-only — never
+ * import from client code, and never log token or credential values.
+ * MFA cannot be answered here; the core throws MFA_REQUIRED_MESSAGE.
  */
 import { db, isDbConfigured } from '~/lib/db';
 import { kv } from '~/lib/schema';
@@ -69,14 +61,11 @@ export async function hasStoredGarminTokens(): Promise<boolean> {
 export interface GarminFitness {
   vo2max: number | null;
   restingHr: number | null;
-  /** Garmin's fitness rating for the VO2max (Cooper norms, age+sex), or null */
+  /** fitness rating for the VO2max (Cooper norms, age+sex), or null */
   vo2maxRating: Vo2Rating | null;
 }
 
-/**
- * Live vitals from Garmin Connect. Throws on any auth or upstream failure
- * (including an MFA challenge) — callers degrade to data/fitness.json.
- */
+/** Live vitals from Garmin. Throws on any auth/upstream failure, MFA included. */
 export async function getGarminFitness(): Promise<GarminFitness> {
   if (!isDbConfigured) throw new Error('Garmin: Turso kv store not configured');
 
@@ -93,7 +82,7 @@ export async function getGarminFitness(): Promise<GarminFitness> {
     getPersonalInfo(accessToken)
   ]);
 
-  // classify on Garmin's own scale (maxmet gives the value, not the rating)
+  // maxmet returns the value but not the rating, so classify locally
   let vo2maxRating: Vo2Rating | null = null;
   if (vo2max !== null && personal.gender && personal.birthDate) {
     const age = ageFromBirthDate(personal.birthDate);
@@ -104,10 +93,8 @@ export async function getGarminFitness(): Promise<GarminFitness> {
 }
 
 /**
- * MOVING section payload from Garmin activities (replaces /api/strava).
- * Two Garmin calls per cache window: the activity list, then the GPS track of
- * the newest run/ride for the route etching. Throws on any auth/upstream
- * failure — /api/moving degrades to an empty payload (section hides).
+ * MOVING payload from Garmin activities. Two calls per cache window: the
+ * activity list, then the GPS track of the newest run/ride. Throws on failure.
  */
 export async function getGarminMoving(): Promise<MovingPayload> {
   if (!isDbConfigured) throw new Error('Garmin: Turso kv store not configured');
@@ -116,7 +103,7 @@ export async function getGarminMoving(): Promise<MovingPayload> {
     hasGarminCredentials && EMAIL && PASSWORD ? { email: EMAIL, password: PASSWORD } : null;
 
   const accessToken = await getAccessToken(kvStore, creds);
-  // 80 covers a 90-day window comfortably even for a busy log
+  // 80 covers a 90-day window even for a busy log
   const acts = await getActivities(accessToken, 80);
 
   const gps = acts.find((a) => a.hasPolyline && isRunOrRide(a.typeKey)) ?? null;

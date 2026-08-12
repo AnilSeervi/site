@@ -1,22 +1,15 @@
 /**
- * check-spark-loader — the hero sparkline's boot sequence (design_handoff_loader).
+ * check-spark-loader — the hero sparkline's boot → fetch → draw → done sequence.
+ * /api/github is stubbed per scenario: the real endpoint is CDN-cached and would
+ * only ever exercise the cached path.
  *
- * boot → fetch → draw → done, plus the two rules that are easy to get wrong:
- * cached data must skip the caption entirely (no fake theatre), and a dead
- * endpoint must leave the dim baseline behind rather than an error or a caret
- * blinking forever.
- *
- * /api/github is stubbed per scenario so the timing is ours, not the network's:
- * the real endpoint is CDN-cached and would only ever exercise the cached path.
- * Each scenario samples the canvas every 60ms and classifies pixels by alpha —
- * baseline (12%), brass polyline (75%), cream head dot (100%) — so "what was on
- * screen when" is measured, not inferred from timers.
+ * Usage: node scripts/check-spark-loader.mjs   (dev server on :4321)
  */
 import { chromium } from 'playwright';
 
 const BASE = 'http://localhost:4321';
 
-/* a plausible 52-week series — shape doesn't matter, only that it has a max > 0 */
+/* 52-week series — the only requirement is a max > 0 */
 const WEEKS = Array.from({ length: 52 }, (_, i) =>
   Math.max(0, Math.round(6 + 5 * Math.sin(i / 4.6) + (i % 7) - 3))
 );
@@ -45,8 +38,8 @@ const WATCH = () => {
         value: el.getAttribute(r.attributeName)
       });
     }
-    // `document`, not documentElement — this runs before the <html> element
-    // exists, and observing a node that isn't there yet throws
+    // `document`, not documentElement — this runs before <html> exists, and
+    // observing a node that isn't there yet throws.
   }).observe(document, {
     subtree: true,
     attributes: true,
@@ -54,7 +47,7 @@ const WATCH = () => {
   });
 };
 
-/** in-page sampler: canvas pixel classes + caption opacity, every 60ms */
+/** in-page sampler, every 60ms: pixels classed by alpha — baseline 12%, brass 75%, cream head dot 100% */
 const SAMPLE = (ms) =>
   new Promise((done) => {
     const out = [];
@@ -116,8 +109,8 @@ async function run(name, { delay = 0, status = 200, reduced = false, ms = 3600, 
   });
 
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-  // measured after the .as-enter stagger has finished — that animation's
-  // translateY(14px) would otherwise read as a shift the loader didn't cause
+  // wait out the .as-enter stagger — its translateY(14px) would otherwise read
+  // as a layout shift the loader didn't cause.
   await page.waitForTimeout(900);
   const layoutBefore = await page.evaluate(() => ({
     role: document.querySelector('.role')?.getBoundingClientRect().top,
@@ -154,24 +147,17 @@ async function run(name, { delay = 0, status = 200, reduced = false, ms = 3600, 
 
 const browser = await chromium.launch();
 const results = [];
-// slow endpoint: the full four-step sequence, caption included
 results.push(await run('delayed 1800ms', { delay: 1800 }));
-// instant endpoint: data beats the typing → caption must never appear
+// instant data beats the typing — the caption must never appear
 results.push(await run('instant', { delay: 0 }));
-// dead endpoint, slow: caption appears, then fades to a bare baseline
 results.push(await run('500 after 1800ms', { delay: 1800, status: 500 }));
-// dead endpoint, instant: nothing to narrate, baseline only
 results.push(await run('500 instant', { delay: 0, status: 500 }));
-// reduced motion: no caption, no draw-on, full line
 results.push(await run('reduced motion', { delay: 0, reduced: true, ms: 2000 }));
-// mobile: the same sequence 20px narrower (300 CSS px → 600 backing)
 results.push(await run('mobile 390', { delay: 600, width: 390 }));
 
 /**
- * Leaving mid-draw. View transitions can swap the page out with the rAF still
- * running, so this navigates away during the reveal and back again: nothing may
- * throw, and the returning page must start from `boot` (no data-values) rather
- * than inherit the outgoing page's state.
+ * Leaving mid-draw: a view transition can swap the page out with the rAF running.
+ * The returning page must start from `boot` (no data-values), not inherit state.
  */
 async function runNav() {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
@@ -218,8 +204,7 @@ await browser.close();
 
 for (const r of results) {
   const { revealEdges, ...rest } = r;
-  // the edge series is the whole point of the reveal but too long to read —
-  // print its ends (the nav scenario has none)
+  // the edge series is too long to print — show its ends (nav scenario has none)
   const edges =
     revealEdges && revealEdges.length > 8 ? [revealEdges[0], '…', revealEdges.at(-1)] : revealEdges;
   console.log(JSON.stringify(edges ? { ...rest, revealEdges: edges } : rest, null, 1));

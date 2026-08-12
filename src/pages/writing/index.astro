@@ -279,12 +279,12 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
     font-size: 16px;
   }
 
-  /* frame 6c spaces the footer 56px under the jar (via .jar-rows margin) */
+  /* footer gap is owned by the .jar-rows margin */
   .wrap :global(footer) {
     margin-top: 0;
   }
 
-  /* ================= mobile (7c) ================= */
+  /* ================= mobile ================= */
   @media (max-width: 768px) {
     /* title over full-width search */
     .head {
@@ -354,8 +354,8 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
       this.#input = this.querySelector<HTMLInputElement>('[data-search-input]');
       const preview = this.querySelector<HTMLElement>('[data-preview]');
       let fallback = preview?.textContent?.trim() ?? '';
-      // touch has no hover: the opening-line fill is skipped on mobile (rows
-      // navigate on tap), so the prompt reads "tap" and stays as the default
+      // touch has no hover: mobile skips the opening-line fill and keeps the
+      // "tap" prompt as the default
       if (isMobile() && preview) {
         fallback = '— tap an article; its opening line appears here';
         preview.textContent = fallback;

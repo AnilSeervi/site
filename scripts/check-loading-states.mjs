@@ -1,10 +1,5 @@
-/**
- * check-loading-states.mjs — verifies the 8b empty/error matrix
- * (design_handoff_loading_states). Intercepts /api/* with failures/empties and
- * asserts the honest degradation: no zeros, no faked values.
- *
- * Usage: node scripts/check-loading-states.mjs [base]  (default localhost:4321)
- */
+// check-loading-states.mjs — intercepts /api/* with failures and empties, asserts degradation
+// with no zeros and no faked values. Usage: node scripts/check-loading-states.mjs [base]
 import { chromium } from 'playwright';
 
 const BASE = process.argv[2] ?? 'http://localhost:4321';
@@ -16,9 +11,7 @@ const check = (name, ok, detail = '') => {
 const txt = async (page, sel) =>
   (await page.locator(sel).textContent().catch(() => ''))?.replace(/\s+/g, ' ').trim() ?? '';
 
-// the live-data island settles all four feeds together, so wait for the phase
-// to actually resolve rather than a fixed delay (a slow real feed on dev would
-// otherwise race the assert)
+// Wait on the island's own settle signal — a fixed delay races a slow real feed on dev.
 const liveArrived = (page) =>
   page.waitForSelector('as-live-data[data-load="arrived"]', { timeout: 15000 });
 const movingSettled = (page) =>
@@ -32,7 +25,6 @@ const movingSettled = (page) =>
 
 const browser = await chromium.launch();
 
-// ---- github didn't answer → dot-grid stays + caption ----
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/github', (r) => r.fulfill({ status: 500, body: 'boom' }));
@@ -51,7 +43,6 @@ const browser = await chromium.launch();
   await page.close();
 }
 
-// ---- moving didn't answer → whole block hides ----
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/moving', (r) => r.fulfill({ status: 500, body: 'boom' }));
@@ -61,7 +52,6 @@ const browser = await chromium.launch();
   await page.close();
 }
 
-// ---- moving empty (days:[]) → whole block hides ----
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/moving', (r) =>
@@ -73,7 +63,6 @@ const browser = await chromium.launch();
   await page.close();
 }
 
-// ---- spotify nothing playing → falls back to last, now row drops ----
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/spotify', (r) =>
@@ -91,7 +80,6 @@ const browser = await chromium.launch();
   await page.close();
 }
 
-// ---- mal disabled → watching/shelf drop, section hides ----
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/mal', (r) =>

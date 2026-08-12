@@ -1,3 +1,5 @@
+// check-phase4.mjs — three home/writing/article nav cycles: islands keep painting, and timers
+// plus window/document listeners must not accumulate. Run: node scripts/check-phase4.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -13,7 +15,7 @@ page.on('console', (msg) => {
 });
 page.on('pageerror', (err) => errors.push('[pageerror] ' + String(err)));
 
-// ---- memory instrumentation: patch timers + window listeners before any script runs
+// Patch timers + listeners before any page script runs, or early registrations go uncounted.
 await page.addInitScript(() => {
   const w = window;
   if (w.__mem) return;
@@ -81,10 +83,9 @@ const settle = async () => {
 
 const results = {};
 
-// ================= 1. first load: stagger + islands =================
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 
-// grab animation state ASAP — .as-enter should have running/pending animations
+// grab animation state ASAP, while .as-enter animations are still running/pending
 results.staggerAnimations = await page.evaluate(() => {
   return [...document.querySelectorAll('.as-enter')].map((el) => {
     const cs = getComputedStyle(el);
@@ -112,9 +113,7 @@ const homeCheck = async (label) => {
 };
 await homeCheck('home_initial');
 
-// ================= 2. nav cycles =================
 const cycle = async (n) => {
-  // home -> writing
   await page.click('nav a[href="/writing"]');
   await settle();
   const dots = await canvasAlive('as-dot-field canvas');
@@ -124,7 +123,6 @@ const cycle = async (n) => {
   const dotsAfterMove = await canvasAlive('as-dot-field canvas');
   results['writing_c' + n] = { dots, dotsAfterMove, url: page.url() };
 
-  // writing -> article
   await page.click('.rows a.row');
   await settle();
   results['article_c' + n] = {
@@ -132,7 +130,6 @@ const cycle = async (n) => {
     progress: await page.evaluate(() => !!document.querySelector('as-progress .fill'))
   };
 
-  // article -> back (writing)
   await page.goBack();
   await settle();
   results['back_c' + n] = {
@@ -140,7 +137,6 @@ const cycle = async (n) => {
     dots: await canvasAlive('as-dot-field canvas')
   };
 
-  // writing -> home
   await page.click('.brand');
   await settle();
   await page.waitForTimeout(1400); // let typeon finish + its interval self-clear
@@ -150,7 +146,6 @@ const cycle = async (n) => {
 
 for (let n = 1; n <= 3; n++) await cycle(n);
 
-// ================= 3. palette after the cycles =================
 await page.keyboard.press('Meta+k');
 await page.waitForTimeout(400);
 results.paletteOpen = await page.evaluate(

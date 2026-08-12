@@ -1,13 +1,5 @@
-/**
- * check-cal-drawer.mjs — the /about career-calendar drawer (<as-drawer>).
- *
- * Vaul-style vanilla sheet: click a card → detail slides up; Esc, overlay
- * click, a >25%-height drag or a downward flick all dismiss; focus returns to
- * the trigger; body scroll locks while open; aria-expanded tracks state.
- * Milestone bands now stack several entries per year (taller 64px rows).
- *
- * Usage: node scripts/check-cal-drawer.mjs [base-url]
- */
+// check-cal-drawer.mjs — /about career-calendar <as-drawer>: open, Esc/overlay/drag dismissal,
+// focus return, scroll lock, aria, band layout. Usage: node scripts/check-cal-drawer.mjs [base-url]
 import { chromium, devices } from 'playwright';
 
 const BASE = process.argv[2] ?? 'http://localhost:4321';
@@ -37,14 +29,12 @@ const settle = (page) => page.waitForTimeout(650); // open 500ms / close 460ms
 
 const browser = await chromium.launch();
 
-// ---- desktop ---------------------------------------------------------------
 console.log('\ndesktop');
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   await page.goto(`${BASE}/about`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(400);
 
-  // taller bands hold stacked milestones
   const bands = await page.evaluate(() => {
     const rows = getComputedStyle(document.querySelector('.cal-grid')).gridAutoRows;
     const groups = [...document.querySelectorAll('.cal-mgroup')];
@@ -57,7 +47,6 @@ console.log('\ndesktop');
       groups: groups.length,
       perBand: groups.map((g) => g.children.length),
       total: ms.length,
-      // a milestone must not restate what a card already says on its face
       echoes: ms.filter((m) =>
         cardText.some((c) => c.includes(m.toLowerCase()) || m.toLowerCase().includes(c))
       )
@@ -68,7 +57,6 @@ console.log('\ndesktop');
   check('bands hold at most two — the list stays curated', Math.max(...bands.perBand) <= 2, bands.perBand.join('/'));
   check('no milestone echoes a card tick or footer', bands.echoes.length === 0, bands.echoes.join(' | '));
 
-  // open
   await page.locator('[data-cal="zd"]').click();
   await settle(page);
   let s = await state(page);
@@ -79,7 +67,6 @@ console.log('\ndesktop');
   );
   check('body scroll locked · focus in sheet', s.scrollLocked && s.focusInSheet);
 
-  // esc closes, focus returns to the trigger
   await page.keyboard.press('Escape');
   await settle(page);
   s = await state(page);
@@ -93,7 +80,6 @@ console.log('\ndesktop');
   );
   check('focus returns to the trigger', focusBack);
 
-  // the close pill — the only visible dismissal
   await page.locator('[data-cal="zd"]').click();
   await settle(page);
   await page.locator('[data-dw-close]').click();
@@ -101,7 +87,6 @@ console.log('\ndesktop');
   s = await state(page);
   check('close pill dismisses', s.hidden === true, JSON.stringify(s));
 
-  // ‹ › walk the entries in place, wrapping, without closing
   await page.locator('[data-cal="zd"]').click();
   await settle(page);
   const shown = () =>
@@ -128,9 +113,8 @@ console.log('\ndesktop');
   await page.keyboard.press('Escape');
   await settle(page);
 
-  // Year numerals and card ticks are both bottom-aligned in their band, so
-  // alignment means their TEXT bottoms agree — comparing box tops would only
-  // prove they share a band, not that they sit on the same line.
+  // Numerals and ticks are bottom-aligned in their band, so compare TEXT bottoms via Range:
+  // box tops would only prove they share a band, not that they sit on one line.
   const drift = await page.evaluate(() => {
     const textBottom = (el) => {
       const r = document.createRange();
@@ -147,15 +131,11 @@ console.log('\ndesktop');
   });
   check('ticks sit on their year’s line', drift.every((d) => d <= 1), `drift ${drift.join(', ')}px`);
 
-  // the legend belongs under its band: numeral above its own rule, and the
-  // rule below the last band closes the grid
   const legend = await page.evaluate(() => {
     const y = document.querySelector('.cal-year');
     const cs = getComputedStyle(y);
-    // last of the collection, not :last-child / :last-of-type — the cards and
-    // milestone groups are siblings rendered after the year numerals, so no
-    // .cal-year is ever the grid's last child, and :last-of-type is tag-based
-    // so it misses too. Both silently returned null.
+    // Index the collection, not :last-child/:last-of-type — .cal-year is never the grid's
+    // last child and :last-of-type is tag-based; both silently return null here.
     const years = document.querySelectorAll('.cal-year');
     const last = getComputedStyle(years[years.length - 1]);
     return {
@@ -170,7 +150,6 @@ console.log('\ndesktop');
     JSON.stringify(legend)
   );
 
-  // overlay click closes
   await page.locator('[data-cal="oss"]').click();
   await settle(page);
   await page.mouse.click(640, 80); // well above the sheet → overlay
@@ -178,7 +157,6 @@ console.log('\ndesktop');
   s = await state(page);
   check('overlay click closes', s.hidden === true);
 
-  // mouse drag past 25% dismisses
   await page.locator('[data-cal="self"]').click();
   await settle(page);
   const sheet = await page.locator('[data-dw-sheet]').boundingBox();
@@ -190,7 +168,6 @@ console.log('\ndesktop');
   s = await state(page);
   check('drag past threshold dismisses', s.hidden === true, JSON.stringify(s));
 
-  // small drag springs back
   await page.locator('[data-cal="self"]').click();
   await settle(page);
   const sh2 = await page.locator('[data-dw-sheet]').boundingBox();
@@ -206,7 +183,6 @@ console.log('\ndesktop');
   await page.close();
 }
 
-// ---- mobile ----------------------------------------------------------------
 console.log('\nmobile (iPhone 13)');
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'] });
@@ -222,7 +198,6 @@ console.log('\nmobile (iPhone 13)');
   let s = await state(page);
   check('tap opens', s.hidden === false && s.zdShown === true, JSON.stringify(s));
 
-  // swipe down dismisses (touchscreen)
   const sheet = await page.locator('[data-dw-sheet]').boundingBox();
   const cdp = await ctx.newCDPSession(page);
   const x = 195;

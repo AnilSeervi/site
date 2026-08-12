@@ -61,10 +61,6 @@ const prSearch = (repo: string) =>
   </div>
   <p class="cb-tail">{contributions.tail}</p>
 
-  {/* The handoff calls this page island-free, and it nearly is. This one is
-      invisible and earns its place: it fills DevFolio's ★/forks from
-      /api/github, and the alternative is a hardcoded count that had already
-      drifted from 486/165 to "★485 · 166" in opposite directions. */}
   <as-home-data aria-hidden="true"></as-home-data>
 
   <Section
@@ -78,7 +74,6 @@ const prSearch = (repo: string) =>
     {spreads.map((project) => <ProjectSpread project={project} />)}
   </div>
 
-  {/* the quiet tier: finished work, given a line each instead of a spread */}
   <div class="archive">
     <p class="archive-label">FROM THE ARCHIVE</p>
     <div class="archive-rows">
@@ -92,7 +87,7 @@ const prSearch = (repo: string) =>
 </Base>
 
 <style>
-  /* ---- EXPERIENCE (frame 6b) ---- */
+  /* ---- EXPERIENCE ---- */
   .xp-list {
     display: flex;
     flex-direction: column;
@@ -123,7 +118,6 @@ const prSearch = (repo: string) =>
     margin: 0;
   }
 
-  /* the row header can only hold one title — the ladder holds the other two */
   .xp-ladder {
     font-family: var(--font-mono);
     font-size: 12px;
@@ -147,8 +141,6 @@ const prSearch = (repo: string) =>
     line-height: 1.6;
     color: var(--text-muted);
   }
-  /* same 4px accent square the /about milestones use — one vocabulary for
-     "a thing that happened" across both pages */
   .xp-bullets li::before {
     content: '';
     position: absolute;
@@ -167,7 +159,6 @@ const prSearch = (repo: string) =>
   }
 
   /* ---- CONTRIBUTIONS ---- */
-  /* same voice as .why-slot below: a serif italic line is this page's narrator */
   .lede {
     font-family: var(--font-serif);
     font-style: italic;
@@ -215,7 +206,6 @@ const prSearch = (repo: string) =>
     color: var(--faint);
   }
 
-  /* tabular so the column reads as a column, not seven separate numbers */
   .cb-count {
     font-family: var(--font-mono);
     font-size: 13px;
@@ -231,11 +221,7 @@ const prSearch = (repo: string) =>
     margin: 16px 0 56px;
   }
 
-  /* ---- OPEN SOURCE ----
-     The rows themselves live in ProjectSpread / ProjectRow; only the outer
-     rhythm is the page's business. Gone from here: the 150px/1fr/76px/auto
-     table, the hover-only why slot, and the row sparklines — the why is inline
-     now, and the sparks were drawing an all-zero series for five of six repos. */
+  /* ---- OPEN SOURCE ---- */
   .spreads {
     /* the last spread's own divider doubles as the rule above the archive */
     margin-bottom: 0;
@@ -261,14 +247,13 @@ const prSearch = (repo: string) =>
     min-width: 0;
   }
 
-  /* frame 6b: footer rule sits 64px below the last row. Footer's default is
-     96px via the scoped `footer[data-astro-cid]` rule (0,1,1) — :last-child
-     lifts this override to (0,1,2) so it wins. */
+  /* :last-child lifts this override to (0,1,2) so it beats Footer's own scoped
+     footer[data-astro-cid] rule (0,1,1), which sets 96px */
   :global(main > footer:last-child) {
     margin-top: 64px;
   }
 
-  /* ================= mobile (7b) ================= */
+  /* ================= mobile ================= */
   @media (max-width: 768px) {
     .xp-list {
       margin-bottom: 40px;
@@ -299,7 +284,6 @@ const prSearch = (repo: string) =>
       font-size: 14.5px;
       margin-bottom: 14px;
     }
-    /* repo + count share the first line; the gloss wraps under both */
     .cb-row {
       grid-template-columns: 1fr auto;
       gap: 3px 12px;
@@ -330,7 +314,6 @@ const prSearch = (repo: string) =>
       margin: 14px 0 44px;
     }
 
-    /* the archive label stops being a left column and becomes a heading */
     .archive {
       grid-template-columns: 1fr;
       gap: 12px;
@@ -348,9 +331,5 @@ const prSearch = (repo: string) =>
 </style>
 
 <script>
-  /* The only island left: it fills DevFolio's ★/forks from /api/github. The
-     why-slot element is gone — the why is inline on every spread now, so there
-     is nothing to reveal on hover and nothing that was invisible on touch.
-     `spark` is gone too: /work has no sparklines in the 6b handoff. */
   import '~/islands/home-data';
 </script>

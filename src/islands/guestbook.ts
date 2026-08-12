@@ -1,18 +1,5 @@
-/**
- * <as-guestbook> + <as-doodle> — the ~/live guestbook (frame 6d).
- *
- * as-doodle: 320×140 pad on a 640×280 backing store (2× transform), cream
- * round-cap strokes, pointer capture, touch-action handled in CSS.
- *
- * as-guestbook: on connect fetches GET /api/guestbook + /api/auth/me in
- * parallel; real entries replace the SSR design quotes (which stay if the
- * fetch fails). Signed out → the header meta links to /api/auth/github and
- * 'ink it' walks there too; signed in → meta reads 'signed in as <login>',
- * the say-something input appears, and posts (text via ↵, doodle via
- * 'ink it') prepend optimistically — rolled back if the POST fails.
- * Entries render via textContent only (user content, never innerHTML);
- * the prepend animation respects prefers-reduced-motion.
- */
+// <as-guestbook> + <as-doodle>. The pad is a 320×140 CSS box over a 640×280
+// backing store, hence the 2× context transform.
 export {};
 
 interface Entry {
@@ -136,9 +123,7 @@ class AsGuestbook extends HTMLElement {
     if (me.status === 'fulfilled' && me.value?.user) this.#user = me.value.user;
     this.#applyAuthState();
 
-    // fetch OK → the API is the source of truth: render real entries, or the
-    // 'be the first to sign' empty state (8b). Fetch failed → leave the SSR
-    // quotes (real archived entries — a value we do have, not a fake).
+    // Only replace the SSR entries when the fetch actually returned a list.
     const entries = gb.status === 'fulfilled' ? gb.value?.entries : null;
     if (Array.isArray(entries)) {
       const list = this.querySelector('[data-gb-entries]');
@@ -239,7 +224,6 @@ class AsGuestbook extends HTMLElement {
     }
   }
 
-  /** empty guestbook (8b) — an invitation in the entries' own quote style */
   #emptyNode(): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'gb-entry gb-empty';

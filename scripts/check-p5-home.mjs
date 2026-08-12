@@ -1,13 +1,5 @@
-/**
- * Phase 5 — home wiring verification.
- * Gates /api/github at the network layer so the SSR placeholder state can be
- * measured before <as-home-data> fills it, then asserts:
- *   1. proof strip spans change to the real /api/github values (repos === repoCount)
- *   2. hero spark canvas pixels change after data-values lands
- *   3. no layout shift: .proof and h1 bounding boxes identical before/after
- *   4. ticker swaps to a live item (text matches an /api response field) within ~8s
- * Screenshots the finished page for the record.
- */
+// check-p5-home.mjs — gates /api/github so the SSR placeholder state can be measured first, then
+// asserts the proof strip, hero spark, zero layout shift and the live ticker swap; writes a screenshot.
 import { chromium } from 'playwright';
 
 const BASE = 'http://localhost:4321';
@@ -21,7 +13,6 @@ const check = (name, ok, detail) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
 };
 
-// ---- expected values straight from the APIs ----
 const [github, spotify, mal] = await Promise.all(
   ['github', 'spotify', 'mal'].map((k) => fetch(`${BASE}/api/${k}`).then((r) => r.json()))
 );
@@ -45,7 +36,6 @@ const r = mal.reading;
 if (r?.title) liveValues.push(r.title === 'Berserk' ? `${r.title} — the long haul` : r.title);
 console.log('expected live ticker values:', JSON.stringify(liveValues));
 
-// ---- browser ----
 const browser = await chromium.launch();
 const page = await browser.newContext({ viewport: { width: 1400, height: 900 } }).then((c) => c.newPage());
 
@@ -57,7 +47,6 @@ await page.route('**/api/github', async (route) => {
 });
 
 await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-// let entrance animations + initial synthetic spark paint settle
 await page.waitForFunction(() => {
   const cv = document.querySelector('as-spark[data-kind="hero"] canvas');
   if (!cv) return false;
@@ -65,8 +54,7 @@ await page.waitForFunction(() => {
   for (let i = 3; i < d.length; i += 4) if (d[i] > 20) return true;
   return false;
 });
-// the typeon hero animation resizes the h1 while typing — wait for it to finish
-// so the before/after geometry comparison isolates the data fill
+// typeon resizes the h1 while typing — wait it out so the geometry diff isolates the data fill.
 await page.waitForFunction(
   () => document.querySelector('[data-typeon]')?.textContent === 'Anil Seervi',
   { timeout: 5000 }
@@ -111,7 +99,6 @@ check(
 
 release();
 
-// 1 · proof strip fills with real values
 await page.waitForFunction(
   (expected) => document.querySelector('[data-proof=repos]')?.textContent === expected,
   String(github.repoCount),
@@ -149,7 +136,6 @@ if (github.lastPush) {
   );
 }
 
-// 2 · hero spark redrew from data-values
 check(
   'hero spark got data-values (52 weeks)',
   !!after.heroValuesAttr && JSON.parse(after.heroValuesAttr).length === 52,
@@ -169,7 +155,6 @@ check(
   JSON.stringify(after.rowValueAttrs)
 );
 
-// 3 · zero layout shift
 const same = (a, b) =>
   a && b && ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) < 0.01);
 check(
@@ -183,7 +168,6 @@ check(
   `${JSON.stringify(before.h1Box)} -> ${JSON.stringify(after.h1Box)}`
 );
 
-// 4 · ticker swaps to live items at a dip
 if (liveValues.length >= 2) {
   await page.waitForFunction(
     (vals) => vals.includes(document.querySelector('[data-ticker-value]')?.textContent),
@@ -195,7 +179,6 @@ if (liveValues.length >= 2) {
     value: document.querySelector('[data-ticker-value]')?.textContent
   }));
   check('ticker shows a live item', liveValues.includes(tick.value), JSON.stringify(tick));
-  // watch one more rotation to prove it cycles through live items only
   await page.waitForTimeout(3700);
   const tick2 = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
   check(

@@ -1,10 +1,11 @@
+// check-spark.mjs — hero <as-spark> draws the real series, /work has none. Run: node scripts/check-spark.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
 
-// helper injected in page: sample a canvas, return stroke pixel stats + a shape signature
+// Kept as source so it can be eval'd inside the page: stroke-pixel stats + a shape signature.
 const sampleFn = `(el) => {
   const cv = el.querySelector('canvas');
   if (!cv) return { error: 'no canvas' };
@@ -32,11 +33,8 @@ const sampleFn = `(el) => {
 }`;
 
 // ---- HOME ----
-// 4s, not 2.5s: the hero now boots in sequence with the typed name — caption
-// while /api/github is in flight, then a 900ms draw-on — so the earliest a
-// complete polyline exists is ~2.2s after load, plus whatever the fetch costs.
-// The sequence itself is covered by check-spark-loader.mjs; this only needs the
-// finished line. Poll rather than sleep blind.
+// The hero boots in sequence (caption while /api/github is in flight, then a 900ms draw-on),
+// so a complete polyline exists no earlier than ~2.2s + fetch: poll, don't sleep blind.
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 await page
   .waitForFunction(() => document.querySelector('as-spark[data-kind="hero"]')?.dataset.values, null, {
@@ -51,10 +49,8 @@ const homeRows = await page.$$eval('as-spark:not([data-kind="hero"])', (els, fnS
   return els.map((el) => ({ status: el.dataset.status, seed: el.dataset.seed, ...fn(el) }));
 }, sampleFn);
 
-// The hero must draw the REAL contribution series and must NOT match the old
-// synthetic seed-7 curve. That fallback used to render an invented commit
-// history on every first paint (and permanently if /api/github failed); it's
-// gone, so a match here would be a regression, not a pass.
+// The hero must draw the real series; a match against the synthetic seed-7 curve below
+// means the retired invented-history fallback is back on screen.
 const heroCheck = await page.evaluate(() => {
   const el = document.querySelector('as-spark[data-kind="hero"]');
   const cv = el.querySelector('canvas');
@@ -80,7 +76,7 @@ const heroCheck = await page.evaluate(() => {
 
   const real = el.dataset.values ? JSON.parse(el.dataset.values) : null;
 
-  // the retired fallback, recomputed here purely to prove it is NOT on screen
+  // recomputed here only to prove it is NOT on screen
   const mul = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const rnd = mul(7), synth = [];
   for (let w = 0; w < 52; w++) { let v = 0; for (let k = 0; k < 7; k++) v += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55); synth.push(v); }
@@ -100,8 +96,7 @@ const heroCheck = await page.evaluate(() => {
 });
 
 // ---- WORK ----
-// The 6b handoff removed per-project sparklines from this page entirely, so the
-// assertion is now an absence: any <as-spark> here is a regression.
+// /work carries no sparklines: any <as-spark> here is a regression.
 await page.goto('http://localhost:4321/work', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(600);
 const workRows = { sparkCount: await page.locator('as-spark').count(), expected: 0 };

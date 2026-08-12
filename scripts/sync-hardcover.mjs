@@ -1,29 +1,8 @@
 /**
- * sync-hardcover — pull the shelf from Hardcover and freeze it into the repo.
- *
- *   node scripts/sync-hardcover.mjs [--force]
- *
- * Writes src/data/hardcover.json (the snapshot /live renders from) and caches
- * the covers it actually needs into public/covers/. Nothing about Hardcover
- * runs at request time: the token stays on this machine, the covers are ours
- * rather than hotlinked, and a build with no network still ships the last good
- * shelf — the handoff's "API dead at build → ship the last successful snapshot"
- * rule, implemented by the snapshot being a committed file.
- *
- * Every book gets its cover: the current read renders it at 172×250, and a
- * finished book shows it on the front board when you take it down. They are
- * resized to 344px wide (2× the largest slot) because the raw files run to
- * 2.4MB each — 21MB of art for a page that never shows a pixel above 344.
- *
- * Each cover also yields the spine's casing colour, sampled from the art and
- * pulled back toward the page's warm black. A shelf of real books is coloured
- * by its covers; a palette picked from a hash only looks like one.
- *
- * Failure leaves the existing snapshot untouched and exits non-zero. Re-running
- * skips covers already on disk unless --force.
- *
- * The token expires yearly and cannot auto-renew (calendar reminder, not code).
- * It is read from .env and never printed — not in errors, not in debug output.
+ * node scripts/sync-hardcover.mjs [--force] — writes src/data/hardcover.json
+ * and caches covers into public/covers/ (existing files reused unless --force).
+ * Failure must leave the previous snapshot intact and exit non-zero.
+ * HARDCOVER_TOKEN is read from .env and never logged.
  */
 import { readFile, writeFile, mkdir, readdir, unlink, access } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -35,10 +14,8 @@ const COVER_DIR = resolve(ROOT, 'public/covers');
 const ENDPOINT = 'https://api.hardcover.app/v1/graphql';
 const FORCE = process.argv.includes('--force');
 
-/** 172×250 slot at 2× — anything much smaller upscales, which the house rule
-    ("never render a cover you don't have") counts as not having one. 260 is the
-    floor rather than 344: a 293px jacket is a real cover, and refusing it left
-    a book on the page with a blank block beside its title. */
+/** 344 = the 172×250 slot at 2×. Sources narrower than 260 would upscale, so
+    they count as having no cover at all. */
 const COVER_W = 344;
 const MIN_SOURCE_W = 260;
 
@@ -62,13 +39,8 @@ async function envToken() {
 
 /* ---------- query ---------- */
 
-/**
- * status_id 2 = currently reading, 3 = read. Hardcover is Hasura, so `me`
- * comes back as an array and everything is a nested selection.
- *
- * Both `book.image` and `edition.image` are asked for: they disagree often,
- * and one of the two is regularly a 98px thumbnail. Same for page counts.
- */
+/** status_id 2 = reading, 3 = read. Hasura: `me` comes back as an array. Both
+    book.image and edition.image are asked for — either can be a 98px thumb. */
 const QUERY = `
   query Shelf {
     me {
@@ -139,8 +111,6 @@ async function graphql(token) {
     throw new Error(`hardcover returned non-JSON: ${text.slice(0, 200)}`);
   }
   if (body.errors?.length) {
-    // surfaces schema drift (renamed field, missing permission) with the
-    // message but never the request headers
     throw new Error(`hardcover graphql: ${body.errors.map((e) => e.message).join(' · ')}`);
   }
   const me = Array.isArray(body.data?.me) ? body.data.me[0] : body.data?.me;
@@ -161,7 +131,7 @@ const slugify = (s) =>
     .replace(/^-|-$/g, '')
     .slice(0, 60);
 
-/** smallest image that still clears the floor — less to download and resize */
+/** smallest candidate that still clears MIN_SOURCE_W */
 function pick(cands) {
   const usable = cands.filter((i) => i?.url && i.width >= MIN_SOURCE_W);
   return usable.sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
@@ -172,13 +142,8 @@ function bestImage(row) {
   return pick([row.book?.image, row.edition?.image]);
 }
 
-/**
- * Last resort: the book's *other* editions. Hardcover's default image is
- * whichever edition happened to be scraped, and that is regularly a 98px
- * thumbnail while a sibling edition of the same book carries a 293px jacket.
- * Asked for only when the first two candidates fail, so the common case stays
- * one query.
- */
+/** A book's default edition image is often a 98px thumb while a sibling edition
+    carries a usable jacket. Queried only when the first two candidates fail. */
 async function editionImage(token, bookId) {
   const q = `{ books(where: {id: {_eq: ${bookId}}}) { editions { image { url width height } } } }`;
   try {
@@ -195,9 +160,7 @@ function shape(row) {
   const author = b.contributions?.[0]?.author?.name ?? null;
   const pages = [b.pages, row.edition?.pages].find((p) => typeof p === 'number' && p > 0) ?? null;
 
-  // progress is 0–1 in some rows and 0–100 in others; normalize to whole %.
-  // Both stay null when no read session exists, which is the common case —
-  // the section then renders no bar rather than a 0%.
+  // progress is 0–1 in some rows and 0–100 in others; normalize to whole %
   let pct = null;
   if (typeof read.progress === 'number')
     pct = Math.round(read.progress <= 1 ? read.progress * 100 : read.progress);
@@ -230,34 +193,24 @@ const exists = (p) =>
 
 const hex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
 
-/**
- * The cover's average colour, pushed toward book cloth: saturation held to a
- * usable band, lightness pinned into the range the design's casings occupy, and
- * the whole thing mixed 30% into the page's warm black. Straight averages come
- * out either white (paperback covers) or mud.
- */
+/** Average cover colour clamped into the casing band and mixed toward the page
+    black; a straight average comes out either white or mud. */
 async function casingFrom(buf) {
   const { channels } = await sharp(buf).resize(24, 36, { fit: 'fill' }).stats();
   let [r, g, b] = channels.slice(0, 3).map((c) => c.mean);
   const mid = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
-  // pull extremes off the rails: a white cover would give a white spine, and
-  // averaging a dark one lands on the page's own background
+  // clamp lightness: a white cover gives a white spine, a dark one vanishes
   const target = Math.min(150, Math.max(70, mid));
   const scale = mid > 1 ? target / mid : 1;
   [r, g, b] = [r * scale, g * scale, b * scale];
-  // averages are muddy — push each channel out from its own mean so a green
-  // cover still reads green as cloth
+  // push channels out from their mean so a green cover still reads green
   const avg = (r + g + b) / 3;
   [r, g, b] = [r, g, b].map((c) => avg + (c - avg) * 1.35);
-  // a little of the page's black keeps every casing inside the same room
   const [br, bg, bb] = [0x0f, 0x0d, 0x0b];
   return `#${hex(r * 0.82 + br * 0.18)}${hex(g * 0.82 + bg * 0.18)}${hex(b * 0.82 + bb * 0.18)}`;
 }
 
-/**
- * Download + resize one cover into public/covers. Returns the site-relative
- * path and the casing colour sampled from the art.
- */
+/** Downloads + resizes one cover into public/covers; returns path and casing. */
 async function cacheCover(slug, image) {
   if (!image) return { cover: null, casing: null };
   const file = `${slug}.jpg`;
@@ -326,7 +279,6 @@ const all = rows.map((row) => ({
   status: row.status_id
 }));
 
-// anything still without art gets one more look, across the book's editions
 for (const r of all) {
   if (!r.image && r.bookId) r.image = await editionImage(token, r.bookId);
 }
@@ -342,17 +294,14 @@ for (const r of all) {
 const reading = all.filter((r) => r.status === 2).map((r) => r.book);
 const finished = all.filter((r) => r.status !== 2).map((r) => r.book);
 
-// keyed on covers we actually produced — a book whose only image was a 98px
-// thumbnail must not keep a file from an earlier, less picky run
+// keyed on covers actually produced, so files from earlier looser runs drop
 const pruned = await pruneCovers(
   new Set(all.filter((r) => r.book.cover).map((r) => `${r.book.slug}.jpg`))
 );
 
 const snapshot = {
-  // stamped so the page can say how fresh the shelf is if it ever needs to
   fetchedAt: new Date().toISOString(),
-  // every status_id 2 book — which one is "now" is an editorial choice, made
-  // in site.ts (`reading.now`), not by whichever row Hardcover touched last
+  // all status_id 2 books; site.ts (`reading.now`) picks which one is current
   reading,
   finished
 };

@@ -1,23 +1,6 @@
 /**
- * check-contrib-readout.mjs — the SHIPPING · GITHUB grid's hover readout.
- *
- * The grid is canvas pixels, so there is nothing to hover: <as-contrib>
- * hit-tests pointer coordinates against the 13.5px stride / 10px cell and
- * reports a cell through `contrib:day`, and <as-live-data> renders it into the
- * meta line in the year total's place. What can quietly break:
- *   - the 3.5px gutter between cells must be a MISS, not a nearest-match;
- *   - a cell's date is derived from the `from` anchor, so an off-by-one there
- *     mislabels the entire year — the last real cell must land on today;
- *   - the current week is padded with zeros, and those future cells must not be
- *     described as quiet days;
- *   - mobile renders the last 23 weeks, but a cell must still report its index
- *     in the FULL grid or the "N that week" clause reads the wrong week;
- *   - superlatives are claimed only when the peak is unique.
- *
- * Pass 1 (live API): geometry + anchor against whatever the feed returns now.
- * Pass 2 (mocked): every line shape exactly, on a grid built to contain one of
- *   each — a unique peak day, a tied peak week, a 5-day streak, a quiet day.
- * Pass 3 (mobile): 23 rendered weeks still resolve full-grid week totals.
+ * check-contrib-readout.mjs — the SHIPPING · GITHUB grid's hover readout: cell
+ * hit-testing, the `from` anchor, line shapes, and mobile's tail slice.
  *
  * Usage: node scripts/check-contrib-readout.mjs [base-url]
  */
@@ -42,7 +25,6 @@ const centre = (week, day) => ({
   y: day * PITCH + CELL / 2
 });
 
-/** the meta line's state: which tenant holds it, and what it says */
 const readLine = (page) =>
   page.evaluate(() => {
     const total = document.querySelector('[data-live="contrib-total"]');
@@ -73,26 +55,19 @@ async function ready(page) {
   await page.locator('.contrib-meta').scrollIntoViewIfNeeded();
 }
 
-// ---------------------------------------------------------------------------
 // mocked grid — 52×7, seeded so each line shape exists exactly once
-// ---------------------------------------------------------------------------
 const FROM = '2025-08-03'; // a Sunday
 const MOCK_DAYS = Array.from({ length: 52 }, () => Array(7).fill(0));
 const at = (w, d, v) => {
   MOCK_DAYS[w][d] = v;
 };
-// a unique peak day: 41, alone at the top
 at(10, 3, 41);
-// a 5-day streak in week 20 (mon–fri), none of them peaks
 for (let d = 1; d <= 5; d++) at(20, d, 4);
-// two weeks tied on 30 — "busiest week" must NOT be claimed for either
 at(30, 2, 15);
 at(30, 4, 15);
 at(31, 1, 15);
 at(31, 5, 15);
-// a lone ordinary day, its week holding nothing else (no "N that week" clause)
 at(40, 6, 7);
-// a day whose week holds more, for the week clause
 at(45, 1, 3);
 at(45, 2, 6);
 const MOCK_WEEKS = MOCK_DAYS.map((w) => w.reduce((a, b) => a + b, 0));
@@ -114,11 +89,8 @@ const mock = (page) =>
     r.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_GITHUB) })
   );
 
-// ---------------------------------------------------------------------------
-
 const browser = await chromium.launch();
 
-// ---- pass 1: live data ----------------------------------------------------
 console.log('\npass 1 — live /api/github');
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -132,7 +104,6 @@ console.log('\npass 1 — live /api/github');
   const flat = feed.days.flat();
   check('feed carries the calendar anchor', Boolean(feed.from), `from=${feed.from}`);
 
-  // the anchor is only right if the last non-future cell is today
   const anchor = Date.parse(`${feed.from}T00:00:00Z`);
   const today = iso(Date.now());
   let lastReal = -1;
@@ -147,8 +118,6 @@ console.log('\npass 1 — live /api/github');
   check('total holds the line at rest', idle.totalHidden === false && idle.readoutHidden === true);
   const idleH = await page.locator('.contrib-meta').evaluate((e) => e.getBoundingClientRect().height);
 
-  // every cell in the rendered grid must resolve, and its date must match the
-  // one the anchor predicts for that column/row
   let bad = 0;
   let mismatched = 0;
   let clipped = 0;
@@ -158,7 +127,6 @@ console.log('\npass 1 — live /api/github');
       await hoverCell(page, w, d);
       const s = await readLine(page);
       if (future) {
-        // padded tail — the readout must stand down, not print a quiet day
         if (s.readoutHidden !== true) bad++;
         continue;
       }
@@ -203,7 +171,6 @@ function shortOf(anchor, w, d) {
   return `${WD[at.getUTCDay()]} ${MO[at.getUTCMonth()]} ${at.getUTCDate()}`;
 }
 
-// ---- pass 2: mocked line shapes ------------------------------------------
 console.log('\npass 2 — mocked line shapes');
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -212,7 +179,6 @@ console.log('\npass 2 — mocked line shapes');
   await ready(page);
 
   const want = [
-    // [label, week, day, expected full line]
     ['unique peak day', 10, 3, 'wed oct 15 — 41 contributions — busiest day of the year'],
     ['mid-streak day', 20, 3, 'wed dec 24 — 4 contributions · 20 that week — day 3 of a 5-day streak'],
     ['first day of the streak', 20, 1, 'mon dec 22 — 4 contributions · 20 that week — day 1 of a 5-day streak'],
@@ -234,7 +200,6 @@ console.log('\npass 2 — mocked line shapes');
   await page.close();
 }
 
-// ---- pass 3: mobile renders a tail slice --------------------------------
 console.log('\npass 3 — mobile (23 weeks rendered, full-grid indices)');
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'] });
@@ -249,8 +214,7 @@ console.log('\npass 3 — mobile (23 weeks rendered, full-grid indices)');
   }));
   check('mobile canvas is the 23-week box', size.css === '321px', JSON.stringify(size));
 
-  // rendered column 0 is full-grid week 29 (52 - 23); week 45 is rendered 16.
-  // If the island reported rendered indices, the week clause would read week 16.
+  // rendered col 0 is full-grid week 29 (52 - 23) — cells must report FULL indices.
   const cv = page.locator('as-contrib canvas');
   const box = await cv.boundingBox();
   const RENDERED = 23;

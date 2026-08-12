@@ -1,14 +1,5 @@
-/**
- * Build-time OG cards — satori → resvg, one PNG per shareable page.
- *
- * Paths: /og/site.png (default), /og/{work,writing,live,about}.png,
- * /og/writing/<id>.png for every post & snippet. All prerendered; satori and
- * resvg never ship to the client or the server runtime.
- *
- * Design mirrors the site tokens (global.css): warm-black bg with the dot
- * grid at a doubled 52px pitch so it reads at card size, brass brand line,
- * Newsreader 500 title, mono meta row over a 2px brass rule.
- */
+// Build-time OG cards (satori → resvg): /og/site.png, /og/<page>.png, /og/writing/<id>.png.
+// Prerendered, so neither lib ships to the client or the serverless runtime.
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { APIRoute, InferGetStaticPropsType } from 'astro';
@@ -59,7 +50,7 @@ export async function getStaticPaths() {
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
-/* ---- tokens (kept in lockstep with src/styles/global.css) ---- */
+/* tokens — must stay in lockstep with src/styles/global.css */
 const BG = '#0F0D0B';
 const CREAM = '#EDE6DA';
 const BRASS = '#D9A54A';
@@ -108,9 +99,8 @@ function buildCard(card: Card): El {
       flexDirection: 'column',
       padding: '64px 80px 60px',
       backgroundColor: BG,
-      // the 26px dot grid from global.css, doubled to 52px so it reads at og
-      // size — %-stops on purpose: satori resolves px stops against the
-      // element width, but %-stops against the tile's gradient radius (26√2)
+      // %-stops are required: satori resolves px stops against the element
+      // width, but %-stops against the tile's gradient radius (26√2).
       backgroundImage:
         'radial-gradient(circle at 26px 26px, rgba(237, 230, 218, 0.08) 6.8%, transparent 8.2%)',
       backgroundSize: '52px 52px'
@@ -134,9 +124,8 @@ function buildCard(card: Card): El {
   );
 }
 
-/* fonts — static TTFs vendored in src/assets/og-fonts (satori can't read the
-   woff2 that fontsource ships). Loaded once per build, resolved from cwd
-   because the bundled endpoint's import.meta.url no longer points into src. */
+/* Static TTFs: satori can't read fontsource's woff2. Resolved from cwd because
+   the bundled endpoint's import.meta.url no longer points into src. */
 let fontsPromise: Promise<SatoriOptions['fonts']> | undefined;
 function loadFonts(): Promise<SatoriOptions['fonts']> {
   fontsPromise ??= Promise.all([

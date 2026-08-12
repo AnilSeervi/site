@@ -1,9 +1,6 @@
 /**
- * <as-dot-field> — cursor-reactive dot canvas, writing page only (frame 6c).
- * Replaces the CSS dot grid: 26px pitch (offset 13px), dot r=1.1px, base
- * α .045; within reach of the pointer α rises to .345 with gaussian falloff
- * σ=140px, and dots tint brass when the falloff g > .3. rAF-throttled.
- * Port of the prototype's initDots/drawDots.
+ * <as-dot-field> — cursor-reactive dot canvas, writing page only. rAF-throttled:
+ * 26px pitch, gaussian pointer falloff σ=140px, brass tint where the falloff > .3.
  */
 class AsDotField extends HTMLElement {
   #cv: HTMLCanvasElement | null = null;

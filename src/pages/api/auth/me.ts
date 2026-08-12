@@ -1,8 +1,4 @@
-/**
- * GET /api/auth/me — {user: {login, name} | null} for client-side state
- * toggling ('sign with github →' vs 'signed in as <login>'). Session-derived,
- * so never cached (no-store) and never exposes the email.
- */
+/** GET /api/auth/me → {user:{login,name}|null}. no-store; never exposes email. */
 import type { APIRoute } from 'astro';
 import { readSession } from '~/lib/session';
 

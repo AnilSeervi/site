@@ -1,16 +1,11 @@
 /**
- * <as-ascii-portrait> — ASCII-dither portrait (frames 6a hero 50×62 / 6e about 60×75).
- * Direct port of the prototype's loadPortrait/renderAscii/startHalfLoop
- * (design handoff, script block): 60×75 shared luminance grid, Rec.709 luma,
- * 6%/94% percentile contrast stretch, ramp ` .·:-=+*#%@`, 4px cells drawn at 2×,
- * per-cell hash shimmer ±0.08 advanced every 90ms, hover-develop gaussian σ≈80px,
- * warm tint rgb(m, .92m, .76m).
+ * <as-ascii-portrait> — ASCII-dither portrait canvas: 60×75 luminance grid,
+ * Rec.709 luma, ramp ` .·:-=+*#%@`, 4px cells drawn at 2×, shimmer every 90ms.
  *
- * Markup contract: <as-ascii-portrait data-cells="50x62" data-cells-mobile="29x36">
+ * Markup: <as-ascii-portrait data-cells="50x62" data-cells-mobile="29x36">
  *   <canvas …></canvas></as-ascii-portrait>
- * The canvas backing store (cols·8 × rows·8, i.e. cols·4 CSS px at 2×) and CSS
- * box are set in JS from the active cell grid, so the mobile size (7a 29×36 /
- * 7e 52×65) is driven by the breakpoint, not the markup.
+ * CSS box (cols·4 × rows·4) and 2× backing store are set in JS from the active
+ * cell grid, so the mobile size follows the breakpoint, not the markup.
  */
 
 import { isMobile, onBreakpointChange } from './breakpoint';
@@ -101,8 +96,7 @@ class AsAsciiPortrait extends HTMLElement {
     this.#rows = r || 62;
     const cv = this.#cv;
     if (!cv) return;
-    // CSS box = cols·4 × rows·4; backing store 2× for retina (matches the
-    // setTransform(2,…) in #draw)
+    // CSS box = cols·4 × rows·4; backing store 2× to match setTransform(2,…) in #draw
     const cssW = this.#cols * 4;
     const cssH = this.#rows * 4;
     cv.width = cssW * 2;
@@ -148,7 +142,6 @@ class AsAsciiPortrait extends HTMLElement {
     this.#cv?.removeEventListener('pointerleave', this.#onLeave);
   }
 
-  /** verbatim renderAscii port — constants must match the prototype */
   #draw() {
     const cv = this.#cv;
     if (!cv) return;
@@ -165,8 +158,7 @@ class AsAsciiPortrait extends HTMLElement {
     x.textBaseline = 'middle';
     const src = this.#lum;
     const m = this.#mouse;
-    // prototype seeds mulberry(21) per render — consumed only by the
-    // no-portrait fallback branch
+    // mulberry(21) reseeded per render; consumed only by the no-portrait fallback
     let a = 21;
     const rnd = () => {
       a |= 0;

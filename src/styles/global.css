@@ -1,12 +1,8 @@
-/* ---------------------------------------------------------------------------
-   The Complete Minimal — global tokens & base
-   Source of truth: design_handoff_portfolio_redesign (README + prototype)
---------------------------------------------------------------------------- */
+/* ---- global tokens & base ---- */
 
 :root {
-  /* the browser's default canvas is light — without this it flashes white
-     for a frame during navigation (behind the view-transition snapshots, and
-     on overscroll/scrollbars). Declaring the scheme makes that UA canvas dark. */
+  /* without this the light UA canvas flashes white for a frame during
+     navigation — behind the view-transition snapshots, and on overscroll */
   color-scheme: dark;
 
   /* color tokens */
@@ -61,10 +57,8 @@ body {
   background: rgba(217, 165, 74, 0.35);
 }
 
-/* Links default to no underline. Those that opt in (`text-decoration-line:
-   underline`, NOT the `text-decoration` shorthand — which would reset these)
-   inherit a thin underline softened to 42% of the link's own colour, so it
-   reads as a hint and tracks the hover crossfade. */
+/* opt in with `text-decoration-line: underline`, never the `text-decoration`
+   shorthand — the shorthand resets the thickness/offset/colour set here */
 a {
   color: inherit;
   text-decoration-line: none;
@@ -104,10 +98,9 @@ a {
   }
 }
 
-/* An open <as-drawer> owns the bottom edge, but it can't out-stack the ❯ chip:
-   the sheet lives inside .page (a z-index:1 stacking context) while the chip is
-   a body child at z-index 90 — so the chip yields instead. Lives here because a
-   scoped rule in either component couldn't name the other's element. */
+/* the open sheet sits inside .page (a z-index:1 stacking context) so it can't
+   out-stack the body-level chip at z-index 90 — the chip yields instead. Lives
+   here because a scoped rule in either component can't name the other. */
 body:has(as-drawer[data-open]) .cmd-chip {
   opacity: 0;
   pointer-events: none;
@@ -123,7 +116,7 @@ body:has(as-drawer[data-open]) .cmd-chip {
   background-size: 26px 26px;
 }
 
-/* ---- keyframes (verbatim from prototype) ---- */
+/* ---- keyframes ---- */
 @keyframes as-eq {
   0%,
   100% {
@@ -197,15 +190,14 @@ body:has(as-drawer[data-open]) .cmd-chip {
   }
 }
 
-/* staggered entrance (6a) — applied via .as-enter + inline animation-delay */
+/* staggered entrance — applied via .as-enter + inline animation-delay */
 .as-enter {
   animation: as-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ---- loading / waiting states (design_handoff_loading_states) ----
-   The rule: never render a value you don't have. Labels, rules and section
-   headers are static; only the value slot is absent, its space reserved.
-   Skeletons breathe (never shimmer-sweep); values fade in on arrival. */
+/* ---- loading / waiting states ----
+   never render a value you don't have: only the value slot is absent, and its
+   space stays reserved so arrival can't reflow the row */
 @keyframes as-breathe {
   0%,
   100% {
@@ -232,8 +224,7 @@ body:has(as-drawer[data-open]) .cmd-chip {
   }
 }
 
-/* skeleton bar — height/width set inline (a plausible fraction, never 100%).
-   primary fill .07; .sk-dim .06 and .sk-faint .05 for secondary lines. */
+/* skeleton bar — height/width set inline, as a fraction, never 100% */
 .sk {
   border-radius: 3px;
   background: rgba(237, 230, 218, 0.07);
@@ -245,15 +236,13 @@ body:has(as-drawer[data-open]) .cmd-chip {
   background: rgba(237, 230, 218, 0.05);
 }
 
-/* phase gating — an island carries data-load = idle | waiting | arrived.
-   [data-sk] holds the skeleton, [data-val] the real value; exactly one shows.
-   idle (pre-180ms): neither — the row's reserved min-height holds the space,
-   so data resolving under 180ms goes straight to the value with no flash.
+/* phase gating on data-load = idle | waiting | arrived; [data-sk] is the
+   skeleton, [data-val] the value, exactly one shows. idle shows neither, so
+   data resolving under 180ms reaches the value without a skeleton flash.
 
-   The island tag prefix (:is) is load-bearing: it lifts the specificity to
-   (0,2,1) so these win over Astro's *scoped* component rules — a scoped
-   `.foo` compiles to `.foo[data-astro-cid…]` (0,2,0), which would otherwise
-   tie and let a component's own `display:` leave a skeleton on screen. */
+   The :is() tag prefix is load-bearing — it lifts specificity to (0,2,1) so
+   these beat Astro's scoped rules, which compile to `.foo[data-astro-cid…]`
+   at (0,2,0) and would otherwise tie and leave a skeleton on screen. */
 :is(as-live-data, as-moving)[data-load] [data-sk] {
   display: none;
 }

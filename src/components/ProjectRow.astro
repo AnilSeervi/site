@@ -1,11 +1,5 @@
 ---
-/**
- * ProjectRow — one line under FROM THE ARCHIVE (handoff 6b/7b).
- *
- * Deliberately quieter than a spread: dimmer name, no why-line, no stack, one
- * icon. The tier is the claim — these are finished, and the page says so by
- * giving them a line instead of a spread rather than by labelling them dead.
- */
+/** Single-line archive entry: name, blurb, source icon. */
 import type { Project } from '~/config/site';
 import { srcUrl } from '~/config/site';
 import GitHubMark from '~/components/icons/GitHubMark.astro';
@@ -59,13 +53,11 @@ const src = srcUrl(project);
 
   .blurb {
     font-size: 14px;
-    /* handoff calls for #6B6354 — one notch between --meta and --faint, and the
-       only use of it in the codebase, so it stays a literal rather than a token */
+    /* one-off shade between --meta and --faint; deliberately not a token */
     color: #6b6354;
     min-width: 0;
   }
 
-  /* the icon is pushed to the far edge — the blurb's length shouldn't move it */
   .src {
     margin-left: auto;
     display: inline-flex;
@@ -87,7 +79,7 @@ const src = srcUrl(project);
     .blurb {
       font-size: 13px;
     }
-    /* padded to a 44px-tall target; negative vertical margin keeps the row height */
+    /* 44px touch target; negative vertical margin preserves row height */
     .src {
       padding: 15px 0 15px 8px;
       margin: -15px 0;

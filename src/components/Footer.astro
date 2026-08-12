@@ -1,7 +1,7 @@
 ---
 interface Props {
   left?: string;
-  /** makes `left` a link — /writing points its "rss available" at the feed */
+  /** makes `left` a link to this href */
   leftHref?: string;
 }
 const { left, leftHref } = Astro.props;
@@ -32,9 +32,6 @@ const year = new Date().getFullYear();
     color: var(--faint);
   }
 
-  /* the line is --faint; a link inside it lifts to the same --meta the right-hand
-     links use, and opts into the global underline hint — otherwise "rss
-     available" sits in a footer sentence with nothing to say it's clickable */
   .left a {
     color: var(--meta);
     text-decoration-line: underline;
@@ -55,7 +52,6 @@ const year = new Date().getFullYear();
     color: var(--text-hi);
   }
 
-  /* forward-arrow chain link: `~/writing →` */
   .right :global(a.chain) {
     display: inline-block;
     transition:

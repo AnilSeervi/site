@@ -1,17 +1,10 @@
 /**
- * Garmin Connect one-time interactive bootstrap.
- *
- * Runs the full SSO login chain (email/password + MFA code prompt when Garmin
- * asks), seeds the Turso `kv` table with the long-lived OAuth1 token and a
- * fresh OAuth2 bearer, then verifies by fetching the profile displayName.
- * After this runs once, the server refreshes OAuth2 from OAuth1 forever —
- * no password, no prompts.
- *
- * Run:  node --env-file=.env scripts/garmin-bootstrap.mjs
+ * garmin-bootstrap.mjs — one-time interactive Garmin SSO login (password + MFA prompt) that seeds
+ * the Turso `kv` table with the long-lived OAuth1 token and a fresh OAuth2 bearer, then verifies
+ * via profile displayName. Afterwards the server refreshes OAuth2 from OAuth1 on its own.
+ * Run:   node --env-file=.env scripts/garmin-bootstrap.mjs   (node >= 24: imports .ts directly)
  * Needs: GARMIN_EMAIL, GARMIN_PASSWORD, TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
- *
- * Imports the TypeScript core directly — node >= 24 strips types natively.
- * NEVER prints secret or token values (redacted summary only).
+ * Prints a redacted summary only — never token or secret values.
  */
 import { createClient } from '@libsql/client';
 import { createInterface } from 'node:readline/promises';
@@ -76,7 +69,6 @@ try {
   const displayName = await getDisplayName(store, oauth2.access_token);
   console.log(`\nVerified — displayName: ${displayName}`);
 
-  // Smoke-read today's vitals so drift is visible immediately.
   const today = calendarDate();
   try {
     const [rhr, vo2] = await Promise.all([

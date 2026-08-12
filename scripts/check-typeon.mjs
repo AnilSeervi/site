@@ -1,6 +1,5 @@
-// Runtime verification of the <as-typeon> hero typing island.
-// Checks: timing curve (450ms delay, 75ms/char, 11 chars), em split,
-// caret animation, reduced-motion behavior.
+// check-typeon.mjs — <as-typeon> hero: timing curve (450ms delay, 75ms/char, 11 chars), em split,
+// caret animation, reduced motion. Run: node scripts/check-typeon.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -32,11 +31,10 @@ const out = {};
   await page.waitForTimeout(2800);
   const samples = await page.evaluate(() => window.__samples);
 
-  // find the moment the island cleared the SSR text (first empty sample)
+  // first empty sample = the island cleared the SSR text; every timing is relative to it
   const clearIdx = samples.findIndex((s) => s.text === '');
   const tClear = clearIdx >= 0 ? samples[clearIdx].t : null;
   const at = (ms) => {
-    // sample closest to tClear + ms
     let best = null;
     for (const s of samples) {
       if (best === null || Math.abs(s.t - (tClear + ms)) < Math.abs(best.t - (tClear + ms)))
@@ -46,7 +44,6 @@ const out = {};
   };
   const firstChar = samples.find((s) => clearIdx >= 0 && s.t > tClear && s.text.length >= 1);
   const complete = samples.find((s) => s.text === 'Anil Seervi');
-  // monotonic growth check
   let monotonic = true;
   for (let i = clearIdx + 1; i < samples.length; i++) {
     if (samples[i].text.length < samples[i - 1].text.length) monotonic = false;
@@ -64,12 +61,10 @@ const out = {};
     monotonic
   };
 
-  // caret checks
   out.caret = await page.evaluate(() => {
     const c = document.querySelector('as-typeon .caret, h1 .caret');
     if (!c) return { exists: false };
     const cs = getComputedStyle(c);
-    // confirm as-caret keyframes are actually defined somewhere
     let kf = false;
     for (const sh of document.styleSheets) {
       try {
@@ -90,7 +85,6 @@ const out = {};
       verticalAlign: cs.verticalAlign
     };
   });
-  // observe caret opacity actually toggling (animation applies)
   const o1 = await page.evaluate(() => getComputedStyle(document.querySelector('h1 .caret')).opacity);
   const opacities = new Set([o1]);
   for (let i = 0; i < 8; i++) {

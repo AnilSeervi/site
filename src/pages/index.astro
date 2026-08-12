@@ -40,8 +40,6 @@ const homeProjects = projects.filter((p) => p.home);
 ---
 
 <Base>
-  <!-- invisible island: fetches /api/github on mount and fills the proof strip
-       + sparkline data-values in place (queries scoped to this page's <main>) -->
   <as-home-data aria-hidden="true"></as-home-data>
 
   <div class="whoami as-enter" style="animation-delay:0s">
@@ -60,9 +58,6 @@ const homeProjects = projects.filter((p) => p.home);
       <as-spark data-kind="hero" class="as-enter" style="animation-delay:.12s">
         <canvas class="spark-hero" width="640" height="44" style="width:320px;height:22px"
           aria-hidden="true"></canvas>
-        <!-- boot caption (design_handoff_loader): overlays the canvas while
-             /api/github is in flight, and only after the name finishes typing.
-             The island fades it via data-cap; it is never shown without JS. -->
         <span class="spark-cap" aria-hidden="true"
           ><span class="accent">❯</span>git log --since=1y<span class="cap-caret"></span></span
         >
@@ -129,10 +124,6 @@ const homeProjects = projects.filter((p) => p.home);
               {p.name}
             </a>
             <span class="pdesc">{p.home}</span>
-            {/* Same icon pair as the /work spreads: the mark is the source, the
-                arrow is the running thing. The row sparkline that used to sit
-                here is gone — every one of these repos has an all-zero 52-week
-                series, so it drew a 1.5px flat line pretending to be a chart. */}
             <p class="plinks">
               {srcUrl(p) && (
                 <a href={srcUrl(p)} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub`}>
@@ -176,9 +167,6 @@ const homeProjects = projects.filter((p) => p.home);
     <div class="live-head">
       <Section label="03 · LIVE" meta="all feeds →" metaMobile="all →" metaHref="/live" />
     </div>
-    <!-- waiting state (design_handoff_loading_states 8b): an inert dot + the
-         ❯ prompt, no faked feed line. The island swaps in real signals as the
-         feeds answer and only then lights the pulse + shows the label. -->
     <as-ticker class="ticker" data-ticker data-live data-load="waiting">
       <span class="pulse" aria-hidden="true"></span>
       <span class="tlabel" data-ticker-label></span>
@@ -252,10 +240,8 @@ const homeProjects = projects.filter((p) => p.home);
     animation: as-caret 1.1s steps(1) infinite;
   }
 
-  /* ---- hero sparkline + its boot caption (design_handoff_loader) ----
-     The margin lives on the wrapper, not the canvas: the wrapper is the
-     positioning context for the caption and reserves the 22px box from first
-     paint, so nothing shifts when the line finally draws. */
+  /* margin on the wrapper, not the canvas: it reserves the 22px box, so the
+     line draw can't shift layout */
   .hero as-spark {
     position: relative;
     margin: 2px 0 12px;
@@ -277,24 +263,21 @@ const homeProjects = projects.filter((p) => p.home);
     pointer-events: none;
     opacity: 0;
   }
-  /* the transition is armed by the island (data-seq) rather than declared here,
-     so the caption can never fade *out* of view on first paint — see spark.ts */
+  /* armed by the island via data-seq: declared unconditionally, the caption
+     fades out on first paint */
   as-spark[data-seq] .spark-cap {
     transition: opacity 0.25s ease;
   }
   as-spark[data-cap='on'] .spark-cap {
     opacity: 1;
   }
-  /* the blinking block is the "working" signal — which is why the copy has no
-     ellipsis. Same keyframes and cadence as the name caret above it. */
   .cap-caret {
     width: 7px;
     height: 12px;
     background: var(--as-accent);
     animation: as-caret 1.1s steps(1) infinite;
   }
-  /* reduced motion skips the sequence entirely (the island draws the line in
-     one shot), so the caption has nothing to narrate */
+  /* reduced motion: the island draws the line in one shot, so no caption */
   @media (prefers-reduced-motion: reduce) {
     .spark-cap {
       display: none;
@@ -308,19 +291,10 @@ const homeProjects = projects.filter((p) => p.home);
     margin-bottom: 22px;
   }
 
-  /* one line of copy carrying the whole introduction. Body size, not display
-     size — the weight comes from the tighter leading and the narrow cap, which
-     break it into two balanced lines instead of one long ruler. Going bigger
-     puts it in competition with the h1 two rows above. */
   .intro {
     font-size: 17px;
     line-height: 1.6;
     margin: 0 0 20px;
-    /* 23em is measured, not chosen: it's the widest cap that still breaks this
-       line on its sentence boundary rather than mid-clause, before the number.
-       `balance` can't do it — the most even split is the one that orphans
-       "13 days later", so it picks that at every width. Re-measure if the copy
-       changes; a wrong cap only costs an uglier break, never a layout. */
     max-width: 23em;
     text-wrap: pretty;
   }
@@ -409,7 +383,6 @@ const homeProjects = projects.filter((p) => p.home);
   }
   .prow {
     display: grid;
-    /* the 76px sparkline column is gone — name, one-liner, links */
     grid-template-columns: 132px 1fr auto;
     gap: 20px;
     padding: 15px 0;
@@ -432,7 +405,6 @@ const homeProjects = projects.filter((p) => p.home);
     color: var(--text-muted);
     line-height: 1.6;
   }
-  /* the icon pair, matching the /work spreads */
   .plinks {
     display: flex;
     align-items: center;
@@ -449,13 +421,11 @@ const homeProjects = projects.filter((p) => p.home);
   .plinks a:hover {
     color: var(--text-hi);
   }
-  /* only the arrow lifts — the mark is a destination, the arrow is a direction */
   .plinks a.plive:hover {
     transform: translate(1px, -1px);
   }
 
   /* 5 · writing rows */
-  /* frame 6a: the plain-text `8 articles` meta reads --faint, not the Section default */
   .writing-sec :global(.section-head .meta) {
     color: var(--faint);
   }
@@ -546,8 +516,6 @@ const homeProjects = projects.filter((p) => p.home);
     transition: opacity 0.25s ease;
   }
 
-  /* waiting (8b): inert grey dot, no label, the prompt line reads mono/muted
-     — never a faked feed value. The island clears data-load once a signal lands. */
   as-ticker[data-load='waiting'] .pulse {
     background: rgba(237, 230, 218, 0.14);
     animation: none;
@@ -574,16 +542,15 @@ const homeProjects = projects.filter((p) => p.home);
     color: var(--meta);
   }
 
-  /* footer spacing — home's ticker owns the 60px gap (prototype) */
+  /* the ticker's own margin owns the gap above the footer */
   .foot :global(footer) {
     margin-top: 0;
   }
 
-  /* ================= mobile (7a) ================= */
+  /* ================= mobile ================= */
   @media (max-width: 768px) {
-    /* hero: name + portrait share row 1; everything else spans full width below.
-       display:contents lifts .hero-left's children into the .hero grid so the
-       portrait (a sibling) can sit beside just the name. */
+    /* display:contents lifts .hero-left's children into the .hero grid so the
+       portrait (a sibling) can sit beside the name */
     .hero {
       grid-template-columns: 1fr 116px;
       gap: 18px;
@@ -607,7 +574,6 @@ const homeProjects = projects.filter((p) => p.home);
       height: 25px;
       margin-left: 8px;
     }
-    /* portrait spans the name + role rows; role sits beside it in col 1 (7a) */
     .hero as-ascii-portrait {
       grid-column: 2;
       grid-row: 1 / span 2;
@@ -645,7 +611,6 @@ const homeProjects = projects.filter((p) => p.home);
       font-size: 11.5px;
     }
 
-    /* proof strip wraps; the pushed line drops to its own row (7a: two rows) */
     .proof {
       flex-wrap: wrap;
       gap: 10px;
@@ -657,7 +622,7 @@ const homeProjects = projects.filter((p) => p.home);
       flex-basis: 100%;
     }
 
-    /* work digest rows: name + icon pair on line 1, one-liner below */
+    /* work digest rows */
     .rows {
       margin-bottom: 44px;
     }
@@ -672,8 +637,8 @@ const homeProjects = projects.filter((p) => p.home);
       grid-row: 1;
       font-size: 18px;
     }
-    /* the pair rides the name's line; padding goes on the anchors so each is a
-       44px target rather than growing the flex container (see ProjectSpread) */
+    /* padding goes on the anchors, not the container: 44px touch targets
+       without growing the row */
     .plinks {
       grid-column: 2;
       grid-row: 1;
@@ -722,9 +687,6 @@ const homeProjects = projects.filter((p) => p.home);
     }
   }
 </style>
-
-<!-- entrance stagger re-runs by itself on view-transition arrival: the swap
-     inserts fresh .as-enter elements, so their CSS animations replay. -->
 
 <script>
   import '~/islands/typeon';

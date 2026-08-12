@@ -5,19 +5,8 @@ import { page } from '~/lib/schema';
 
 export const prerender = false;
 
-/**
- * Page-view counter backed by the existing Turso `page` table.
- *
- * GET  /api/views/<path>  → { views: number }   (0 when no row yet)
- * POST /api/views/<path>  → { views: number }   (upsert, +1)
- *
- * Slug scheme (matches the old site's usePageViews): '/' + path segments,
- * with '' / 'home' normalized to '/home'. e.g. /api/views/writing/foo
- * tracks the slug '/writing/foo'.
- *
- * Degradation contract: missing env → 200 {"disabled":true};
- * upstream failure → 200 { views: null } (never 5xx for expected failures).
- */
+// Page-view counter on the Turso `page` table. GET → { views }, POST upserts +1.
+// Stored slug is '/' + path segments; '' and 'home' normalize to '/home'.
 
 function normalizeSlug(param: string | undefined): string {
   const joined = (param ?? '').replace(/^\/+|\/+$/g, '');

@@ -1,35 +1,13 @@
 /**
- * Garmin Connect minimal client — core auth chain + data fetchers.
- *
- * Replicates the flow of the python `garth` project in TypeScript:
- *   1. SSO login (sso.garmin.com embed widget, CSRF from the login page HTML)
- *      → one-time service ticket. MFA challenges are surfaced via
- *      `promptMfaCode`; without a prompt handler the login throws (servers
- *      never prompt — run scripts/garmin-bootstrap.mjs interactively).
- *   2. ticket → long-lived OAuth1 token (oauth-service/oauth/preauthorized),
- *      signed with the PUBLIC garth consumer key/secret published at
- *      https://thegarth.s3.amazonaws.com/oauth_consumer.json.
- *   3. OAuth1 → short-lived (~1h) OAuth2 bearer (oauth/exchange/user/2.0).
- *      Refresh = re-run step 3 from the stored OAuth1 token; the password is
- *      only needed when OAuth1 itself is missing/invalid.
- *
- * OAuth1 HMAC-SHA1 signing (RFC 5849) is implemented manually with
- * node:crypto — no extra dependencies. `oauth1Sign` is exported so
- * scripts/garmin-oauth-selftest.mjs can verify it against the RFC 5849
- * known-answer example.
- *
- * ENVIRONMENT-AGNOSTIC ON PURPOSE: no import.meta.env, no db import. All
- * functions take credentials and a `TokenStore` as parameters so both the
- * Astro server (src/lib/garmin.ts, import.meta.env + drizzle kv) and the
- * plain-node bootstrap script (process.env + @libsql/client) can use them.
- * Only erasable TS syntax is used so node's type stripping can import this
- * file directly. NEVER log token or credential values.
+ * Garmin Connect client: SSO login → long-lived OAuth1 → ~1h OAuth2 bearer.
+ * Refresh re-exchanges the stored OAuth1; the password is only needed when
+ * OAuth1 is missing or invalid. MFA needs an interactive `promptMfaCode`.
+ * Must stay environment-agnostic and erasable-TS-only (node type stripping
+ * imports this file directly). Never log token or credential values.
  */
 import { createHmac, randomBytes } from 'node:crypto';
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export interface GarminCredentials {
   email: string;
@@ -77,9 +55,7 @@ export const KV_KEYS = {
 
 export const MFA_REQUIRED_MESSAGE = 'MFA required — run scripts/garmin-bootstrap.mjs';
 
-// ---------------------------------------------------------------------------
 // Constants (mirroring garth)
-// ---------------------------------------------------------------------------
 
 const SSO = 'https://sso.garmin.com/sso';
 const SSO_EMBED = `${SSO}/embed`;
@@ -104,9 +80,7 @@ const SIGNIN_PARAMS: Record<string, string> = {
   redirectAfterAccountCreationUrl: SSO_EMBED
 };
 
-// ---------------------------------------------------------------------------
 // OAuth1 HMAC-SHA1 signing (RFC 5849)
-// ---------------------------------------------------------------------------
 
 /** RFC 3986 percent-encoding (stricter than encodeURIComponent). */
 export function percentEncode(s: string): string {
@@ -143,7 +117,7 @@ export interface OAuth1SignInput {
 export interface OAuth1SignResult {
   /** `Authorization` header value. */
   header: string;
-  /** RFC 5849 §3.4.1 signature base string (exposed for the self-test). */
+  /** RFC 5849 §3.4.1 base string; scripts/garmin-oauth-selftest.mjs asserts it. */
   baseString: string;
   /** Base64 HMAC-SHA1 signature. */
   signature: string;
@@ -163,8 +137,8 @@ export function oauth1Sign(input: OAuth1SignInput): OAuth1SignResult {
   if (input.token) oauthParams.oauth_token = input.token;
   if (input.includeVersion !== false) oauthParams.oauth_version = '1.0';
 
-  // All request params (query + body + oauth_*), percent-encoded then sorted
-  // by encoded name, then encoded value (RFC 5849 §3.4.1.3.2).
+  // Query + body + oauth_* params, percent-encoded then sorted by encoded name
+  // then encoded value — order is required by RFC 5849 §3.4.1.3.2.
   const all: Array<[string, string]> = [
     ...queryPairs(u.search),
     ...Object.entries(input.bodyParams ?? {}),
@@ -198,9 +172,7 @@ export function oauth1Sign(input: OAuth1SignInput): OAuth1SignResult {
   return { header, baseString, signature };
 }
 
-// ---------------------------------------------------------------------------
 // Small helpers
-// ---------------------------------------------------------------------------
 
 function asRecord(x: unknown): Record<string, unknown> | null {
   return typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -221,7 +193,7 @@ function qs(params: Record<string, string>): string {
   return new URLSearchParams(params).toString();
 }
 
-/** Calendar date (YYYY-MM-DD) in the given IANA time zone (default IST — home). */
+/** Calendar date (YYYY-MM-DD) in the given IANA time zone (default IST). */
 export function calendarDate(timeZone: string = 'Asia/Kolkata'): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -231,9 +203,7 @@ export function calendarDate(timeZone: string = 'Asia/Kolkata'): string {
   }).format(new Date());
 }
 
-// ---------------------------------------------------------------------------
-// Garth consumer key/secret (public constants, cached in kv)
-// ---------------------------------------------------------------------------
+// Garth consumer key/secret — public constants, not secrets; cached in kv.
 
 let consumerMemo: OAuthConsumer | null = null;
 
@@ -257,9 +227,7 @@ export async function getOAuthConsumer(store: TokenStore): Promise<OAuthConsumer
   return consumerMemo;
 }
 
-// ---------------------------------------------------------------------------
-// SSO login (cookie jar + manual redirects, since fetch has no cookie store)
-// ---------------------------------------------------------------------------
+// SSO login — manual cookie jar + redirects, since fetch has no cookie store.
 
 interface SsoResponse {
   status: number;
@@ -331,8 +299,8 @@ function extractTicket(html: string): string {
 }
 
 /**
- * Full SSO login → one-time service ticket. Throws MFA_REQUIRED_MESSAGE when
- * Garmin asks for a code and no `promptMfaCode` handler was provided.
+ * SSO login → one-time service ticket. Throws MFA_REQUIRED_MESSAGE when Garmin
+ * asks for a code and no `promptMfaCode` handler was provided.
  */
 export async function ssoLogin(
   creds: GarminCredentials,
@@ -340,16 +308,14 @@ export async function ssoLogin(
 ): Promise<string> {
   const client = createSsoClient();
 
-  // (a) seed cookies on the embed widget
+  // Cookies must be seeded on the embed widget before the signin page loads.
   await client.request(`${SSO_EMBED}?${qs(SSO_EMBED_PARAMS)}`);
 
-  // (b) login page → CSRF token
   const signinUrl = `${SSO}/signin?${qs(SIGNIN_PARAMS)}`;
   const page = await client.request(signinUrl, { headers: { Referer: SSO_EMBED } });
   if (page.status !== 200) throw new Error(`Garmin SSO: signin page ${page.status}`);
   const csrf = extractCsrf(page.text);
 
-  // (c) POST credentials
   const post = await client.request(signinUrl, {
     method: 'POST',
     headers: { Referer: signinUrl, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -388,11 +354,9 @@ export async function ssoLogin(
   return extractTicket(html);
 }
 
-// ---------------------------------------------------------------------------
 // OAuth token exchanges
-// ---------------------------------------------------------------------------
 
-/** (b) service ticket → long-lived OAuth1 token. */
+/** Service ticket → long-lived OAuth1 token. */
 export async function getOAuth1Token(
   ticket: string,
   consumer: OAuthConsumer
@@ -425,7 +389,7 @@ export async function getOAuth1Token(
   return out;
 }
 
-/** (c) OAuth1 → OAuth2 bearer (~1h). Reusable forever for refresh. */
+/** OAuth1 → OAuth2 bearer (~1h); the OAuth1 token stays reusable for refresh. */
 export async function exchangeOAuth2(
   oauth1: OAuth1Token,
   consumer: OAuthConsumer
@@ -471,11 +435,9 @@ export async function exchangeOAuth2(
   return out;
 }
 
-// ---------------------------------------------------------------------------
 // Orchestration
-// ---------------------------------------------------------------------------
 
-/** Full password login chain; seeds kv with both tokens. Bootstrap + fallback. */
+/** Full password login chain; seeds kv with both tokens. */
 export async function loginWithPassword(
   store: TokenStore,
   creds: GarminCredentials,
@@ -491,10 +453,8 @@ export async function loginWithPassword(
 }
 
 /**
- * Valid OAuth2 bearer, refreshing as needed:
- *   stored OAuth2 still fresh → use it;
- *   else stored OAuth1 (long-lived) → re-exchange, no password;
- *   else password login (throws MFA_REQUIRED_MESSAGE without a prompt handler).
+ * Valid OAuth2 bearer: reuse a fresh stored one, else re-exchange the stored
+ * OAuth1 without the password, else password login (may throw on MFA).
  */
 export async function getAccessToken(
   store: TokenStore,
@@ -526,7 +486,7 @@ export async function getAccessToken(
       await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
       return oauth2.access_token;
     } catch {
-      // OAuth1 invalid/expired — fall through to password login if possible.
+      // OAuth1 invalid/expired — fall through to password login.
     }
   }
 
@@ -535,9 +495,7 @@ export async function getAccessToken(
   return oauth2.access_token;
 }
 
-// ---------------------------------------------------------------------------
 // Data fetchers (connectapi.garmin.com, Bearer auth)
-// ---------------------------------------------------------------------------
 
 async function apiGet(accessToken: string, path: string): Promise<unknown> {
   const res = await fetch(`${CONNECT_API}${path}`, {
@@ -580,15 +538,14 @@ export async function getRestingHeartRate(
 /** Latest VO2max (generic.vo2MaxValue) as of the given date, or null. */
 export async function getVo2Max(accessToken: string, date: string): Promise<number | null> {
   const raw = await apiGet(accessToken, `/metrics-service/metrics/maxmet/latest/${date}`);
-  // Endpoint is documented to return an object; be tolerant of array shapes.
+  // Endpoint is documented to return an object, but can return an array.
   const entry = asRecord(Array.isArray(raw) ? raw[raw.length - 1] : raw);
   const generic = asRecord(entry?.generic);
   const vo2 = generic?.vo2MaxValue;
   return typeof vo2 === 'number' && Number.isFinite(vo2) && vo2 > 0 ? vo2 : null;
 }
 
-/** gender + birthDate from the profile — used to classify VO2max (Garmin's
- * maxmet endpoint returns the value but no age/sex rating). */
+/** gender + birthDate — maxmet returns a VO2max value but no age/sex rating. */
 export async function getPersonalInfo(
   accessToken: string
 ): Promise<{ gender: string | null; birthDate: string | null }> {
@@ -602,9 +559,8 @@ export async function getPersonalInfo(
 export type Vo2Rating = 'superior' | 'excellent' | 'good' | 'fair' | 'poor';
 
 /**
- * Cooper Institute VO2max norms (ml/kg/min) — the age/sex percentile scale
- * Garmin Connect uses for its fitness rating. Each row is the *lower bound* of
- * a category for an age band; a value at/above `sup` is superior, etc.
+ * Cooper Institute VO2max norms (ml/kg/min), the scale Garmin rates against.
+ * Each row is the lower bound of a category for an age band.
  */
 const VO2_NORMS: Record<
   'male' | 'female',
@@ -652,9 +608,7 @@ export function vo2MaxRating(vo2: number, gender: string, age: number): Vo2Ratin
   return 'poor';
 }
 
-// ---------------------------------------------------------------------------
-// Activities (Moving section — replaces the retired Strava feed)
-// ---------------------------------------------------------------------------
+// Activities
 
 export interface GarminActivity {
   activityId: number;
@@ -669,7 +623,7 @@ export interface GarminActivity {
   startTimeLocal: string;
   /** GMT "YYYY-MM-DD HH:MM:SS" (no zone suffix) */
   startTimeGMT: string;
-  /** true when the activity carries a GPS track (route etching candidate) */
+  /** true when the activity carries a GPS track */
   hasPolyline: boolean;
 }
 
@@ -701,8 +655,8 @@ export async function getActivities(accessToken: string, limit = 60): Promise<Ga
 }
 
 /**
- * GPS track of an activity as [lat, lon] pairs (empty when none). Chart data
- * is suppressed (maxChartSize=0); only geoPolylineDTO is needed.
+ * GPS track as [lat, lon] pairs, empty when none. maxChartSize=0 suppresses the
+ * unused chart payload; only geoPolylineDTO is read.
  */
 export async function getActivityTrack(
   accessToken: string,

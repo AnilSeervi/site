@@ -1,13 +1,5 @@
-/**
- * <as-clock> — IST clock + time-aware greeting (frames 6a/6d).
- * Always the author's IST (UTC+5:30), never the visitor's zone. Ticks every 30s.
- * Buckets: <5 up too late · <12 good morning · <17 good afternoon ·
- * <22 good evening · else winding down.
- *
- * data-format="greeting" → `18:42 ist · good evening, from bengaluru`
- *   (mobile 7a shortens this to just the greeting — `good evening`)
- * data-format="time"     → `18:42 ist · bengaluru`
- */
+// <as-clock> — always the author's IST (UTC+5:30), never the visitor's zone.
+// data-format: "greeting" (time + greeting) or "time".
 import { onBreakpointChange } from './breakpoint';
 
 class AsClock extends HTMLElement {
@@ -17,7 +9,7 @@ class AsClock extends HTMLElement {
   connectedCallback() {
     this.#tick();
     this.#iv = setInterval(() => this.#tick(), 30_000);
-    // the greeting collapses to just the phrase on mobile — re-render on cross
+    // output differs per breakpoint, so re-render on every crossing
     this.#unsub = onBreakpointChange(() => this.#tick());
   }
 
@@ -39,7 +31,6 @@ class AsClock extends HTMLElement {
     if (this.dataset.format === 'time') {
       this.textContent = `${hh}:${mm} ist · bengaluru`;
     } else if (matchMedia('(max-width: 768px)').matches) {
-      // 7a whoami: short greeting only
       this.textContent = greet;
     } else {
       this.textContent = `${hh}:${mm} ist · ${greet}, from bengaluru`;

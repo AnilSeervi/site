@@ -1,20 +1,8 @@
 /**
- * check-moving.mjs — Phase 6 verification for the MOVING · GARMIN + STRAVA
- * section (<as-moving>) and the home-ticker `moving` item.
- *
- * Pass 1 (live API): whatever /api/moving actually returns right now.
- *   disabled/nulls → the section renders NOTHING (README rule);
- *   real data → the section is visible.
- * Pass 2 (mocked /api/moving + /api/fitness): route etching decoded from a
- *   realistic encoded loop polyline (two stacked paths, runner lapping),
- *   vitals rows exact, 90 bars with mixed buckets + 16ms rise stagger,
- *   RHR dot beating at 60/52 ≈ 1.154s, reduced-motion fallbacks.
- * Pass 3 (mocked ticker): home ticker shows the `moving` item with the
- *   run-with-km copy, then the gym-by-name copy.
+ * check-moving.mjs — the MOVING section (<as-moving>): route etching, vitals,
+ * consistency strip, reduced motion, and the home-ticker `moving` item.
  *
  * Usage: node scripts/check-moving.mjs [base-url] [page-path]
- *   base-url  default http://localhost:4321
- *   page-path default /live (pass /dev-moving while the harness page exists)
  * Env: SHOT_PATH — save a screenshot of the mocked section.
  */
 import { chromium } from 'playwright';
@@ -31,9 +19,7 @@ function check(name, ok, detail = '') {
 
 const text = async (loc) => (await loc.textContent())?.replace(/\s+/g, ' ').trim() ?? '';
 
-// ---------------------------------------------------------------------------
-// mocked payload — a plausible Cubbon-Park-ish loop + 90 mixed days
-// ---------------------------------------------------------------------------
+// mocked payload — an encoded loop polyline + 90 mixed days
 const IST_MIN = 330;
 const istDate = (ms) => new Date(ms + IST_MIN * 60000);
 
@@ -47,7 +33,7 @@ function seeded(a) {
   };
 }
 
-// closed jittered ellipse around Cubbon Park — encodes to a realistic polyline
+// closed jittered ellipse — first and last point must coincide, hence j = 0 there
 const rnd = seeded(7);
 const loopPts = [];
 for (let i = 0; i <= 48; i++) {
@@ -126,7 +112,6 @@ const mockRoutes = async (page) => {
 
 const browser = await chromium.launch();
 
-// ---------------- pass 1 · live API state ----------------
 console.log('\npass 1 · live /api/moving state');
 const real = await fetch(`${BASE}/api/moving`).then((r) => r.json());
 const page1 = await browser.newPage({ viewport: { width: 1000, height: 1200 } });
@@ -145,7 +130,6 @@ if (real.disabled || !Array.isArray(real.days) || real.days.length === 0) {
 }
 await page1.close();
 
-// ---------------- pass 2 · mocked payload ----------------
 console.log('\npass 2 · mocked strava + fitness');
 const page2 = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 await mockRoutes(page2);
@@ -160,7 +144,6 @@ check(
   (await text(page2.locator('as-moving .section-head .label'))) === 'MOVING · GARMIN'
 );
 
-// etching — decoded path inside the viewBox, both paths share d, runner laps
 const dBase = await page2.locator('[data-route-base]').getAttribute('d');
 const dRunner = await page2.locator('[data-route-runner]').getAttribute('d');
 check('base path has a decoded d', !!dBase && dBase.startsWith('M') && dBase.length > 200);
@@ -197,7 +180,6 @@ check(
   await text(page2.locator('[data-live="etch-cap"]'))
 );
 
-// vitals — exact copy
 check(
   'last run row',
   (await text(page2.locator('[data-live="lastrun"]'))) === `12.4 km · 58:12 · 4:41/km — ${latestWeekday}, before the heat`,
@@ -236,7 +218,6 @@ check(
 );
 check('rhr dot is 7×7', dot.size === '7×7');
 
-// consistency strip — 90 bars, mixed buckets, heights, stagger
 const bars = page2.locator('[data-strip] span');
 check('90 bars', (await bars.count()) === 90);
 const barInfo = await page2.locator('[data-strip]').evaluate((strip) => {
@@ -291,7 +272,6 @@ if (shot) {
 }
 await page2.close();
 
-// reduced motion — runner hidden, bars instant, dot static
 const page2r = await browser.newPage({ viewport: { width: 1000, height: 1400 }, reducedMotion: 'reduce' });
 await mockRoutes(page2r);
 await page2r.goto(`${BASE}${PAGE}`, { waitUntil: 'domcontentloaded' });
@@ -309,7 +289,6 @@ check(
 );
 await page2r.close();
 
-// ---------------- pass 3 · home ticker moving item ----------------
 console.log('\npass 3 · home ticker moving item');
 async function tickerShows(page, wantValue, timeoutMs = 25000) {
   const label = page.locator('[data-ticker-label]');
@@ -337,7 +316,6 @@ await page3.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
 check(`ticker cycles to 'moving · ${runValue}'`, await tickerShows(page3, runValue));
 await page3.close();
 
-// gym/racquet copy — name only, no km
 const gymStart = new Date(Date.now() - 20 * 3600000).toISOString(); // ~yesterday-ish, inside 48h
 const gymMock = {
   ...STRAVA_MOCK,
@@ -358,8 +336,8 @@ await page4.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
 check(`ticker gym copy '${gymValue}' (name only, no km)`, await tickerShows(page4, gymValue));
 await page4.close();
 
-// stale activity (>48h) → moving item skipped: with only spotify alive there
-// are <2 live items, so the placeholder rotation must keep running unchanged
+// the other feeds are stubbed dead as well, so fewer than 2 live items remain
+// and the placeholder rotation keeps running — that is what this check reads.
 const stale = {
   ...STRAVA_MOCK,
   latestAny: { ...STRAVA_MOCK.latestAny, startedAt: new Date(Date.now() - 72 * 3600000).toISOString() }

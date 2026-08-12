@@ -1,20 +1,4 @@
-/**
- * MOVING section data model + builder.
- *
- * The feed is Garmin Connect (activitylist-service + activity details GPS),
- * replacing the retired Strava integration — Strava's API now sits behind a
- * paid tier. Everything the section needs is precomputed here so /api/moving
- * ships finished numbers, not raw activities:
- *   latest    — newest run/ride WITH a GPS track (route etching); the Garmin
- *               [lat,lon] points are encoded to a polyline so the client
- *               island decodes it exactly as it did the Strava summary line
- *   latestAny — newest activity of any kind (home ticker)
- *   month     — current-IST-month run km + active days (vitals row)
- *   days      — 90-day consistency strip, one entry per day, oldest→newest
- *
- * Server-only. Pure functions here; the authenticated orchestration (token +
- * fetch) lives in src/lib/garmin.ts.
- */
+/** MOVING payload builder — latest / latestAny / month / 90-day strip from a Garmin activity list. Server-only. */
 import polyline from '@mapbox/polyline';
 import type { GarminActivity } from '~/lib/garmin-core';
 
@@ -55,11 +39,7 @@ export interface MovingDayPart {
   seconds: number;
 }
 
-/**
- * One day of the consistency strip. `date`/`seconds`/`bucket` drive the bar
- * itself; the rest is detail for the strip's hover readout — all optional and
- * absent on rest days, so 51-of-90 empty days cost nothing in the payload.
- */
+/** One day of the consistency strip; the optional detail fields are absent on rest days. */
 export interface MovingDay {
   date: string;
   seconds: number;
@@ -68,9 +48,9 @@ export interface MovingDay {
   count?: number;
   /** per-bucket seconds, dominant first — parts[0].bucket IS `bucket` */
   parts?: MovingDayPart[];
-  /** activity names, chronological + deduped, at most 2 (count carries the rest) */
+  /** activity names, deduped, at most 2 — `count` carries the rest */
   names?: string[];
-  /** total distance that day, km to 1dp — absent when nothing carried distance */
+  /** day's distance, km to 1dp */
   km?: number;
   /** pace over the day's run legs, "m:ss" — run-dominant days only */
   pace?: string;
@@ -84,8 +64,6 @@ export interface MovingPayload {
 }
 
 // ---- Garmin activityType.typeKey → bucket -------------------------------
-// running family → run; strength/HIIT/crossfit → lift; racket sports → racquet;
-// everything else that moved (rides, walks, swims, hikes…) → other.
 const RUN_TYPES = new Set([
   'running',
   'trail_running',
@@ -138,12 +116,12 @@ export function bucketFor(typeKey: string): Bucket {
   return 'other';
 }
 
-/** run or ride → carries a route worth etching / a km-leading ticker line */
+/** run or ride → carries a route worth etching */
 export function isRunOrRide(typeKey: string): boolean {
   return RUN_TYPES.has(typeKey) || RIDE_TYPES.has(typeKey);
 }
 
-// ---- formatters (shared shapes with the old Strava lib) -----------------
+// ---- formatters ---------------------------------------------------------
 
 /** "m:ss" under an hour, "h:mm:ss" above */
 function fmtDuration(totalSeconds: number): string {
@@ -154,7 +132,7 @@ function fmtDuration(totalSeconds: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
 
-/** pace over meters, "4:41"; null when distance is degenerate */
+/** seconds + metres → pace per km, "4:41"; null under 50 m */
 function fmtPace(movingSeconds: number, meters: number): string | null {
   if (!meters || meters < 50) return null;
   const secPerKm = movingSeconds / (meters / 1000);
@@ -187,10 +165,7 @@ function activityDay(a: GarminActivity): string | null {
   return null;
 }
 
-/**
- * Assemble the Moving payload from a newest-first activity list plus the GPS
- * track of the chosen latest run/ride (already fetched by the orchestrator).
- */
+/** Assemble the Moving payload from a newest-first activity list + the chosen GPS track. */
 export function buildMovingPayload(
   acts: GarminActivity[],
   gps: GarminActivity | null,
@@ -240,12 +215,10 @@ export function buildMovingPayload(
   };
 
   // ---- 90-day consistency strip, oldest → newest ----
-  // Aggregated per IST day: the bar needs `seconds` + the dominant bucket, the
-  // hover readout needs the bucket split, the names and the distance/pace.
   interface DayAgg {
     seconds: number;
     byBucket: Record<Bucket, number>;
-    /** distinct name → its total seconds, so names can be ranked like buckets */
+    /** name → total seconds, so names rank like buckets */
     byName: Map<string, number>;
     count: number;
     meters: number;
@@ -273,8 +246,7 @@ export function buildMovingPayload(
     entry.byBucket[bucketFor(a.typeKey)] += a.durationSeconds;
     entry.count += 1;
     entry.meters += a.distanceMeters;
-    // Garmin auto-names repeat across same-day sessions — fold them together so
-    // three "bengaluru running" legs read as one name, not three
+    // Garmin auto-names repeat within a day — fold same-name legs into one entry
     const name = a.activityName.trim().toLowerCase();
     if (name) entry.byName.set(name, (entry.byName.get(name) ?? 0) + a.durationSeconds);
     if (RUN_TYPES.has(a.typeKey)) {
@@ -292,7 +264,7 @@ export function buildMovingPayload(
       days.push({ date, seconds: 0, bucket: 'rest' });
       continue;
     }
-    // dominant-first split; the sort is stable, so BUCKET_ORDER breaks ties
+    // sort is stable, so the BUCKET_ORDER filter above breaks equal-seconds ties
     const parts: MovingDayPart[] = BUCKET_ORDER.filter((b) => entry.byBucket[b] > 0)
       .map((b) => ({ bucket: b, seconds: Math.round(entry.byBucket[b]) }))
       .sort((x, y) => y.seconds - x.seconds);
@@ -303,17 +275,13 @@ export function buildMovingPayload(
       bucket,
       count: entry.count,
       parts,
-      // ranked by time, like `parts` — so the names read in the same order as
-      // the buckets beside them. Two is all the readout line has room for.
       names: [...entry.byName.entries()]
         .sort((x, y) => y[1] - x[1])
         .slice(0, 2)
         .map(([name]) => name)
     };
-    // Distance is the day's total, EXCEPT on run-dominant days where it's the
-    // run's own — there it sits beside `pace`, and the two must agree.
-    // 500m floor either way: Garmin logs incidental metres for indoor sessions,
-    // and `· 0.1 km` next to a strength workout is noise, not information.
+    // run-dominant days use run metres only, so km and pace agree; others total.
+    // 500 m floor: Garmin logs incidental metres for indoor sessions.
     const meters = bucket === 'run' ? entry.runMeters : entry.meters;
     if (meters >= 500) day.km = km1(meters);
     if (bucket === 'run') {

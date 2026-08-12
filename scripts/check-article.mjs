@@ -1,3 +1,5 @@
+// check-article.mjs — asserts the article progress-bar fill grows on scroll and that pre-block
+// copy sets then clears data-copied. Run: node scripts/check-article.mjs <screenshot-path>
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -7,17 +9,13 @@ const ctx = await browser.newContext({
   permissions: ['clipboard-read', 'clipboard-write']
 });
 const page = await ctx.newPage();
-// domcontentloaded + an explicit settle, not networkidle: the dev server never
-// goes quiet for 500ms straight (HMR socket + the views POST), so networkidle
-// times out at 30s. Same house pattern as check-moving / check-live.
+// domcontentloaded + explicit settle, not networkidle: the dev server never goes quiet for
+// 500ms (HMR socket + views POST), so networkidle times out at 30s.
 await page.goto('http://localhost:4321/writing/event-loop-in-javascript', {
   waitUntil: 'domcontentloaded'
 });
 await page.waitForTimeout(700);
 
-// the `NN% read` readout is gone — it scrolled out of view before it read
-// anything but 0%. The fixed bar is the only progress indicator now, so the
-// fill width is what gets asserted, at rest and after scrolling.
 const fill = () => page.evaluate(() => document.querySelector('as-progress .fill').style.width);
 const initial = await fill();
 

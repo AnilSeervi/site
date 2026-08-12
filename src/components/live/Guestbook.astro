@@ -1,15 +1,6 @@
 ---
-/**
- * GUESTBOOK section (frame 6d, prototype lines ~431-455) — self-contained:
- * ships its own header (the right meta toggles link ↔ 'signed in as <login>',
- * which Section.astro's fixed markup can't do), the two-column grid, and the
- * <as-guestbook>/<as-doodle> island import.
- *
- * SSR placeholders are the two design quotes; the island swaps them for
- * GET /api/guestbook and keeps them if the fetch fails. Styles are is:global
- * scoped under as-guestbook because the island creates entry nodes at runtime
- * (Astro's scoped cid wouldn't reach them).
- */
+// Styles must stay is:global: the island builds entry nodes at runtime, which
+// Astro's scoped class never reaches.
 ---
 
 <as-guestbook id="guestbook" data-section="guestbook">
@@ -64,7 +55,6 @@
     display: block;
   }
 
-  /* section header — Section.astro pattern, meta toggled by the island */
   as-guestbook .gb-head {
     display: flex;
     align-items: baseline;
@@ -109,7 +99,6 @@
     align-items: start;
   }
 
-  /* left — text entry (writing-index search box styling) + entries */
   as-guestbook .gb-say {
     display: flex;
     align-items: center;
@@ -188,7 +177,7 @@
     font-family: var(--font-mono);
     font-size: 11.5px;
     color: var(--faint);
-    /* the design's byline rhythm is lowercase regardless of API casing */
+    /* bylines render lowercase regardless of API casing */
     text-transform: lowercase;
   }
 
@@ -241,7 +230,7 @@
     color: var(--text-hi);
   }
 
-  /* ================= mobile (7d) ================= */
+  /* ================= mobile ================= */
   @media (max-width: 768px) {
     as-guestbook .gb-grid {
       grid-template-columns: 1fr;
@@ -263,7 +252,6 @@
     as-guestbook .gb-draw-label {
       font-size: 11px;
     }
-    /* finger-drawing pad fills the column (330×150 in 7d) */
     as-guestbook as-doodle canvas {
       width: 100%;
       height: 150px;

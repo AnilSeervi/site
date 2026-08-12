@@ -14,16 +14,15 @@ function json(body: unknown, sMaxAge: number): Response {
 }
 
 export const GET: APIRoute = async () => {
-  // No Turso kv → no stored Garmin tokens to refresh from. Section hides.
+  // no db → no stored Garmin tokens to refresh from; the island hides the section
   if (!isDbConfigured) return json({ disabled: true }, 60);
 
   try {
-    // Garmin is gentler than Strava on rate limits, but two calls per hit
-    // (list + GPS track) still warrant a real cache window.
+    // two upstream calls per hit (list + GPS track) — 900s cache window
     return json(await getGarminMoving(), 900);
   } catch {
-    // Auth/upstream failure (expired tokens, MFA, Garmin down…) — degrade,
-    // never 5xx. Empty payload reads as "no data": the island hides Moving.
+    // auth/upstream failure must not 5xx — an empty payload reads as "no data"
+    // and the island hides the section
     return json({ latest: null, latestAny: null, month: null, days: [] }, 60);
   }
 };

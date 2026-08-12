@@ -1,10 +1,6 @@
 /**
- * MyAnimeList fetchers (refresh-token OAuth flow, ported from the old
- * Next.js site's lib/mal.ts).
- *
- * MAL may rotate the refresh token on each refresh; like the old site we
- * intentionally do NOT persist the rotated token — we only use the returned
- * access token for the lifetime of the request.
+ * MyAnimeList fetchers (refresh-token OAuth flow).
+ * MAL may rotate the refresh token per refresh; the rotated token is not persisted.
  */
 
 const TOKEN_ENDPOINT = 'https://myanimelist.net/v1/oauth2/token';
@@ -92,14 +88,7 @@ export async function getWatching(accessToken: string): Promise<MALWatching | nu
   };
 }
 
-/** Lifetime anime statistics. */
-/**
- * Most recently updated 'reading' manga.
- *
- * Manga is MAL's job, not Hardcover's — the Hardcover shelf is books, and the
- * sixteen volumes that used to sit on it were deleted from that account so the
- * two sources can't disagree about what's been read.
- */
+/** Most recently updated 'reading' manga. */
 export async function getManga(accessToken: string): Promise<MALManga | null> {
   const data = await malFetch<{
     data?: Array<{
@@ -117,7 +106,7 @@ export async function getManga(accessToken: string): Promise<MALManga | null> {
   return {
     title: entry.node.title,
     ch: entry.list_status?.num_chapters_read ?? 0,
-    // 0 means "still running" in MAL's data, same as with episode counts
+    // MAL reports 0 for unfinalized chapter counts, same as episodes.
     chTotal: entry.node.num_chapters ? entry.node.num_chapters : null,
     vol: entry.list_status?.num_volumes_read ?? 0
   };

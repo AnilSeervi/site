@@ -19,11 +19,7 @@ export const GET: APIRoute = async () => {
     const { status, degraded } = await getSpotifyStatus();
     return json(status, degraded ? 60 : 30);
   } catch {
-    // Upstream failure (token exchange etc.) — degrade, never 5xx. `error`
-    // matters: without it this body is byte-identical to a genuinely quiet
-    // evening, so the page hides the section and a revoked refresh token
-    // looks exactly like nobody listening to anything. No detail is carried —
-    // the reason lives in the server log, not in a public response.
+    // Degrade, never 5xx. `error` distinguishes failure from nothing-playing; no detail leaked.
     return json({ error: true, isPlaying: false, now: null, last: null }, 60);
   }
 };

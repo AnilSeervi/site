@@ -1,27 +1,8 @@
 /**
- * <as-home-data> — invisible one-shot fetcher for the home page.
- *
- * Mounted near the top of index.astro (renders nothing); on connect it
- * fetches /api/github and fills the SSR placeholders in place:
- *   - proof strip: [data-proof=stars|repos|followers|pushed]
- *   - hero sparkline: data-values on <as-spark data-kind="hero">
- *   - work-row sparklines: data-values on each <as-spark data-repo> whose
- *     repo has a series in `sparks` (absent → the synthetic series stays)
- *
- * Query scope: all lookups go through `this.closest('main') ?? document`.
- * During a view transition the outgoing and incoming page trees briefly
- * coexist, so scoping to the island's own <main> guarantees we only ever
- * write into the page this island was rendered with. The element reconnects
- * fresh on every view-transition arrival, so each home view refetches
- * (cheap — the endpoint is CDN-cached via s-maxage).
- *
- * Degradation: fetch failure or {disabled:true} → the SSR placeholders remain,
- * with one exception — the hero sparkline is always told the fetch is over, so
- * its boot loader can drop the caption instead of blinking a fetch caret at a
- * request that will never answer (see #settleSpark and design_handoff_loader).
- * Null fields are skipped individually, except lastPush: null, which hides the
- * whole `pushed …` chip (pulse included) because "pushed <nothing>" would be
- * worse than absence.
+ * <as-home-data> — invisible one-shot fetcher; fills index.astro's SSR
+ * placeholders from /api/github. Lookups are scoped to this island's own <main>
+ * because the outgoing and incoming page trees coexist during a view transition.
+ * On failure the placeholders stay, but the hero spark is still settled.
  */
 
 interface GitHubData {
@@ -49,9 +30,8 @@ class AsHomeData extends HTMLElement {
   }
 
   /**
-   * Hand the hero sparkline its series, or `[]` for "asked, nothing to draw".
-   * The distinction the loader needs is *answered* vs *still in flight*, and an
-   * absent attribute is the latter — so every exit from #load comes through here.
+   * Hand the hero spark its series, or `[]` for "answered, nothing to draw": an
+   * absent attribute reads as in-flight, so every exit from #load must call this.
    */
   #settleSpark(weeks: number[] | null | undefined) {
     const usable = Array.isArray(weeks) && weeks.length > 1 ? weeks : [];
@@ -80,8 +60,6 @@ class AsHomeData extends HTMLElement {
     };
 
     if (typeof data.devfolioStars === 'number') set('stars', `★${data.devfolioStars}`);
-    // /work quotes DevFolio's forks beside its stars. Both were hardcoded and
-    // both had drifted — in opposite directions — so the page now asks GitHub.
     if (typeof data.devfolioForks === 'number') set('forks', String(data.devfolioForks));
     if (typeof data.repoCount === 'number') set('repos', String(data.repoCount));
     if (typeof data.followers === 'number') set('followers', String(data.followers));
@@ -94,10 +72,8 @@ class AsHomeData extends HTMLElement {
         pushed.textContent = `pushed ${data.lastPush.ago}`;
         chip.style.removeProperty('visibility');
       } else {
-        // No public push in GitHub's event window — hide text and pulse.
-        // visibility (not display): the chip is the tallest item in the
-        // baseline-aligned strip, so display:none would shrink the row 1.5px
-        // and shift everything below it.
+        // No public push in GitHub's event window. visibility, not display: the
+        // chip is the strip's tallest item, so display:none shifts the row 1.5px.
         chip.style.visibility = 'hidden';
       }
     }
@@ -110,7 +86,7 @@ class AsHomeData extends HTMLElement {
       if (Array.isArray(series) && series.length > 1) {
         el.setAttribute('data-values', JSON.stringify(series));
       }
-      // absent/failed repo stats → keep the synthetic series (by design)
+      // no usable series for this repo → leave the placeholder as rendered
     });
   }
 }

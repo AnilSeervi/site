@@ -1,15 +1,9 @@
 /**
- * <as-typeon> — hero h1 typing animation (frame 6a).
- * 75ms/char after a 450ms delay, 11 chars total: `Anil ` then `<em>Seervi</em>`.
- * SSR renders the full name (SEO/no-JS); JS clears and types unless
- * prefers-reduced-motion. The brass caret (sibling span) blinks throughout.
- *
- * Announces completion twice over, because the sparkline below waits for it
- * (design_handoff_loader — the caption only appears once the name is done):
- * `data-typed` for anyone who mounts late or misses the event, and a bubbling
- * `as-hero:typed` for anyone already listening. The event is deferred a
- * microtask so the synchronous bail-outs below still reach a listener that
- * hasn't been attached yet — <as-spark> upgrades after this element.
+ * <as-typeon> — hero h1 typing animation (75ms/char after 450ms); SSR renders the
+ * full name, JS retypes it unless prefers-reduced-motion. All timers are cleared
+ * on disconnect. Completion signals twice: `data-typed` for late mounts, plus a
+ * bubbling `as-hero:typed` deferred one microtask so the synchronous bail-outs
+ * below still reach <as-spark>, which upgrades after this element.
  */
 class AsTypeon extends HTMLElement {
   #timers: ReturnType<typeof setTimeout | typeof setInterval>[] = [];

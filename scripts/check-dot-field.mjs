@@ -1,3 +1,5 @@
+// check-dot-field.mjs — <as-dot-field> pixel sampling (baseline/hover/resize), rAF throttling,
+// and listener leaks over 3 soft navs. Run: node scripts/check-dot-field.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -35,7 +37,6 @@ await page.waitForTimeout(300);
 
 const out = {};
 
-// ---- 1. canvas geometry + backing store + noDots ----
 out.geometry = await page.evaluate(() => {
   const cv = document.querySelector('as-dot-field canvas');
   if (!cv) return { found: false };
@@ -65,14 +66,12 @@ const HOT = [637, 403]; // dot we point at (g = 1)
 const MID = [845, 403]; // ~208px away: g ~ .11 -> cream, brightened
 const FAR = [13, 13]; // ~733px away: g ~ 0 -> baseline
 
-// ---- 2. baseline ----
 out.baseline = {
   hot: await samplePixel(...HOT),
   far: await samplePixel(...FAR),
   gap: await samplePixel(HOT[0] + 13, HOT[1] + 13) // between dots: must be transparent
 };
 
-// ---- 3. hover: real mouse move onto the HOT dot ----
 await page.mouse.move(HOT[0], HOT[1]);
 await page.waitForTimeout(150);
 out.hover = {
@@ -81,7 +80,6 @@ out.hover = {
   far: await samplePixel(...FAR)
 };
 
-// ---- 4. rAF throttle: burst 60 synthetic pointermoves in one task ----
 out.rafBurst = await page.evaluate(() => {
   const before = window.__lc.raf;
   for (let i = 0; i < 60; i++) {
@@ -93,12 +91,10 @@ out.rafBurst = await page.evaluate(() => {
 });
 await page.waitForTimeout(100);
 
-// ---- 5. move away -> reverts ----
 await page.mouse.move(5, 780);
 await page.waitForTimeout(150);
 out.afterAway = { hot: await samplePixel(...HOT) };
 
-// ---- 6. resize ----
 await page.setViewportSize({ width: 900, height: 700 });
 await page.waitForTimeout(300);
 out.afterResize = await page.evaluate(() => {
@@ -112,7 +108,6 @@ out.afterResize = await page.evaluate(() => {
 });
 out.afterResize.dot = await samplePixel(13, 13);
 
-// ---- 7. leaks: writing -> home x3 via client-side nav (ClientRouter) ----
 const counts = () =>
   page.evaluate(() =>
     Object.fromEntries(
@@ -139,7 +134,6 @@ for (let i = 0; i < 3; i++) {
 }
 out.leak.sameWindow = await page.evaluate(() => !!window.__lc);
 
-// ---- 8. after nav cycles: still one canvas, no .dot-grid, still draws ----
 out.final = await page.evaluate(() => ({
   canvases: document.querySelectorAll('as-dot-field canvas').length,
   dotGridPresent: !!document.querySelector('.dot-grid'),

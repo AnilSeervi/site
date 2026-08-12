@@ -1,13 +1,4 @@
-/**
- * GET /api/fitness → { vo2max, restingHr, source: 'garmin' | 'file' | 'none' }
- *
- * Garmin is attempted only when env credentials or kv-stored tokens exist.
- * ANY Garmin failure (auth drift, MFA challenge, upstream 5xx) falls back to
- * the hand-editable data/fitness.json; if even that is unreadable, honest
- * nulls with source 'none'. Never 5xx.
- *
- * Cache: garmin 86400 (vitals drift slowly) · file 3600 · none 60.
- */
+/** GET /api/fitness. s-maxage: garmin 86400 · file 3600 · none 60. Degrades, never 5xx. */
 import type { APIRoute } from 'astro';
 import { readFile } from 'node:fs/promises';
 import { hasGarminCredentials, hasStoredGarminTokens, getGarminFitness } from '../../lib/garmin';
@@ -19,7 +10,7 @@ export const prerender = false;
 interface FitnessBody {
   vo2max: number | null;
   restingHr: number | null;
-  /** Garmin's fitness rating for the VO2max (age+sex Cooper norms); garmin-only */
+  /** Garmin's fitness rating for the VO2max; garmin-only */
   vo2maxRating: string | null;
   source: 'garmin' | 'file' | 'none';
 }
@@ -37,10 +28,7 @@ function asVital(x: unknown): number | null {
   return typeof x === 'number' && Number.isFinite(x) ? x : null;
 }
 
-/**
- * data/fitness.json values. Prefers a fresh read from disk (picks up hand
- * edits in dev) and falls back to the bundled build-time snapshot (Vercel).
- */
+/** data/fitness.json — fresh disk read (picks up dev edits), else the snapshot. */
 async function readFitnessFile(): Promise<{ vo2max: number | null; restingHr: number | null } | null> {
   try {
     const raw = await readFile(new URL('../../../data/fitness.json', import.meta.url), 'utf8');
@@ -60,23 +48,19 @@ async function readFitnessFile(): Promise<{ vo2max: number | null; restingHr: nu
 }
 
 export const GET: APIRoute = async () => {
-  // 1. Garmin — only worth attempting with env creds or bootstrapped tokens.
   try {
     if (hasGarminCredentials || (await hasStoredGarminTokens())) {
       const { vo2max, restingHr, vo2maxRating } = await getGarminFitness();
-      // Both null means Garmin had nothing useful — prefer the curated file.
       if (vo2max !== null || restingHr !== null) {
         return json({ vo2max, restingHr, vo2maxRating, source: 'garmin' }, 86400);
       }
     }
   } catch {
-    // Any failure (MFA required, token drift, upstream down) → file fallback.
+    // Any Garmin failure (MFA, token drift, upstream down) → file fallback.
   }
 
-  // 2. Hand-editable file fallback (no age/sex on hand → no rating).
   const file = await readFitnessFile();
   if (file) return json({ ...file, vo2maxRating: null, source: 'file' }, 3600);
 
-  // 3. Honest nulls.
   return json({ vo2max: null, restingHr: null, vo2maxRating: null, source: 'none' }, 60);
 };

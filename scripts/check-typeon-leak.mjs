@@ -1,5 +1,5 @@
-// Leak check for <as-typeon>: navigate away mid-typing via the client router,
-// return, and verify no stray timers and no double-typing glitches.
+// check-typeon-leak.mjs — navigates away mid-typing and back; asserts no stray typeon timers
+// and no double-typing. Run: node scripts/check-typeon-leak.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -7,8 +7,7 @@ const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
 const page = await ctx.newPage();
 
 await page.addInitScript(() => {
-  // Track every timer with its callback source; ClientRouter navigations keep
-  // the same document, so these patches survive page swaps.
+  // ClientRouter navs keep the same document, so these timer patches survive page swaps.
   window.__timers = { timeouts: new Map(), intervals: new Map() };
   const oST = window.setTimeout.bind(window);
   const oSI = window.setInterval.bind(window);
@@ -52,7 +51,7 @@ await page.addInitScript(() => {
 const out = {};
 
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
-// wait until mid-typing (~600ms after the island cleared; typing runs 450-1275ms)
+// mid-typing window: the island types between 450ms and 1275ms after load
 await page.waitForFunction(() => {
   const el = document.querySelector('[data-typeon]');
   return el && el.textContent.length >= 1 && el.textContent.length < 11;
@@ -62,7 +61,6 @@ out.midTypingText = await page.evaluate(
 );
 out.typeonTimersDuringTyping = await page.evaluate(() => window.__typeonTimers());
 
-// click a real nav link mid-typing
 await Promise.all([
   page.waitForURL('**/work**'),
   page.click('header nav a[href="/work"], header nav a[href="/work/"]')
@@ -71,7 +69,6 @@ await page.waitForTimeout(400);
 out.sameDocumentAfterNav = await page.evaluate(() => !!window.__timers); // patches survived => VT swap
 out.typeonTimersAfterLeaving = await page.evaluate(() => window.__typeonTimers());
 
-// go back home; record the full text timeline to catch double-typing glitches
 await page.evaluate(() => {
   window.__tl = [];
   const iv = setInterval(() => {
@@ -87,7 +84,6 @@ await Promise.all([
 await page.waitForTimeout(2600);
 
 const tl = await page.evaluate(() => window.__tl);
-// analyze: count "resets" (length drops) after typing began, and glitches
 let resets = 0;
 let glitches = [];
 for (let i = 1; i < tl.length; i++) {

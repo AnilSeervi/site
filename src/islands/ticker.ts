@@ -1,27 +1,12 @@
-/**
- * <as-ticker> — home live ticker (frame 6a, `03 · LIVE`).
- * Cycles label/value pairs every 3.4s with a .26s opacity dip (the spans carry
- * `transition: opacity .25s ease`). Items come from the data-items JSON
- * attribute.
- *
- * Loading (design_handoff_loading_states 8b): the SSR state is the waiting
- * line — an inert dot + `❯ listening for signals…`, carried by
- * `data-load="waiting"`. Never a faked feed value.
- *
- * With the `data-live` attribute present it fetches /api/spotify, /api/github,
- * /api/moving and /api/mal (allSettled — one dead feed never blocks the rest)
- * and builds live items from whatever answered. Once ≥1 real item resolves the
- * island leaves the waiting state, lights the pulse, shows the label and
- * rotates (a lone item just sits). Nothing answered → the waiting line stays;
- * a feed older than ~48h simply never joins the cycle.
- */
+// <as-ticker> — cycles the data-items label/value pairs; with data-live it also
+// fetches the feeds. The 260ms dip must stay ≥ the spans' `transition: opacity .25s`.
 
 type Item = [string, string];
 
 const FRESH_MS = 48 * 3600 * 1000; // "recent enough to brag about" window
 const IST_OFFSET_MIN = 330; // relative-time buckets keep the author's clock
 
-/** Garmin activity types that read as distance efforts (show the km prefix) */
+/** Garmin sportType values that get the km prefix */
 const KM_SPORTS = new Set([
   'running',
   'trail_running',
@@ -39,11 +24,7 @@ const KM_SPORTS = new Set([
   'e_bike_mountain'
 ]);
 
-/**
- * 'this morning' / 'yesterday evening' style bucket, IST wall clock.
- * null when the activity is older than yesterday (the 48h check upstream
- * already guards staleness; this guards the copy).
- */
+/** 'this morning' / 'yesterday evening' bucket on the IST wall clock; null past yesterday. */
 function relativeBucket(startedAt: string): string | null {
   const t = Date.parse(startedAt);
   if (Number.isNaN(t)) return null;
@@ -110,7 +91,7 @@ class AsTicker extends HTMLElement {
     }, 3400);
   }
 
-  /** leave the waiting line — a real signal answered; light the dot + rotate */
+  /** swap the SSR waiting line for real items and start rotating */
   #activate(items: Item[]) {
     this.#items = items;
     this.#idx = 0;
@@ -137,13 +118,12 @@ class AsTicker extends HTMLElement {
 
     const items: Item[] = [];
 
-    // listening — now playing, else last played, else skip
     const track = spotify?.now ?? spotify?.last;
     if (track?.title && track?.artist) {
       items.push(['listening', `${track.title} — ${track.artist}`]);
     }
 
-    // shipping — only a fresh push (the API's ≤48h-ish `ago` buckets)
+    // /api/github reports `ago` as a bucket string, not a timestamp — match, don't parse.
     const push = github?.lastPush;
     if (push?.repo && (push.ago === 'earlier today' || push.ago === 'yesterday')) {
       const short = String(push.repo).split('/').pop()!.toLowerCase();
@@ -151,8 +131,6 @@ class AsTicker extends HTMLElement {
       items.push(['shipping', `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`]);
     }
 
-    // moving — latest Garmin activity of any kind, skipped past 48h (or when
-    // the feed is disabled). Runs/rides lead with km; gym/racquet by name.
     const act = moving?.disabled ? null : moving?.latestAny;
     if (
       act?.name &&
@@ -169,20 +147,18 @@ class AsTicker extends HTMLElement {
       }
     }
 
-    // watching — same 48h freshness rule: a months-old "episode 5" isn't live
     const w = mal?.watching;
     if (w?.title && w.updatedAt && Date.now() - Date.parse(w.updatedAt) <= FRESH_MS) {
       const ep = w.epTotal ? `episode ${w.ep} of ${w.epTotal}` : `episode ${w.ep}`;
       items.push(['watching', `${w.title} — ${ep}`]);
     }
 
-    // reading — Berserk earns its epithet; anything else is just the title
     const r = mal?.reading;
     if (r?.title) {
       items.push(['reading', r.title === 'Berserk' ? `${r.title} — the long haul` : r.title]);
     }
 
-    // nothing answered (or all feeds stale) → keep the waiting line (8b)
+    // nothing answered, or the subtree was swapped away mid-flight → leave the SSR waiting line
     if (!items.length || !this.isConnected) return;
     this.#activate(items);
   }

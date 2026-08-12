@@ -1,24 +1,5 @@
-/**
- * <as-reading> — the READING · HARDCOVER section (design_handoff_reading).
- *
- * One island owns both halves, because they share nothing with anything else on
- * /live: the cover's pointer tilt, and the shelf's tip / pick / reshelve state.
- * Everything is DOM + CSS transforms — no canvas, no library. The keyframes
- * (as-pick, as-shelve, as-float) live in the component's <style>; this only
- * moves state between them.
- *
- * State, per the handoff: `out` is the books in hand (max two, insertion
- * ordered), `back` is books mid-reshelve (each clears on a 640ms timer so it
- * stays above its neighbours until it has slid home). Every timer is tracked
- * and cleared on disconnect — view transitions can unmount mid-animation.
- *
- * The shelf was fitted to 752px at build. On a phone the row is a third of
- * that, so the fit is re-run against the row's real width and the overflow is
- * hidden — one shelf at any width, which is the rule the fit exists to keep.
- *
- * Reduced motion: no tilt, no pickup. Hover and focus still drive the caption,
- * and the notes render as a plain list under the shelf (CSS).
- */
+// <as-reading>: cover pointer-tilt + shelf tip/pick/reshelve. Keyframes live in the component <style>.
+// Every timer is tracked and cleared on disconnect — view transitions can unmount mid-animation.
 
 import { isMobile } from './breakpoint';
 
@@ -95,8 +76,7 @@ class AsReading extends HTMLElement {
       // −1 … 1 from the cover's centre
       const px = (ev.clientX - r.left) / r.width - 0.5;
       const py = (ev.clientY - r.top) / r.height - 0.5;
-      // short transition while the pointer drives it; the CSS 500ms settle
-      // takes over the moment we stop overriding it on leave
+      // inline transition while the pointer drives; clearing it on leave restores the CSS settle
       cover.style.transition = 'transform 160ms ease-out, box-shadow 160ms ease-out';
       cover.style.transform = `rotateY(${px * TILT_Y * 2}deg) rotateX(${-py * TILT_X * 2}deg) translateZ(14px)`;
       cover.style.boxShadow = '0 26px 55px rgba(0, 0, 0, 0.6)';
@@ -139,10 +119,7 @@ class AsReading extends HTMLElement {
     this.#on(row, 'focusout', () => this.#speak(null));
   }
 
-  /**
-   * Re-run the build-time fit against the row's real width. Books that no
-   * longer fit are hidden rather than wrapped — the shelf is one shelf.
-   */
+  /** Re-run the build-time fit against the row's real width; books that no longer fit are hidden, never wrapped. */
   #refit() {
     const row = this.#row;
     if (!row) return;
@@ -154,8 +131,7 @@ class AsReading extends HTMLElement {
     let used = 0;
     let items = 0;
     const visible: HTMLButtonElement[] = [];
-    // walk the row in order so the divider's width is spent like a book's —
-    // the in-progress group is first, so it survives a narrow shelf
+    // DOM order matters: the divider spends width like a book, and the in-progress group comes first
     for (const el of [...row.children] as HTMLElement[]) {
       const isBook = el.classList.contains('book');
       const w = isBook
@@ -164,7 +140,6 @@ class AsReading extends HTMLElement {
       const next = used + w + (items ? gap : 0);
       const fits = next <= budget;
       if (!isBook) {
-        // a divider with nothing after it is just a gap at the end
         el.hidden = !fits;
         if (fits) {
           used = next;
@@ -192,7 +167,6 @@ class AsReading extends HTMLElement {
       cap.dataset.idle = idle;
       if (!cap.hasAttribute('data-active')) cap.textContent = idle;
     }
-    // the shelf may have narrowed past two-in-hand
     while (this.#out.length > this.#maxOut()) this.#reshelve(this.#out[0]!, true);
     if (this.#out.length) this.#place();
   }
@@ -202,12 +176,10 @@ class AsReading extends HTMLElement {
     return isMobile() ? 1 : 2;
   }
 
-  /** caption slot: names the book, or falls back to the idle line */
   #speak(book: HTMLButtonElement | null): void {
     const cap = this.#caption;
     if (!cap) return;
-    // sticky while something is in hand — the shelf keeps talking about the
-    // book you're holding until you hover another one that's also out
+    // sticky while a book is in hand: falls back to the held book, not the idle line
     if (!book) {
       const held = this.#out.at(-1);
       if (held) return this.#speak(held);
@@ -215,8 +187,7 @@ class AsReading extends HTMLElement {
       cap.textContent = cap.dataset.idle ?? '';
       return;
     }
-    // while a book is out the caption belongs to it — except for the
-    // in-progress group, which stays live because it's still clickable
+    // while a book is out the caption is its own, except the in-progress group which stays clickable
     if (this.#out.length && !book.dataset.state && book.dataset.group !== 'reading') return;
 
     const { title = '', author = '', note = '', group } = book.dataset;
@@ -229,8 +200,6 @@ class AsReading extends HTMLElement {
   }
 
   #toggle(book: HTMLButtonElement) {
-    // an in-progress book isn't taken down — it comes up into the current-read
-    // slot, which is the only place its cover and note have room
     if (book.dataset.group === 'reading') return this.#promote(book);
     if (this.#reduced) return this.#speak(book);
     if (book.dataset.state === 'out') this.#reshelve(book);
@@ -283,14 +252,12 @@ class AsReading extends HTMLElement {
     for (const b of this.#books) b.removeAttribute('aria-current');
     book.setAttribute('aria-current', 'true');
 
-    // a short fade so the swap reads as one motion rather than four
     panel.setAttribute('data-swapping', '');
     this.#after(220, () => panel.removeAttribute('data-swapping'));
     this.#speak(book);
   }
 
   #pick(book: HTMLButtonElement) {
-    // two in hand is the ceiling (one on a phone); the next sends the oldest home
     while (this.#out.length >= this.#maxOut()) this.#reshelve(this.#out[0]!);
 
     book.dataset.state = 'out';
@@ -329,11 +296,7 @@ class AsReading extends HTMLElement {
     if (!silent) this.#speak(null);
   }
 
-  /**
-   * Lift the held books to the row's centre. The handoff's 376px is half of its
-   * 752px row; deriving it from the live row keeps the pickup centred at any
-   * width instead of flying off a narrow shelf.
-   */
+  /** Lift the held books to the live row's centre — derived, not hardcoded, so it stays centred at any width. */
   #place() {
     const row = this.#row;
     if (!row) return;
@@ -342,9 +305,8 @@ class AsReading extends HTMLElement {
     const spread = Math.min(PAIR_GAP, width * 0.14);
 
     this.#out.forEach((book, i) => {
-      // offsetLeft, not getBoundingClientRect: the second pick re-places both
-      // books, and a rect reads the position the first one has *already* been
-      // translated to — so its next offset compounds and it walks off the shelf
+      // offsetLeft is transform-independent; a rect reads the already-translated
+      // position, so on the second pick the offset compounds and the book walks off the shelf
       const from = book.offsetLeft - row.offsetLeft + book.offsetWidth / 2;
       const to = this.#out.length === 1 ? centre : centre + (i === 0 ? -spread : spread);
       book.style.setProperty('--tx', `${Math.round(to - from)}px`);
@@ -358,8 +320,7 @@ class AsReading extends HTMLElement {
     for (const held of this.#out) {
       const i = this.#visible.indexOf(held);
       if (i < 0) continue;
-      // never across the bookend — the in-progress group is a separate run of
-      // books and doesn't feel a gap opening on the other side of the divider
+      // never lean across the bookend: the two groups are separate runs of books
       const near = (b?: HTMLButtonElement) => b && !b.dataset.state && b.dataset.group === held.dataset.group;
       const left = this.#visible[i - 1];
       const right = this.#visible[i + 1];

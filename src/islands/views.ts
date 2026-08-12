@@ -1,10 +1,5 @@
-/**
- * <as-views> — silent page-view tracker. Renders nothing.
- *
- * Mounted once per page in Base.astro; the custom element reconnects on
- * every view-transition arrival, so connectedCallback fires exactly once
- * per page view. Fire-and-forget POST to /api/views — failures are silent.
- */
+// <as-views> — renders nothing. Reconnects on every view-transition arrival,
+// so connectedCallback fires once per page view.
 class AsViews extends HTMLElement {
   #tracked = false;
 

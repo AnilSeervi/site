@@ -2,12 +2,7 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-/**
- * Current weather in Bengaluru via Open-Meteo (no API key required).
- * Returns { temp: number, phrase: string } — temp is a rounded integer °C,
- * phrase is a short lowercase line in the site's voice mapped from the
- * WMO weather code.
- */
+/** Bengaluru weather via Open-Meteo (no API key). temp is a rounded integer °C. */
 
 const LATITUDE = 12.9716;
 const LONGITUDE = 77.5946;
@@ -17,11 +12,7 @@ const OPEN_METEO_URL =
   `?latitude=${LATITUDE}&longitude=${LONGITUDE}` +
   `&current=temperature_2m,weather_code`;
 
-/**
- * Exhaustive WMO present-weather code table (0–99), grouped by range.
- * Ordered; first range containing the code wins. Open-Meteo emits a
- * subset of these, but every code has a home so nothing falls through.
- */
+/** WMO present-weather codes 0–99, order-dependent: first matching range wins. */
 const WMO_PHRASES: ReadonlyArray<readonly [min: number, max: number, phrase: string]> = [
   [0, 0, 'clear skies'],
   [1, 2, 'a few clouds'],
@@ -86,7 +77,7 @@ export const GET: APIRoute = async () => {
 
     return json({ temp: Math.round(temperature), phrase: phraseFor(code) }, 3600);
   } catch {
-    // Degradation contract: upstream failure → 200 with null fields, short cache.
+    // Upstream failure → 200 with nulls, 60s cache, never a 5xx.
     return json({ temp: null, phrase: null }, 60);
   }
 };

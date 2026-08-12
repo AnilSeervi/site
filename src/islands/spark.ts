@@ -1,52 +1,12 @@
 /**
- * <as-spark> — commit-activity sparkline (frame 6a) and its boot sequence
- * (design_handoff_loader/LOADER.md).
- *
- * Hero: 320×22 (2× backing 640×44), 52 weekly points, brass rgba(217,165,74,.75).
- * Geometry per the handoff: x(i) = i·(w/(n−1)), y = 20 − (v/max)·17.
- *
- * The line no longer pops in when data lands — it boots in sequence with the
- * typed name above it:
- *
- *   boot   baseline only. <as-typeon> is still typing; one ritual at a time.
- *   fetch  name finished, request still in flight → caption fades in, caret blinks.
- *   draw   data resolved → caption fades out while the polyline reveals
- *          left→right over 900ms (ease-out cubic) behind a cream head dot.
- *   done   full polyline, no dot.
- *   fail   nothing to draw → caption fades out, the dim baseline just stays.
- *
- * The baseline is consumed by the reveal rather than sitting under it: each
- * frame draws it only from the head dot rightwards, so the spark visibly
- * replaces it ("never removed until the spark covers it").
- *
- * Coordination across three islands, no shared singleton:
- *   - typing:  <as-typeon> sets data-typed and fires `as-hero:typed` (bubbling).
- *              This element also reads the attribute on connect, so it doesn't
- *              matter which of the two upgrades first.
- *   - data:    <as-home-data> writes data-values once /api/github answers —
- *              a JSON array on success, `[]` when there is nothing to draw.
- *              Attribute absent = still in flight; that distinction is the
- *              whole difference between `fetch` and `fail`.
- *   Both signals are scoped to this island's own <main>, so the two page trees
- *   that briefly coexist during a view transition can't drive each other.
- *
- * Never draws a guess. This used to substitute a synthetic mulberry32 wave
- * whenever real data was missing, which put invented commit history on the page
- * — and would have left it there permanently if /api/github failed. An all-zero
- * series counts as nothing too: five of the six repos have had no commit in 52
- * weeks, and a flat 1.5px line reads as a broken chart, not a quiet year.
- *
- * The 72×18 row variant is no longer mounted anywhere (the 6b handoff dropped
- * per-project sparklines and the home digest followed), and it deliberately has
- * no part in this sequence: it has no baseline, no caption, and paints in one
- * shot. The sizing path is kept for when a row spark has real data again.
- *
- * Mobile (7a): the hero is a touch narrower (300px full-column vs 320px).
+ * <as-spark> — commit-activity sparkline: dim baseline, then a left→right reveal
+ * once data lands. Signals (data-typed / data-values) are scoped to this
+ * island's own <main>; both page trees coexist during a view transition.
  */
 
 import { isMobile, onBreakpointChange } from './breakpoint';
 
-/** ms the reveal takes, and its curve — `1−(1−p)³` (handoff §Sequence 3) */
+/** reveal duration (ms) and its ease-out curve */
 const DRAW_MS = 900;
 const easeOutCubic = (p: number) => 1 - (1 - Math.min(1, Math.max(0, p))) ** 3;
 
@@ -106,17 +66,13 @@ class AsSpark extends HTMLElement {
 
     this.#reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.#root = this.closest('main') ?? document;
-    // Arms the caption's opacity transition (see index.astro). Without the gate
-    // the caption fades 1 → 0 on first paint whenever the stylesheet lands after
-    // the markup — which is exactly what dev's JS-injected styles do — so the
-    // "fetching" line flashes on a page that hasn't fetched anything yet.
+    // Arms the caption's opacity transition (index.astro). Without the gate the
+    // caption fades 1 → 0 on first paint when the stylesheet lands after markup.
     this.dataset.seq = '';
     this.#unsub = onBreakpointChange(() => this.#resize());
 
-    // Reduced motion skips the whole sequence: typing is skipped site-wide, so
-    // there is nothing to sequence against — the line just appears when it can.
-    // Otherwise: already-typed (attribute) or no <as-typeon> on the page at all
-    // both count as typed, which keeps this independent of upgrade order.
+    // A missing <as-typeon>, an already-set data-typed, or reduced motion all
+    // count as typed — that is what makes this independent of upgrade order.
     const typer = this.#root.querySelector('as-typeon');
     this.#typed = this.#reduced || !typer || typer.hasAttribute('data-typed');
     if (!this.#typed) this.#root.addEventListener('as-hero:typed', this.#onTyped);
@@ -132,9 +88,8 @@ class AsSpark extends HTMLElement {
   }
 
   attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null) {
-    // The custom-element upgrade replays pre-existing attributes before
-    // connectedCallback (which reads them itself), and a no-op write of the
-    // same JSON shouldn't repaint.
+    // Upgrade replays pre-existing attributes before connectedCallback (which
+    // reads them itself); an identical rewrite shouldn't repaint.
     if (!this.isConnected || oldValue === newValue) return;
     this.#read();
     if (this.#hero) this.#advance();
@@ -154,9 +109,8 @@ class AsSpark extends HTMLElement {
       this.#series = null;
       return;
     }
-    // The attribute is only ever written once the fetch answers, so its mere
-    // presence means resolved — `[]` (or anything unusable) means resolved with
-    // nothing to draw, which is `fail`, not "still waiting".
+    // The attribute is only written once the fetch answers, so its presence means
+    // resolved; `[]` or unusable JSON is `fail`, not "still waiting".
     this.#resolved = true;
     let parsed: unknown = null;
     try {
@@ -221,8 +175,7 @@ class AsSpark extends HTMLElement {
 
   /** the caption is CSS-driven — this only flips the flag it keys off */
   #caption(on: boolean) {
-    // reduced motion has no caption at all; CSS hides it either way, but there
-    // is no reason to narrate a sequence that isn't running
+    // reduced motion has no caption; CSS hides it either way
     if (this.#reduced) return;
     if (on) this.dataset.cap = 'on';
     else delete this.dataset.cap;
@@ -236,11 +189,7 @@ class AsSpark extends HTMLElement {
 
   /* ---------------- painting ---------------- */
 
-  /**
-   * Paint at reveal progress `p` (0 = baseline only, 1 = whole polyline).
-   * The hero sizes its own canvas so the width can track the breakpoint; row
-   * sparks keep their markup dims.
-   */
+  /** Paint at reveal progress `p` (0 = baseline only, 1 = whole polyline). */
   #render(p: number) {
     const cv = this.querySelector('canvas');
     if (!cv) return;
@@ -254,9 +203,8 @@ class AsSpark extends HTMLElement {
       cv.style.height = `${h}px`;
     }
 
-    // A row spark with nothing to draw takes up no ink at all. visibility, not
-    // display, so the column holds its width and the row keeps its alignment.
-    // The hero always stays visible — its baseline is the waiting state.
+    // visibility, not display, so an empty row spark still holds its column
+    // width; the hero stays visible because its baseline is the waiting state.
     this.style.visibility = !this.#hero && !this.#series ? 'hidden' : '';
 
     const x = cv.getContext('2d');
@@ -270,16 +218,15 @@ class AsSpark extends HTMLElement {
     let values = this.#series;
     const edge = values ? p * w : 0;
 
-    // Baseline, from the reveal edge rightwards — the spark eats it as it draws.
-    // 1 CSS px tall on a half-pixel centre so it lands crisp at 2× backing.
+    // Baseline runs from the reveal edge rightwards, so the spark eats it as it
+    // draws. 1 CSS px on a half-pixel centre to land crisp at 2× backing.
     if (this.#hero && edge < w) {
       x.fillStyle = 'rgba(237, 230, 218, 0.12)';
       x.fillRect(edge, bottom - 0.5, w - edge, 1);
     }
     if (!values || p <= 0) return;
 
-    // row sparks read as gentle 12-month waves in the design — bucket the
-    // 52-week series down so 72px doesn't render as noise
+    // bucket the 52-week series down so 72px doesn't render as noise
     if (!this.#hero && values.length > 16) {
       const buckets = 12;
       const per = values.length / buckets;
@@ -293,10 +240,6 @@ class AsSpark extends HTMLElement {
       });
     }
 
-    // Brass at .75 for the hero, solid for a row. Rows used to take their
-    // colour from the project's active/maintained/archived field; that field is
-    // gone (it couldn't be checked), and with it the last reason for a
-    // per-status palette here.
     const accent = cssHex('--as-accent', '#d9a54a');
     const top = Math.max(...values, 0.001);
     const step = w / (values.length - 1);

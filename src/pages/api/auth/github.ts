@@ -1,11 +1,5 @@
-/**
- * GET /api/auth/github — kick off the GitHub OAuth flow.
- *
- * Redirects to github.com/login/oauth/authorize with a random `state` echoed
- * into a short-lived httpOnly cookie (verified by /api/auth/callback).
- * NOTE: the GitHub OAuth app must list <origin>/api/auth/callback as its
- * callback URL (prod + localhost dev).
- */
+// Starts OAuth; random `state` mirrored into a short-lived httpOnly cookie.
+// The OAuth app must allow <origin>/api/auth/callback.
 import type { APIRoute } from 'astro';
 
 export const prerender = false;

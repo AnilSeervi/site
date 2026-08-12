@@ -1,9 +1,6 @@
 /**
- * Spotify data helpers — refresh-token OAuth flow ported from the old
- * Next.js site (site/lib/spotify.ts).
- *
- * Server-only: reads SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET /
- * SPOTIFY_REFRESH_TOKEN from import.meta.env. Never import from client code.
+ * Spotify data helpers — refresh-token OAuth flow.
+ * Server-only: reads SPOTIFY_CLIENT_ID / _SECRET / _REFRESH_TOKEN. Never import from client code.
  */
 
 const CLIENT_ID = import.meta.env.SPOTIFY_CLIENT_ID;
@@ -96,10 +93,7 @@ async function getPlaylistName(token: string, href: string): Promise<string | nu
   }
 }
 
-/**
- * me/player/currently-playing. 204 / empty body → not playing.
- * Only `track` items count (podcast episodes are ignored).
- */
+/** me/player/currently-playing: 204 or empty body → not playing; only `track` items count. */
 async function getNowPlaying(token: string): Promise<{ isPlaying: boolean; now: SpotifyNow | null }> {
   const res = await fetch(NOW_PLAYING_ENDPOINT, { headers: authHeaders(token) });
 
@@ -136,11 +130,7 @@ async function getRecentlyPlayed(token: string): Promise<SpotifyLast | null> {
   return { ...trackFields(entry.track), playedAt: entry.played_at ?? '' };
 }
 
-/**
- * Full status for /api/spotify. Throws if the token exchange fails;
- * individual data-fetch failures degrade to null fields and set `degraded`
- * so the caller can shorten the cache window.
- */
+/** Full status for /api/spotify. Throws if the token exchange fails; per-fetch failures set `degraded`. */
 export async function getSpotifyStatus(): Promise<{ status: SpotifyStatus; degraded: boolean }> {
   const token = await getAccessToken();
 

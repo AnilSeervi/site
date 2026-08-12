@@ -1,15 +1,9 @@
 /**
- * Shared mobile-breakpoint helper for canvas islands.
- *
- * The site's single responsive breakpoint is ≤768px (see the `@media`
- * blocks across the pages/components). CSS handles layout, but canvas
- * backing stores can't be sized by CSS — islands that draw to a canvas
- * must pick their pixel dimensions in JS and re-do them when the viewport
- * crosses the breakpoint (a phone rotating into landscape can exceed 768px).
- *
- * `onBreakpointChange` returns an unsubscribe fn; islands call it from
- * disconnectedCallback so the listener never outlives the element across
- * view-transition swaps.
+ * Mobile-breakpoint helper for canvas islands: backing stores can't be sized by
+ * CSS, so islands re-pick pixel dimensions when the viewport crosses ≤768px
+ * (a phone rotating into landscape can exceed it).
+ * onBreakpointChange returns an unsubscribe — call it from disconnectedCallback
+ * or the listener outlives the element across view-transition swaps.
  */
 
 export const MOBILE_MQ = '(max-width: 768px)';

@@ -1,7 +1,5 @@
-// Runtime verification for src/islands/clock.ts + src/islands/ticker.ts
-// - clock: rendered IST vs independently computed IST (context tz = America/New_York)
-// - ticker: 8s watch, >=2 rotations, order, opacity dips, .25s transition
-// - leaks: 3x client-side nav round-trips, active interval counts must be stable
+// check-clock-ticker.mjs — src/islands/clock.ts + ticker.ts: rendered IST vs computed IST (context
+// tz America/New_York), 8s rotation/order/opacity dips, interval counts stable over 3 soft navs.
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -82,13 +80,11 @@ const browserTz = await page.evaluate(() => Intl.DateTimeFormat().resolvedOption
 const clockIntervals = await page.evaluate(() => window.__activeIntervals());
 
 // ---------- TICKER ----------
-// transition on spans
 const transitions = await page.evaluate(() => ({
   label: getComputedStyle(document.querySelector('[data-ticker-label]')).transition,
   value: getComputedStyle(document.querySelector('[data-ticker-value]')).transition
 }));
 
-// sample label text + opacity every 40ms for 8s
 const samples = await page.evaluate(async () => {
   const label = document.querySelector('[data-ticker-label]');
   const value = document.querySelector('[data-ticker-value]');
@@ -121,7 +117,6 @@ for (let i = 1; i < labelSeq.length && orderOk; i++) {
   if (prev < 0 || cur < 0 || cur !== (prev + 1) % expectedOrder.length) orderOk = false;
 }
 
-// measure swap timing: first two label-change timestamps
 const changes = [];
 for (let i = 1; i < samples.length; i++) {
   if (samples[i].label !== samples[i - 1].label) changes.push(samples[i].t);

@@ -1,23 +1,6 @@
-/**
- * LoadPhase — the shared skeleton-timing controller for the live feeds
- * (design_handoff_loading_states, "8 · waiting").
- *
- * Drives an island's `data-load` attribute through idle → waiting → arrived,
- * enforcing the two timing rules that keep skeletons from reading as glitches:
- *
- *   - Under 180ms → no skeleton. The skeleton is delayed by 180ms; if data
- *     resolves first the value shows straight away and `waiting` never happens.
- *   - Minimum show 400ms. Once the skeleton is visible it is held ≥400ms — a
- *     sub-frame flash reads as a stutter.
- *
- * Usage: `const phase = new LoadPhase(el); phase.start();` on connect, then
- * `phase.settle(() => …fill + reveal…)` when the fetch resolves (or `.fail()`
- * to hide/degrade). The DOM write in `settle` runs behind the min-show gate,
- * and the CSS `[data-load]` rules fade the values in.
- *
- * Uses performance.now() + setTimeout; both are torn down by `cancel()` from
- * the island's disconnectedCallback so a view-transition swap leaks nothing.
- */
+/** Skeleton-timing controller: drives an island's `data-load` idle → waiting → arrived. */
+// Skeleton is delayed 180ms (fast fetch shows none) then held ≥400ms so it can't flash.
+// Callers must invoke cancel() from disconnectedCallback or the timers leak.
 
 const SKELETON_DELAY = 180;
 const MIN_SHOW = 400;
@@ -33,7 +16,7 @@ export class LoadPhase {
     this.#el = el;
   }
 
-  /** begin the wait — reserved space only until the 180ms skeleton gate fires */
+  /** begin the wait — the skeleton only appears once the 180ms gate fires */
   start() {
     this.#el.dataset.load = 'idle';
     this.#showTimer = setTimeout(() => {
@@ -52,7 +35,7 @@ export class LoadPhase {
       this.#el.dataset.load = 'arrived';
     };
     if (this.#showTimer) {
-      // skeleton never shown (resolved < 180ms) → straight to the value
+      // timer still pending → skeleton never shown, so no min-show debt
       clearTimeout(this.#showTimer);
       this.#showTimer = null;
       reveal();

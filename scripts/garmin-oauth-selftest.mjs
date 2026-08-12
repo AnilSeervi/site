@@ -1,15 +1,7 @@
 /**
- * OAuth1 HMAC-SHA1 signing self-test — RFC 5849 known-answer example.
- *
- * Verifies src/lib/garmin-core.ts `oauth1Sign` against the example request in
- * RFC 5849 §3.4.1.1 (as corrected by Errata ID 2550):
- *
- *   POST http://example.com/request?b5=%3D%253D&a3=a&c%40=&a2=r%20b
- *   body: c2&a3=2+q
- *   client j49sk3j29djd / token secret dh893hdasih9
- *   → signature "r6/TJjbCOr97/+UU0NsvSne7s5g="
- *
- * Run:  node scripts/garmin-oauth-selftest.mjs   (exit 0 = pass)
+ * garmin-oauth-selftest.mjs — known-answer test for `oauth1Sign` in src/lib/garmin-core.ts against
+ * the RFC 5849 §3.4.1.1 example request, as corrected by Errata ID 2550.
+ * Run: node scripts/garmin-oauth-selftest.mjs   (exit 0 = pass)
  */
 import { oauth1Sign, percentEncode } from '../src/lib/garmin-core.ts';
 
@@ -53,7 +45,7 @@ check('percentEncode("=%3D")', percentEncode('=%3D'), '%3D%253D');
 check(`percentEncode("!'()*")`, percentEncode("!'()*"), '%21%27%28%29%2A');
 check('percentEncode("~-._")', percentEncode('~-._'), '~-._');
 
-// Authorization header shape (deterministic inputs → stable header)
+// deterministic inputs, so the exact header string is safe to assert
 const headerOk =
   result.header.startsWith('OAuth ') &&
   result.header.includes('oauth_signature="r6%2FTJjbCOr97%2F%2BUU0NsvSne7s5g%3D"') &&

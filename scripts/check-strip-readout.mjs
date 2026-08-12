@@ -1,21 +1,6 @@
 /**
- * check-strip-readout.mjs — the MOVING consistency strip's hover readout.
- *
- * Hovering a bar hands the legend line over to that day's detail and takes it
- * back on leave. The things that can quietly break:
- *   - the readout's bucket words are built in JS, so they carry no Astro scope
- *     attribute — their colours must come from `:global()` rules or they render
- *     in the inherited --faint and the legend mapping is lost;
- *   - legend and readout share one reserved line, so the swap must not reflow;
- *   - the day index on each bar must survive a strip rebuild (60d ↔ 90d);
- *   - the wiring is `(hover:hover) and (pointer:fine)` only — a touch viewport
- *     must keep the legend and attach nothing.
- *
- * Pass 1 (live API): whatever /api/moving returns now — hover every bar, assert
- *   the composed line parses and never overflows its slot.
- * Pass 2 (mocked): the three shapes exactly — run day with pace, multi-bucket
- *   day, rest day — plus the ×n fold for repeated activity names.
- * Pass 3 (touch): iPhone-ish viewport, no hover wiring, legend stays.
+ * check-strip-readout.mjs — the MOVING strip's hover readout: line swap, bucket
+ * colours, slot overflow, and the touch viewport.
  *
  * Usage: node scripts/check-strip-readout.mjs [base-url]
  */
@@ -31,13 +16,8 @@ function check(name, ok, detail = '') {
 
 const STRIP_BAR = 'as-moving[data-load="arrived"] [data-strip] span[data-day]';
 
-/**
- * Wait until the bars are actually hoverable. They mount at scaleY(0) and only
- * rise once the IntersectionObserver sees the strip, so: wait for the elements
- * to exist, scroll the strip in to trip the observer, then let the staggered
- * rise finish (0.5s each + 16ms/bar) — a bar still at scaleY(0) has no box for
- * Playwright to aim at.
- */
+// Bars mount at scaleY(0) and have no box to hover: trip the IntersectionObserver,
+// then wait out the staggered rise (0.5s each + 16ms/bar).
 async function armStrip(page) {
   await page.locator(STRIP_BAR).first().waitFor({ state: 'attached', timeout: 20000 });
   await page.locator('.strip-meta').scrollIntoViewIfNeeded();
@@ -46,7 +26,6 @@ async function armStrip(page) {
   await page.waitForTimeout(500 + n * 16 + 150);
 }
 
-/** state of the shared line: which tenant is showing, and what it says */
 const readLine = (page) =>
   page.evaluate(() => {
     const legend = document.querySelector('[data-legend]');
@@ -56,7 +35,6 @@ const readLine = (page) =>
       legendHidden: legend?.hidden ?? null,
       readoutHidden: out?.hidden ?? null,
       text: (out?.textContent ?? '').trim(),
-      // every span the island coloured, with what it actually computed to
       buckets: [...(out?.querySelectorAll('[class^="k-"]') ?? [])].map((e) => ({
         word: e.textContent,
         color: getComputedStyle(e).color
@@ -68,17 +46,12 @@ const readLine = (page) =>
     };
   });
 
-/** a day line always starts `sat jul 18 — ` */
 const HEAD = /^(sun|mon|tue|wed|thu|fri|sat) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{1,2} — /;
 
-// ---------------------------------------------------------------------------
 // mocked payload — one of each shape the composer has to handle
-// ---------------------------------------------------------------------------
 const day = (date, extra) => ({ date, ...extra });
 const MOCK_DAYS = [
-  // a rest day
   day('2026-07-20', { seconds: 0, bucket: 'rest' }),
-  // three run legs sharing one Garmin name → folded, restored by ×3
   day('2026-07-21', {
     seconds: 4510,
     bucket: 'run',
@@ -88,7 +61,6 @@ const MOCK_DAYS = [
     km: 10.5,
     pace: '7:10'
   }),
-  // two buckets, two names, ranked by time — names must follow bucket order
   day('2026-07-22', {
     seconds: 3851,
     bucket: 'racquet',
@@ -99,7 +71,6 @@ const MOCK_DAYS = [
     ],
     names: ['table tennis', 'strength']
   }),
-  // an indoor day: no distance at all (the 500m floor dropped it)
   day('2026-07-23', {
     seconds: 2148,
     bucket: 'lift',
@@ -107,7 +78,6 @@ const MOCK_DAYS = [
     parts: [{ bucket: 'lift', seconds: 2148 }],
     names: ['strength']
   }),
-  // over an hour → coarse() switches to 1h43
   day('2026-07-24', {
     seconds: 6195,
     bucket: 'other',
@@ -135,11 +105,8 @@ async function mock(page) {
   );
 }
 
-// ---------------------------------------------------------------------------
-
 const browser = await chromium.launch();
 
-// ---- pass 1: live data ----------------------------------------------------
 console.log('\npass 1 — live /api/moving');
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -154,7 +121,6 @@ console.log('\npass 1 — live /api/moving');
 
   const idleH = await page.locator('.strip-meta').evaluate((e) => e.getBoundingClientRect().height);
 
-  // hover every bar: the line must always compose, and never outgrow its slot
   let bad = 0;
   let clipped = 0;
   const samples = [];
@@ -187,7 +153,6 @@ console.log('\npass 1 — live /api/moving');
   await page.close();
 }
 
-// ---- pass 2: mocked shapes ----------------------------------------------
 console.log('\npass 2 — mocked shapes');
 {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -211,7 +176,6 @@ console.log('\npass 2 — mocked shapes');
     check(want[i][0], got === want[i][1], got === want[i][1] ? got : `got “${got}”`);
   }
 
-  // run/lift/racquet/other each resolve to their legend token, dim tail to --faint
   await bars.nth(2).hover();
   const two = await readLine(page);
   check(
@@ -223,7 +187,6 @@ console.log('\npass 2 — mocked shapes');
   );
   check('name tail is dimmed', two.dimmed[0] === 'rgb(94, 87, 73)', two.dimmed.join(' '));
 
-  // gaps between bars target the strip itself — the day must stay put
   const box = await bars.nth(2).boundingBox();
   await page.mouse.move(box.x + box.width + 1, box.y + box.height / 2);
   const gap = await readLine(page);
@@ -231,7 +194,6 @@ console.log('\npass 2 — mocked shapes');
   await page.close();
 }
 
-// ---- pass 3: touch viewport ---------------------------------------------
 console.log('\npass 3 — touch (no hover wiring)');
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'] });

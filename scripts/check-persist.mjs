@@ -1,3 +1,4 @@
+// check-persist.mjs — asserts .dot-grid and .site-header survive a soft nav. Run: node scripts/check-persist.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();

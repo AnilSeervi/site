@@ -1,3 +1,5 @@
+// check-views.mjs — mocks /api/views and asserts the meta views text, a POST per soft-nav arrival,
+// and that 0 views leaves the span hidden. Run: node scripts/check-views.mjs
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
@@ -15,32 +17,27 @@ await ctx.route('**/api/views/**', async (route) => {
   });
 });
 
-// 1. article page: meta should now end at "... · 1.2k views" — the trailing
-// "· 0% read" is gone with the readout (the fixed bar carries progress)
-// domcontentloaded + settle, not networkidle — the dev server's HMR socket and
-// the views POST keep the network from idling 500ms, so networkidle times out
+// domcontentloaded + settle, not networkidle: the dev HMR socket and the views POST keep the
+// network from idling 500ms, so networkidle times out.
 await page.goto('http://localhost:4321/writing/event-loop-in-javascript', {
   waitUntil: 'domcontentloaded'
 });
 await page.waitForTimeout(700);
 const metaFilled = (await page.textContent('.meta')).replace(/\s+/g, ' ').trim();
 
-// 2. view-transition navigation: island must POST again on arrival
+// soft nav: the island must POST again on arrival
 await page.click('a.crumb'); // -> /writing
 await page.waitForURL('**/writing');
 await page.waitForTimeout(600);
 
-// 3. home page: POST /api/views/home (normalized '/home' server-side)
+// home posts to /api/views/home — the server normalizes '/' to '/home'
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(700);
 
-// 4. zero-views case: span must stay empty -> hidden, no stray separator
 await ctx.unroute('**/api/views/**');
 await ctx.route('**/api/views/**', (route) =>
   route.fulfill({ contentType: 'application/json', body: '{"views":0}' })
 );
-// domcontentloaded + settle, not networkidle — the dev server's HMR socket and
-// the views POST keep the network from idling 500ms, so networkidle times out
 await page.goto('http://localhost:4321/writing/event-loop-in-javascript', {
   waitUntil: 'domcontentloaded'
 });

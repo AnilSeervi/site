@@ -1,9 +1,7 @@
 ---
 /**
- * ⌘K command palette (frame 6g) — mounted once in Base.astro.
- * Rows are rendered by the <as-palette> custom element from the JSON payload
- * below, so styles are is:global with a .pal- prefix (JS-created nodes don't
- * carry Astro's scoped-style attribute).
+ * ⌘K command palette — mounted once in Base.astro. Rows are built in JS, and
+ * JS-created nodes carry no scoped-style attribute: styles must stay is:global.
  */
 import { getCollection } from 'astro:content';
 import { site, paletteActions, accentOptions } from '~/config/site';
@@ -39,14 +37,8 @@ const payload = {
       <div class="pal-prompt">
         <span class="pal-ps1" aria-hidden="true">~ ❯</span>
         <div class="pal-inputwrap">
-          <!--
-            Caret approach: the more robust option — keep the native caret
-            (caret-color: var(--as-accent)) while typing, so mid-string editing
-            and selection behave natively; show the brass block caret (8×17px,
-            as-caret) only while the input is empty, positioned right after our
-            own placeholder span so it matches the reference exactly. The
-            mirror-span approach breaks when the cursor moves mid-text.
-          -->
+          <!-- native caret handles mid-string editing; the fake block caret
+               shows only while the input is empty (see [data-empty] rules) -->
           <input
             class="pal-input"
             type="text"
@@ -132,7 +124,7 @@ const payload = {
     color: var(--text-hi);
     caret-color: var(--as-accent);
   }
-  /* the prompt row is the focus affordance — suppress the global accent outline */
+  /* the prompt row is the focus affordance — suppress the global outline */
   .pal-input:focus-visible {
     outline: none;
   }
@@ -296,8 +288,7 @@ const payload = {
       font-size: 10.5px;
       color: var(--faint);
     }
-    /* keyboard-shortcut hints (⌘C) are meaningless on touch (7g omits them);
-       the ↵ affordance on the active row stays */
+    /* shortcut hints are meaningless on touch; the ↵ on the active row stays */
     .pal-hint:not(.pal-enter) {
       display: none;
     }
@@ -335,7 +326,6 @@ const payload = {
       private index = 0;
       private copyTimer: ReturnType<typeof setTimeout> | null = null;
       private bound = false;
-      // swipe-down-to-dismiss (touch) state
       private dragY = 0;
       private dragging = false;
       private vvHandler: (() => void) | null = null;
@@ -347,8 +337,7 @@ const payload = {
         this.overlay = this.querySelector('.pal-overlay')!;
         this.panel = this.querySelector('.pal-panel')!;
         this.setAttribute('data-empty', '');
-        // listeners live on descendants of the element, which persists across
-        // view transitions — guard so a re-connect never double-binds
+        // the element persists across view transitions; guard against double-binding
         if (this.bound) return;
         this.bound = true;
         this.input.addEventListener('input', () => {
@@ -369,9 +358,7 @@ const payload = {
           if (row) this.select(Number(row.dataset.i));
         });
 
-        // swipe-down to dismiss (touch) — drag begins only when the sheet's
-        // scroll is at the top, so downward flicks over a scrolled list scroll
-        // natively instead of closing
+        // swipe-down to dismiss: drag only from scrollTop 0, else the flick is a scroll
         this.panel.addEventListener(
           'touchstart',
           (e) => {
@@ -465,11 +452,7 @@ const payload = {
         this.isOpen ? this.close() : this.open();
       }
 
-      /**
-       * Case-insensitive subsequence match; consecutive + start-of-word bonuses,
-       * minus a spread penalty so a tight match ("theme → system") outranks the
-       * same letters scattered across a long title.
-       */
+      /** case-insensitive subsequence score: consecutive/word-start bonuses, spread penalty */
       private static score(query: string, text: string): number {
         const q = query.toLowerCase();
         const t = text.toLowerCase();
@@ -499,7 +482,6 @@ const payload = {
           href: p.href
         }));
         const actions: PalItem[] = this.data.actions
-          // the sheet drops "cat feed.xml" on touch (7g lists three actions)
           .filter((a) => !isMobile() || a.action !== 'open-feed')
           .map((a) => ({
             kind: 'action',
@@ -522,8 +504,7 @@ const payload = {
             serif: true,
             href: w.href
           }));
-          // groups render best-match-first so row 0 (the Enter target) is the
-          // strongest hit overall, not just the first group's best
+          // sort groups by best score so row 0 (the Enter target) is the top hit overall
           const scored = [
             { label: 'PAGES', rows: match(pages) },
             { label: 'WRITING', rows: match(writing) },
@@ -584,14 +565,13 @@ const payload = {
       private run(item: PalItem | undefined) {
         if (!item) return;
         if (item.href) {
-          // navigation rows — soft-navigate so the view transition actually runs
+          // navigate(), not location — a hard load skips the view transition
           this.close();
           navigate(item.href);
           return;
         }
         switch (item.action) {
           case 'copy-email': {
-            // stays open for the 1.2s 'copied ✓' flash (feedback), then closes
             navigator.clipboard?.writeText(this.data.email).catch(() => {});
             const row = this.body.querySelectorAll('.pal-row')[this.index];
             const label = row?.querySelector('.pal-label');
@@ -635,8 +615,8 @@ const payload = {
 
     customElements.define('as-palette', AsPalette);
 
-    // Module-level document delegation — this module runs once (Astro dedupes
-    // scripts across view transitions), so these listeners are never doubled.
+    // module-level delegation: Astro dedupes scripts across view transitions,
+    // so this module runs once and these listeners are never doubled
     const pal = () => document.querySelector<AsPalette>('as-palette');
 
     document.addEventListener('keydown', (e) => {
@@ -651,8 +631,7 @@ const payload = {
         e.preventDefault();
         p.close();
       } else if (e.key === 'Tab') {
-        // aria-modal dialog: keep focus inside — the input is the only
-        // focusable control (rows are pointer/arrow-driven)
+        // focus trap: the input is the only focusable control in this aria-modal dialog
         e.preventDefault();
         p.querySelector<HTMLInputElement>('.pal-input')?.focus();
       } else if (e.key === 'ArrowDown') {

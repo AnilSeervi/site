@@ -1,23 +1,15 @@
 ---
-/**
- * Section label pattern: `01 · WORK` + flex-filling hairline + optional right meta.
- * Right meta renders as a link when `metaHref` is given. `external` controls the
- * ↗ hover lift (translate(2px,-2px)) — some ↗ links are internal routes (e.g.
- * `all projects ↗` → /work), so a new tab is opened only for real http(s) URLs.
- */
+/** Section head: `01 · WORK` + filling hairline + optional right meta. */
 interface Props {
   label: string;
   meta?: string;
-  /** shorter meta shown ≤768px (mobile design trims several of these); ''
-      hides the meta on mobile entirely. Omit to keep `meta` at every width. */
+  /** shorter meta shown ≤768px; '' hides it on mobile, omit to keep `meta` */
   metaMobile?: string;
   metaHref?: string;
   external?: boolean;
-  /** margin-bottom override — some sections use 12px when a hint line follows */
+  /** margin-bottom override in px */
   mb?: number;
-  /** loading phase note (design_handoff_loading_states 8a) — renders a right
-      meta the island flips 'fetching…' → 'live' on arrival. Mutually exclusive
-      with `meta`. */
+  /** renders a placeholder right meta the island flips to 'live'; excludes `meta` */
   phaseNote?: boolean;
 }
 const { label, meta, metaMobile, metaHref, external = false, mb = 20, phaseNote = false } = Astro.props;
@@ -83,7 +75,6 @@ const hasMobile = metaMobile !== undefined;
     font-size: 12px;
     color: var(--meta);
   }
-  /* loading phase note (8a): quieter than a normal meta */
   .meta.note {
     font-size: 11.5px;
     color: var(--faint);
@@ -102,7 +93,6 @@ const hasMobile = metaMobile !== undefined;
     transform: translate(2px, -2px);
   }
 
-  /* mobile: labels + meta drop a notch (7a–7e) */
   @media (max-width: 768px) {
     .section-head {
       gap: 12px;

@@ -1,12 +1,6 @@
 /**
- * Drizzle schema for the EXISTING Turso database.
- *
- * Mirrors the live tables verbatim (ported from the old site:
- * /Users/anil/Projects/site/drizzle/schema.ts). This is production data —
- * do not run migrations or alter these definitions casually.
- *
- * Phase 6 (migration already ran — scripts/migrate-phase6.mjs):
- * guestbook.doodle TEXT NULL + the kv table.
+ * Drizzle schema for the existing Turso database; mirrors the live tables verbatim.
+ * Production data — do not alter these definitions or run migrations casually.
  */
 import { sql } from 'drizzle-orm';
 import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';

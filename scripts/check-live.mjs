@@ -1,19 +1,5 @@
-/**
- * check-live.mjs — Phase 5 verification for /live (frame 6d).
- *
- * Pass 1 (real data): rows must match what /api/{spotify,github,mal,weather}
- *   actually return right now — weather text, watching/shelf text, reading
- *   title, last-played track, contribution total, eq animation-play-state
- *   matching isPlaying, and the contrib canvas painted from the REAL days
- *   grid (sparse brass, hot/cold pixel probes) instead of the synthetic field.
- * Pass 2 (mocked now-playing): /api/spotify intercepted → now row fills with
- *   title/artist/context and the bars run.
- * Pass 3 (mocked failures): mal disabled + github 500 + weather nulls →
- *   reading/weather rows and the github/mal sections disappear (design rule:
- *   drop missing rows, no zeros).
- *
- * Usage: node scripts/check-live.mjs [base-url]   (default http://localhost:4321)
- */
+// check-live.mjs — asserts /live rows against real feeds, a mocked now-playing, and mocked failures.
+// Usage: node scripts/check-live.mjs [base-url]   (default http://localhost:4321)
 import { chromium } from 'playwright';
 
 const BASE = process.argv[2] ?? 'http://localhost:4321';
@@ -35,12 +21,10 @@ async function waitForFeeds(page) {
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 
-// ---- expected values straight from the APIs ----
 const [spotify, github, mal, weather] = await Promise.all(
   ['spotify', 'github', 'mal', 'weather'].map((f) => fetch(`${BASE}/api/${f}`).then((r) => r.json()))
 );
 
-// ---------------- pass 1 · real data ----------------
 console.log('\npass 1 · real data');
 await page.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
 await waitForFeeds(page);
@@ -70,9 +54,7 @@ if (mal.reading?.title) {
   check('reading row hidden (null feed)', await page.locator('[data-row="reading"]').isHidden());
 }
 
-// spotify — three states, and they must stay distinguishable: playing, quiet,
-// and upstream-failed. The last one used to render as the second one, which
-// pruned the whole section and hid a revoked refresh token.
+// Rendering "failed" as "quiet" prunes the section and hides a revoked refresh token.
 if (spotify.error) {
   check(
     'upstream failed → section survives with an honest row',
@@ -108,14 +90,12 @@ check(
   `animation-play-state: ${playState}`
 );
 
-// github — total line + canvas painted from the real days grid
 if (Array.isArray(github.days)) {
   const got = await text(page.locator('[data-live="contrib-total"]'));
   const want = `${github.total.toLocaleString('en-US')} contributions in the last year — brass runs hotter where the weeks did`;
   check('contrib total line matches /api/github', got === want, got);
   check('52 weeks meta', (await text(page.locator('.contrib-meta span').nth(1))) === '52 weeks');
 
-  // find a nonzero and a zero cell to probe
   let hotCell = null;
   let coldCell = null;
   for (let w = 0; w < 52; w++)
@@ -158,11 +138,9 @@ if (Array.isArray(github.days)) {
   check('github section hidden (null feed)', await page.locator('[data-section="github"]').isHidden());
 }
 
-// mal — anime + manga + shelf
 if (mal.watching) {
   const tail = mal.watching.epTotal == null ? `episode ${mal.watching.ep}` : `episode ${mal.watching.ep} of ${mal.watching.epTotal}`;
-  // frame 6d italicizes the base title only: a trailing season/part suffix
-  // stays upright and lowercase, so the em holds less than the full title
+  // Only the base title is in <em>; a season/part suffix stays outside it, lowercased.
   const split = mal.watching.title.match(
     /^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i
   );
@@ -177,8 +155,6 @@ if (mal.watching) {
 } else {
   check('anime row hidden (null feed)', await page.locator('[data-row="watching"]').isHidden());
 }
-// manga is MAL's now — the volumes were deleted from Hardcover so the shelf
-// and this row can't disagree about what has been read
 if (mal.manga) {
   const chapters =
     mal.manga.chTotal == null
@@ -202,8 +178,7 @@ if (mal.shelf) {
   check('shelf row hidden (null feed)', await page.locator('[data-row="shelf"]').isHidden());
 }
 
-// phase 6 sections absent, footer intact
-// case-sensitive regexes — `text=MOVING` would hit "moving" in the sub copy
+// Regex locators, not `text=MOVING`: that matches case-insensitively and hits "moving" in prose.
 check('MOVING section absent', (await page.locator('text=/MOVING · GARMIN/').count()) === 0);
 check('GUESTBOOK section absent', (await page.locator('text=/GUESTBOOK/').count()) === 0);
 check(
@@ -220,7 +195,6 @@ check(
 const shot = process.env.SHOT_PATH;
 if (shot) await page.screenshot({ path: shot, fullPage: true });
 
-// ---------------- pass 2 · mocked now-playing ----------------
 console.log('\npass 2 · mocked now-playing');
 const page2 = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 await page2.route('**/api/spotify', (route) =>
@@ -253,7 +227,6 @@ check(
 );
 await page2.close();
 
-// ---------------- pass 3 · mocked failures ----------------
 console.log('\npass 3 · mocked failures / disabled feeds');
 const page3 = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 await page3.route('**/api/spotify', (route) =>

@@ -1,12 +1,5 @@
-/**
- * GET /api/auth/callback — GitHub OAuth callback.
- *
- * Verifies `state` against the httpOnly cookie set by /api/auth/github,
- * exchanges the code, fetches /user (+ /user/emails for the primary email
- * when the profile email is private), signs the `as-session` JWT cookie and
- * lands back on /live#guestbook. Any failure redirects there without a
- * session — never a 5xx, never a leaked token.
- */
+// GitHub OAuth callback. `state` must match the httpOnly cookie set by
+// /api/auth/github before the code is exchanged; any failure → redirect.
 import type { APIRoute } from 'astro';
 import { SESSION_COOKIE, SESSION_MAX_AGE, isSessionConfigured, signSession } from '~/lib/session';
 import { STATE_COOKIE } from './github';

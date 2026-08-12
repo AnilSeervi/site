@@ -1,7 +1,4 @@
-/**
- * GitHub data layer — GraphQL contributions calendar + REST repo/event stats.
- * Server-only: reads GITHUB_TOKEN (classic PAT) from import.meta.env.
- */
+/** GitHub data layer: contributions calendar (GraphQL) + repo/event stats (REST). Server-only, reads GITHUB_TOKEN. */
 
 const USER = 'AnilSeervi';
 const REST = 'https://api.github.com';
@@ -23,13 +20,7 @@ export interface Contributions {
   weeks: number[];
   /** weeks[i] = 7 daily counts (partial current week padded with 0s) */
   days: number[][];
-  /**
-   * ISO date of days[0][0] — the anchor the grid's calendar is derived from.
-   * The calendar is a contiguous Sunday-aligned grid, so every cell's date is
-   * `from + (week * 7 + weekday)` days; sending 364 date strings instead would
-   * cost ~4.7KB to say the same thing. Also the only way to tell the padded
-   * tail of the current week (future days) from genuine rest days.
-   */
+  /** ISO date of days[0][0]; the grid is Sunday-aligned, so each cell is `from + (week * 7 + weekday)` days. */
   from: string;
   followers: number;
 }
@@ -63,8 +54,7 @@ export async function getContributions(): Promise<Contributions> {
   const allWeeks: { contributionDays: { contributionCount: number; date: string }[] }[] =
     calendar.weeks;
 
-  // The calendar spans ~53 columns; keep the most recent 52 and pad any
-  // partial week (the current one) to 7 days so the shape is consistent.
+  // GitHub returns ~53 columns; keep the last 52 and pad the short current week to 7.
   const kept = allWeeks.slice(-52);
   const days = kept.map((week) => {
     const counts = week.contributionDays.map((d) => d.contributionCount);
@@ -73,12 +63,8 @@ export async function getContributions(): Promise<Contributions> {
   });
   const weeks = days.map((w) => w.reduce((a, b) => a + b, 0));
 
-  // The anchor is simply the oldest kept week's first day: GitHub returns every
-  // column Sunday-aligned and full, padding the oldest one itself — only the
-  // current week comes back short. (Verified against the live calendar: 53
-  // columns, all 7 days but the last, and all 362 cells derive from this one
-  // date.) Note the padding above is appended, so a partial FIRST column would
-  // break the mapping rather than shift it — hence no clever realignment here.
+  // Only the last column comes back short; GitHub pads the oldest one itself.
+  // Padding above is appended, so a partial FIRST column would break this anchor.
   const from = kept[0]?.contributionDays[0]?.date ?? '';
 
   return {
@@ -97,7 +83,7 @@ export interface RepoStats {
   stars: number;
   /** stargazers of AnilSeervi/DevFolio */
   devfolioStars: number;
-  /** forks of AnilSeervi/DevFolio — /work quotes this next to the stars */
+  /** forks of AnilSeervi/DevFolio */
   devfolioForks: number;
 }
 
@@ -175,9 +161,8 @@ export async function getLastPush(): Promise<LastPush | null> {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * repo → 52 weekly commit counts (the 'all' series: owner + others).
- * GitHub answers 202 while it computes stats — retry once after 2.5s,
- * and omit the repo if it still isn't ready (or the request fails).
+ * repo → 52 weekly commit counts ('all' series: owner + others).
+ * GitHub answers 202 while computing stats; retried once after 2.5s, else omitted.
  */
 export async function getSparks(repos: string[]): Promise<Record<string, number[]>> {
   const entries = await Promise.all(

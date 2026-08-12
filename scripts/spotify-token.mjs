@@ -1,27 +1,9 @@
 /**
- * spotify-token.mjs — mint a fresh SPOTIFY_REFRESH_TOKEN.
- *
- * Spotify revokes refresh tokens when the account password changes, the app is
- * removed under Account → Apps with access, or the client secret is rotated.
- * The symptom is a 400 `invalid_grant` on every token exchange, which is not
- * something code can recover from: the authorization-code flow needs a human
- * at a browser, which is what this script drives.
- *
- * The redirect URI is the production site, so the callback lands there rather
- * than on this machine — there is no local server to catch it. The flow is
- * therefore manual: authorize, then paste the URL you were redirected to back
- * into the terminal. Pasting the whole URL (not just the code) is what lets
- * the script verify the `state` it generated.
- *
- * It never prints the refresh token. The new value is written straight into
- * `.env` and copied to the clipboard so it can be pasted into Vercel; the
- * terminal only ever sees its length.
- *
- * Prerequisite (one time): `https://anil.vercel.app` must be listed in the
- * app's Redirect URIs at developer.spotify.com/dashboard. Spotify matches it
- * byte-for-byte, so REDIRECT below has to spell it exactly — no path, no
- * trailing slash.
- *
+ * spotify-token.mjs — mint a fresh SPOTIFY_REFRESH_TOKEN (400 `invalid_grant` means the old
+ * one was revoked). Manual auth-code flow: authorize, then paste the whole redirect URL back
+ * so `state` can be verified. REDIRECT must be listed byte-for-byte on the app's Redirect URIs.
+ * Needs SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET in .env; writes the new token into .env and
+ * the clipboard, never to the terminal.
  * Usage: node scripts/spotify-token.mjs
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -72,8 +54,7 @@ const authorizeUrl = `https://accounts.spotify.com/authorize?${new URLSearchPara
   redirect_uri: REDIRECT,
   scope: SCOPES,
   state,
-  // force the consent screen even if the app is already authorized — a silent
-  // re-approval can hand back the same revoked grant
+  // force the consent screen — a silent re-approval can hand back the same revoked grant
   show_dialog: 'true'
 })}`;
 
@@ -103,8 +84,7 @@ if (/^https?:\/\//.test(answer)) {
     process.exit(1);
   }
 } else {
-  // a bare code carries no state, so the CSRF check is skipped; harmless when
-  // the value came straight off your own screen, worth knowing all the same
+  // a bare code carries no state, so the CSRF check is skipped
   console.warn('\n(no state to verify — pasting the full URL next time checks it)');
 }
 

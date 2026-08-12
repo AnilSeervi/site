@@ -1,23 +1,4 @@
-/**
- * <as-moving> — data plumbing + drawing for the MOVING section (frame 6d).
- *
- * On connect it fetches /api/moving and /api/fitness in parallel
- * (Promise.allSettled — a dead fitness feed never blocks the strip) and:
- *   - decodes the latest run/ride polyline (@mapbox/polyline) into the
- *     230×150 route etching (normalized, aspect-preserving, ~12px inset);
- *   - fills the vitals rows (last run / this month / vo2max / resting hr);
- *     the RHR dot's beat+pulse duration is 60/RHR seconds, set inline;
- *   - builds the 90-bar consistency strip and fires its rise-in stagger via
- *     IntersectionObserver on first viewport entry.
- *
- * Degradation (README rule): Moving feed disabled / unreachable / empty → the
- * section stays `hidden` — it renders NOTHING. Fitness nulls → only those
- * rows drop. The SSR content under <as-moving> is placeholder copy that is
- * never shown; the island overwrites everything before un-hiding.
- *
- * Reduced motion: bars render risen instantly (no IO wait), the RHR dot
- * stays static (no inline animation), and CSS hides the route runner.
- */
+/** <as-moving> — fetches /api/moving + /api/fitness, draws the route etching, vitals rows and 90-day strip. */
 
 import polyline from '@mapbox/polyline';
 import { isMobile, onBreakpointChange } from './breakpoint';
@@ -39,7 +20,7 @@ interface MovingDay {
   date: string;
   seconds: number;
   bucket: Bucket | 'rest';
-  /** detail for the hover readout — absent on rest days (see lib/moving.ts) */
+  /** hover-readout detail — absent on rest days */
   count?: number;
   parts?: Array<{ bucket: Bucket; seconds: number }>;
   names?: string[];
@@ -66,7 +47,7 @@ const VIEW_W = 230;
 const VIEW_H = 150;
 const INSET = 12;
 
-/** IST offset — weekday/heat copy keeps the author's clock */
+/** IST offset in minutes — every weekday/date string is IST, not UTC */
 const IST_OFFSET_MIN = 330;
 
 const BAR_COLORS: Record<Bucket, string> = {
@@ -107,17 +88,14 @@ function istDate(iso: string): Date | null {
   return new Date(t + IST_OFFSET_MIN * 60_000);
 }
 
-/** '— saturday, before the heat' — time-of-day suffix from the IST start hour */
+/** time-of-day suffix from the IST start hour */
 function heatPhrase(hour: number): string {
   if (hour < 12) return 'before the heat';
   if (hour < 17) return 'braving the heat';
   return 'after the heat';
 }
 
-/**
- * Coarse duration for the strip readout — `42m`, `1h12`, `<1m`. The vitals row
- * keeps m:ss precision because it's a record; the strip is a scan.
- */
+/** seconds → coarse duration for the strip readout: `42m`, `1h12`, `<1m` */
 function coarse(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
   if (s < 60) return '<1m';
@@ -125,7 +103,7 @@ function coarse(seconds: number): string {
   return `${Math.floor(s / 3600)}h${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
 }
 
-/** 'sat jul 18' — the strip's dates are already IST calendar days, no offset maths */
+/** 'sat jul 18' — strip dates are already IST calendar days, so no offset maths */
 function dayLabel(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
@@ -153,8 +131,6 @@ class AsMoving extends HTMLElement {
   #etchT2: ReturnType<typeof setTimeout> | null = null;
 
   connectedCallback() {
-    // reveal the shell (labels + rule + placeholders); the skeletons breathe
-    // in only after the 180ms gate, values fade in once data lands
     this.#t0 = performance.now();
     this.hidden = false;
     this.#phase.start();
@@ -163,8 +139,7 @@ class AsMoving extends HTMLElement {
       if (this.#days) this.#buildStrip(this.#days);
     });
 
-    // The strip readout is pointer-fine only: aiming at a ~4px bar by touch is
-    // a coin flip, so phones keep the legend and lose nothing they could use.
+    // pointer-fine only — a ~4px bar is not targetable by touch
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
       const strip = this.querySelector<HTMLElement>('[data-strip]');
       strip?.addEventListener('pointerover', this.#onStripOver);
@@ -196,7 +171,7 @@ class AsMoving extends HTMLElement {
     if (!this.isConnected) return;
 
     const s = alive(moving);
-    // didn't answer / disabled / empty → hide the whole block, no zeros (8b)
+    // no answer / disabled / empty → hide the whole block, never show zeros
     if (!s || !Array.isArray(s.days) || s.days.length === 0) {
       this.#phase.cancel();
       this.hidden = true;
@@ -205,8 +180,6 @@ class AsMoving extends HTMLElement {
     const days = s.days;
     const f = alive(fitness);
 
-    // hold the skeletons until min-show, then fill + reveal (route draws,
-    // vitals fade, strip rises — all gated on data-load="arrived" in CSS)
     this.#phase.settle(() => {
       this.#days = days;
       this.#applyEtch(s.latest ?? null);
@@ -216,8 +189,8 @@ class AsMoving extends HTMLElement {
   }
 
   #hideRow(name: string) {
-    // inline display:none, not [hidden] — the rows' display:grid class would
-    // out-cascade the UA hidden rule (same trick as <as-live-data>)
+    // inline display:none, not [hidden] — the row's display:grid out-cascades
+    // the UA [hidden] rule
     const row = this.querySelector<HTMLElement>(`[data-row="${name}"]`);
     if (row) row.style.display = 'none';
   }
@@ -246,8 +219,8 @@ class AsMoving extends HTMLElement {
     }
     if (!Array.isArray(pts) || pts.length < 2) return drop();
 
-    // project: x = lng·cos(midLat) (equirectangular, keeps the shape honest),
-    // y = −lat (north up); then fit into the viewBox preserving aspect
+    // equirectangular: x = lng·cos(midLat), y = −lat (north up), then fit the
+    // viewBox preserving aspect. lat/lng arrive in degrees, cos() needs radians.
     const midLat = (pts.reduce((a, [lat]) => a + lat, 0) / pts.length) * (Math.PI / 180);
     const k = Math.cos(midLat);
     const xs = pts.map(([, lng]) => lng * k);
@@ -282,13 +255,12 @@ class AsMoving extends HTMLElement {
       ? `the shape of ${weekday} — ${latest.name.toLowerCase()}`
       : `the shape of it — ${latest.name.toLowerCase()}`;
 
-    // lock the fix dot onto the route's start point (it slides there from centre)
     if (fix) fix.style.transform = `translate(${px(0)}px,${py(0)}px)`;
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const instant = performance.now() - this.#t0 < 180;
 
-    // cached / reduced motion → no loader: the route is simply there, whole
+    // cached or reduced motion → no loader, draw the route whole
     if (reduced || instant) {
       if (base) base.style.strokeDashoffset = '0';
       this.classList.add('settled');
@@ -296,7 +268,7 @@ class AsMoving extends HTMLElement {
       return;
     }
 
-    // GPS-acquire: keep pinging through the lock slide, then unfurl, then settle
+    // ordered: locking (ping) → unfurl (draw) → settled (runner laps)
     this.classList.add('locking');
     this.#etchT1 = setTimeout(() => {
       if (!this.isConnected) return;
@@ -316,7 +288,6 @@ class AsMoving extends HTMLElement {
     month: MovingRes['month'],
     fitness: FitnessRes | null
   ) {
-    // last run — the same activity the etching draws
     if (latest) {
       const label = this.querySelector<HTMLElement>('[data-live="lastrun-label"]');
       if (label) label.textContent = latest.isRun ? 'last run' : 'last ride';
@@ -327,7 +298,6 @@ class AsMoving extends HTMLElement {
       const tail = this.#part('lastrun', 'tail');
       if (tail) {
         const when = istDate(latest.startedAt);
-        // weekday + short date, then the time-of-day phrase
         tail.textContent = when
           ? `— ${WEEKDAYS[when.getUTCDay()]} ${MONTHS[when.getUTCMonth()]} ${when.getUTCDate()}, ${heatPhrase(when.getUTCHours())}`
           : '';
@@ -336,7 +306,6 @@ class AsMoving extends HTMLElement {
       this.#hideRow('lastrun');
     }
 
-    // this month
     const monthEl = this.querySelector<HTMLElement>('[data-live="month"]');
     if (month && monthEl) {
       monthEl.textContent = `${month.runKm} km on foot · ${month.activeDays} active days of ${month.daysInMonth}`;
@@ -344,12 +313,11 @@ class AsMoving extends HTMLElement {
       this.#hideRow('month');
     }
 
-    // vitals from /api/fitness — missing values DROP their row entirely
+    // /api/fitness: a missing or zero value drops its whole row
     if (typeof fitness?.vo2max === 'number' && fitness.vo2max > 0) {
       const num = this.#part('vo2max', 'num');
       if (num) num.textContent = String(fitness.vo2max);
       const tail = this.#part('vo2max', 'tail');
-      // real Garmin rating (age+sex Cooper norms), not a hardcoded label
       if (tail) {
         tail.textContent = fitness.vo2maxRating
           ? ` — garmin calls it “${fitness.vo2maxRating}”; the legs disagree`
@@ -365,7 +333,7 @@ class AsMoving extends HTMLElement {
       if (text) text.textContent = `${rhr} bpm — the dot keeps time`;
       const dot = this.querySelector<HTMLElement>('[data-rhr-dot]');
       if (dot && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        // the dot literally keeps time: one beat cycle = 60/RHR seconds
+        // one beat cycle = 60/RHR seconds (bpm → seconds per beat)
         const period = (60 / rhr).toFixed(4);
         dot.style.animation = `as-beat ${period}s ease-in-out infinite, as-pulse ${period}s ease-out infinite`;
       }
@@ -376,13 +344,7 @@ class AsMoving extends HTMLElement {
 
   // ---- strip hover readout -------------------------------------------------
 
-  /**
-   * Fill the readout with one day, in the legend's place:
-   *   `sat jul 18 — run 8.2 km · 42m · 5:04/km — morning run`
-   *   `tue jul 21 — racquet 45m · lift 27m — table tennis, strength`
-   *   `wed jul 22 — rest`
-   * Built as DOM nodes rather than innerHTML — the names come off the wire.
-   */
+  /** Fill the readout with one day. DOM nodes, not innerHTML — names come off the wire. */
   #showDay(day: MovingDay) {
     const out = this.querySelector<HTMLElement>('[data-readout]');
     if (!out) return;
@@ -400,7 +362,6 @@ class AsMoving extends HTMLElement {
       put(' — rest', 'ro-dim');
     } else {
       put(' — ');
-      // per-bucket minutes, dominant first, each word in its legend colour
       const parts = day.parts?.length
         ? day.parts
         : [{ bucket: day.bucket as Bucket, seconds: day.seconds }];
@@ -411,8 +372,7 @@ class AsMoving extends HTMLElement {
       });
       if (day.km) put(` · ${day.km} km`);
       if (day.pace) put(` · ${day.pace}/km`);
-      // the names, then ×n when more sessions ran than names shown (three legs
-      // all called "bengaluru running" fold to one name — the ×3 restores them)
+      // ×n when more sessions ran than names shown — same-day names are deduped
       const names = day.names ?? [];
       if (names.length) {
         const more = (day.count ?? 0) > names.length ? ` ×${day.count}` : '';
@@ -436,8 +396,8 @@ class AsMoving extends HTMLElement {
 
   #onStripOver = (e: PointerEvent) => {
     const bar = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-day]');
-    // gaps between bars target the strip itself → keep the last day showing
-    // rather than flickering back to the legend on every 2.5px crossing
+    // the 2.5px gaps between bars target the strip itself — keep the last day
+    // showing rather than flickering back to the legend on every crossing
     if (!bar) return;
     const day = this.#stripDays[Number(bar.dataset.day)];
     if (day) this.#showDay(day);
@@ -451,13 +411,13 @@ class AsMoving extends HTMLElement {
     const strip = this.querySelector<HTMLElement>('[data-strip]');
     if (!strip) return;
 
-    // a re-entry (breakpoint crossing) must retire the prior stagger observer,
-    // and drop any readout still showing — its day index is about to shift
+    // a rebuild must retire the prior observer and clear the readout — the
+    // data-day indices are about to shift
     this.#io?.disconnect();
     this.#io = null;
     this.#clearDay();
 
-    // mobile shows the last 60 days (7d); desktop the full 90
+    // mobile shows the last 60 days, desktop all 90
     const days = isMobile() ? allDays.slice(-60) : allDays;
     const stagger = isMobile() ? 20 : 16; // ms/bar
 
@@ -467,13 +427,12 @@ class AsMoving extends HTMLElement {
     const frag = document.createDocumentFragment();
     days.forEach((day, i) => {
       const bar = document.createElement('span');
-      // index, not the day itself — 90 JSON blobs in the DOM would be wasteful
       bar.dataset.day = String(i);
       if (day.bucket === 'rest' || day.seconds <= 0) {
         bar.style.height = '4px';
         bar.style.background = REST_COLOR;
       } else {
-        // 12–30px, linear vs the window max
+        // 12–30px tall, linear against the window's max seconds
         bar.style.height = `${Math.round(12 + 18 * (day.seconds / max))}px`;
         bar.style.background = BAR_COLORS[day.bucket];
       }
@@ -481,7 +440,7 @@ class AsMoving extends HTMLElement {
       frag.appendChild(bar);
     });
     strip.replaceChildren(frag);
-    // a rebuild after the rise already played must re-arm the animation
+    // must be removed to re-arm the animation on a rebuild
     strip.classList.remove('rise');
 
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -490,7 +449,6 @@ class AsMoving extends HTMLElement {
       return;
     }
 
-    // fire the stagger on first viewport entry; re-mounts re-fire naturally
     this.#io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {

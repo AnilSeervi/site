@@ -1,18 +1,5 @@
 ---
-/**
- * ProjectSpread — the editorial treatment on /work (handoff 6b).
- *
- * Two columns, 190px + rest. Left carries identity and the two ways out (the
- * running thing, the source); right carries the prose. The why-line is inline
- * and always visible, which is the point: it used to live in a single shared
- * slot above the list that filled on hover, so it was invisible on touch and
- * shoved the whole list down by up to 25px when it grew.
- *
- * The chip under the name holds a number, never a status word — see the note on
- * `Project.metric`. DevFolio's is filled from /api/github by <as-home-data>,
- * which is why this page still mounts one invisible island despite the
- * handoff's "no islands": the alternative is hardcoding a count that drifts.
- */
+/** Two-column project entry: identity and links left, prose right. */
 import type { Project } from '~/config/site';
 import { srcUrl } from '~/config/site';
 import GitHubMark from '~/components/icons/GitHubMark.astro';
@@ -32,8 +19,6 @@ const src = srcUrl(project);
     {
       (project.siteUp || project.live || project.metric) && (
         <p class="chip">
-          {/* `active` is a claim about the deployed site, not the repo — the one
-              version of this label a reader can check by clicking the ↗ */}
           {project.siteUp && (
             <span class="up">
               <span class="dot" aria-hidden="true" />active
@@ -41,7 +26,7 @@ const src = srcUrl(project);
           )}
           {project.live === 'devfolio' && (
             <span class="num">
-              {/* SSR values are last-known fallbacks; the island overwrites both */}
+              {/* SSR values are fallbacks; the island overwrites both */}
               {project.siteUp && ' · '}
               <span data-proof="stars">★486</span> · <span data-proof="forks">165</span> forks
             </span>
@@ -119,7 +104,6 @@ const src = srcUrl(project);
     margin: 0;
     white-space: nowrap;
   }
-  /* green, per the handoff's `active` colour — the dot inherits it */
   .chip .up {
     color: var(--live-green);
   }
@@ -130,7 +114,7 @@ const src = srcUrl(project);
     border-radius: 50%;
     background: currentColor;
     margin-right: 6px;
-    /* 5px against an 11px cap height needs nudging onto the optical centre */
+    /* optical centring of the 5px dot against 11px text */
     vertical-align: 1px;
   }
   .chip .num {
@@ -153,7 +137,6 @@ const src = srcUrl(project);
   .links a:hover {
     color: var(--text-hi);
   }
-  /* only the arrow lifts — the mark is a destination, the arrow is a direction */
   .links a.live:hover {
     transform: translate(1px, -1px);
   }
@@ -191,10 +174,6 @@ const src = srcUrl(project);
     margin: 0;
   }
 
-  /* ---- mobile (handoff 7b) ----
-     One column: the name and the icon pair share a header row, then the chip,
-     then the prose. 768px, not the handoff's 640px — every other page in the
-     site switches at 768, and two breakpoints would be a maintenance trap. */
   @media (max-width: 768px) {
     .spread {
       grid-template-columns: 1fr;
@@ -215,9 +194,8 @@ const src = srcUrl(project);
     .links {
       grid-column: 2;
       grid-row: 1;
-      /* the padding has to sit on the anchors, not here — on the container it
-         grows the flex box and leaves each <a> a 14px target. Negative left
-         margin keeps the first glyph on the column edge despite its padding. */
+      /* touch padding must sit on the anchors, not here; the negative margin
+         keeps the first glyph on the column edge */
       gap: 0;
       margin-left: -8px;
     }

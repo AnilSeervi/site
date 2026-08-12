@@ -1,10 +1,5 @@
 ---
-/**
- * Globe.astro — cobe globe for the live hero (frame 6d).
- * Drop-in replacement for the 280×280 .globe-ph placeholder: same box, so
- * .globe-col layout in live.astro is untouched. The <as-globe> island lazily
- * boots cobe when the canvas enters the viewport (src/islands/globe.ts).
- */
+// 280×280 globe; the <as-globe> island boots cobe lazily on intersect.
 ---
 
 <as-globe>
@@ -17,7 +12,7 @@
     width: 280px;
     height: 280px;
   }
-  /* 7d: globe shrinks to 220px on mobile (island resizes the canvas backing) */
+  /* mobile: 220px — the island resizes the canvas backing store to match */
   @media (max-width: 768px) {
     as-globe {
       width: 220px;
