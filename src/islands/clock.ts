@@ -27,7 +27,15 @@ class AsClock extends HTMLElement {
     const mm = String(ist.getMinutes()).padStart(2, '0');
     const h = ist.getHours();
     const greet =
-      h < 5 ? 'up too late' : h < 12 ? 'good morning' : h < 17 ? 'good afternoon' : h < 22 ? 'good evening' : 'winding down';
+      h < 5
+        ? 'up too late'
+        : h < 12
+          ? 'good morning'
+          : h < 17
+            ? 'good afternoon'
+            : h < 22
+              ? 'good evening'
+              : 'winding down';
     if (this.dataset.format === 'time') {
       this.textContent = `${hh}:${mm} ist · bengaluru`;
     } else if (matchMedia('(max-width: 768px)').matches) {

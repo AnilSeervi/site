@@ -31,7 +31,8 @@
   /* type */
   --font-serif: 'Newsreader Variable', 'Newsreader', Georgia, serif;
   --font-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-sans: 'Schibsted Grotesk Variable', 'Schibsted Grotesk', 'Helvetica Neue', Helvetica, Arial,
+  --font-sans:
+    'Schibsted Grotesk Variable', 'Schibsted Grotesk', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
 }
 

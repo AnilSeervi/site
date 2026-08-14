@@ -85,7 +85,9 @@ const out = {};
       verticalAlign: cs.verticalAlign
     };
   });
-  const o1 = await page.evaluate(() => getComputedStyle(document.querySelector('h1 .caret')).opacity);
+  const o1 = await page.evaluate(
+    () => getComputedStyle(document.querySelector('h1 .caret')).opacity
+  );
   const opacities = new Set([o1]);
   for (let i = 0; i < 8; i++) {
     await page.waitForTimeout(150);

@@ -30,14 +30,18 @@ if (push?.repo && (push.ago === 'earlier today' || push.ago === 'yesterday')) {
 }
 const w = mal.watching;
 if (w?.title && w.updatedAt && Date.now() - Date.parse(w.updatedAt) <= FRESH) {
-  liveValues.push(`${w.title} — ${w.epTotal ? `episode ${w.ep} of ${w.epTotal}` : `episode ${w.ep}`}`);
+  liveValues.push(
+    `${w.title} — ${w.epTotal ? `episode ${w.ep} of ${w.epTotal}` : `episode ${w.ep}`}`
+  );
 }
 const r = mal.reading;
 if (r?.title) liveValues.push(r.title === 'Berserk' ? `${r.title} — the long haul` : r.title);
 console.log('expected live ticker values:', JSON.stringify(liveValues));
 
 const browser = await chromium.launch();
-const page = await browser.newContext({ viewport: { width: 1400, height: 900 } }).then((c) => c.newPage());
+const page = await browser
+  .newContext({ viewport: { width: 1400, height: 900 } })
+  .then((c) => c.newPage());
 
 let release;
 const gate = new Promise((res) => (release = res));
@@ -161,8 +165,7 @@ check(
   JSON.stringify(after.rowValueAttrs)
 );
 
-const same = (a, b) =>
-  a && b && ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) < 0.01);
+const same = (a, b) => a && b && ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) < 0.01);
 check(
   'proof strip geometry unchanged',
   same(before.proofBox, after.proofBox),
@@ -186,16 +189,35 @@ if (liveValues.length >= 2) {
   }));
   check('ticker shows a live item', liveValues.includes(tick.value), JSON.stringify(tick));
   await page.waitForTimeout(3700);
-  const tick2 = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
+  const tick2 = await page.evaluate(
+    () => document.querySelector('[data-ticker-value]')?.textContent
+  );
   check(
     'ticker keeps rotating within live set',
     liveValues.includes(tick2) && tick2 !== tick.value,
     JSON.stringify(tick2)
   );
+} else if (liveValues.length === 1) {
+  // ticker.ts activates on `items.length` >= 1 and only skips rotation below 2,
+  // so a single live item is shown and sits there. The old assertion here
+  // expected placeholders for anything under 2, which only holds at zero.
+  await page
+    .waitForFunction(
+      (v) => document.querySelector('[data-ticker-value]')?.textContent === v,
+      liveValues[0],
+      { timeout: 12000 }
+    )
+    .catch(() => {});
+  const val = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
+  check(
+    'single live item is shown and does not rotate',
+    val === liveValues[0],
+    `showing "${val}" (live set ${JSON.stringify(liveValues)})`
+  );
 } else {
   const val = await page.evaluate(() => document.querySelector('[data-ticker-value]')?.textContent);
   check(
-    '<2 live items: placeholders kept',
+    'no live items: placeholders kept',
     !liveValues.includes(val),
     `showing "${val}" (live set ${JSON.stringify(liveValues)})`
   );

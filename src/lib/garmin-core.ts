@@ -144,9 +144,7 @@ export function oauth1Sign(input: OAuth1SignInput): OAuth1SignResult {
     ...Object.entries(input.bodyParams ?? {}),
     ...Object.entries(oauthParams)
   ].map(([k, v]) => [percentEncode(k), percentEncode(v)] as [string, string]);
-  all.sort(([ak, av], [bk, bv]) =>
-    ak < bk ? -1 : ak > bk ? 1 : av < bv ? -1 : av > bv ? 1 : 0
-  );
+  all.sort(([ak, av], [bk, bv]) => (ak < bk ? -1 : ak > bk ? 1 : av < bv ? -1 : av > bv ? 1 : 0));
   const paramString = all.map(([k, v]) => `${k}=${v}`).join('&');
 
   const baseString = [
@@ -302,10 +300,7 @@ function extractTicket(html: string): string {
  * SSO login → one-time service ticket. Throws MFA_REQUIRED_MESSAGE when Garmin
  * asks for a code and no `promptMfaCode` handler was provided.
  */
-export async function ssoLogin(
-  creds: GarminCredentials,
-  opts?: SsoLoginOptions
-): Promise<string> {
+export async function ssoLogin(creds: GarminCredentials, opts?: SsoLoginOptions): Promise<string> {
   const client = createSsoClient();
 
   // Cookies must be seeded on the embed widget before the signin page loads.
@@ -471,10 +466,7 @@ export async function getAccessToken(
   }
 
   const stored1 = safeParse(await store.get(KV_KEYS.oauth1));
-  if (
-    typeof stored1?.oauth_token === 'string' &&
-    typeof stored1.oauth_token_secret === 'string'
-  ) {
+  if (typeof stored1?.oauth_token === 'string' && typeof stored1.oauth_token_secret === 'string') {
     const oauth1: OAuth1Token = {
       oauth_token: stored1.oauth_token,
       oauth_token_secret: stored1.oauth_token_secret
@@ -549,7 +541,9 @@ export async function getVo2Max(accessToken: string, date: string): Promise<numb
 export async function getPersonalInfo(
   accessToken: string
 ): Promise<{ gender: string | null; birthDate: string | null }> {
-  const data = asRecord(await apiGet(accessToken, '/userprofile-service/userprofile/personal-information'));
+  const data = asRecord(
+    await apiGet(accessToken, '/userprofile-service/userprofile/personal-information')
+  );
   return {
     gender: typeof data?.gender === 'string' ? data.gender : null,
     birthDate: typeof data?.birthDate === 'string' ? data.birthDate : null

@@ -7,8 +7,7 @@ import { fitShelf, SHELF_FIT, SHELF_GAP, SHELF_HEIGHT, type Book } from '~/lib/h
 import { reading as cfg } from '~/config/site';
 
 const open = snapshot.reading as Book[];
-const now =
-  open.find((b) => b.slug === cfg.now) ?? open.find((b) => b.cover) ?? open[0] ?? null;
+const now = open.find((b) => b.slug === cfg.now) ?? open.find((b) => b.cover) ?? open[0] ?? null;
 
 /* fit order matters: the in-progress group is fitted first, the finished group
    gets the width that's left minus DIVIDER */
@@ -71,15 +70,25 @@ const shelf = [
                 <span class="track" aria-hidden="true">
                   <span class="fill" style={`width:${now.progress ?? 0}%`} data-now-fill />
                 </span>
-                <span class="pct" data-now-pct>{now.progress ?? 0}%</span>
+                <span class="pct" data-now-pct>
+                  {now.progress ?? 0}%
+                </span>
               </p>
             </div>
 
             <div class="current-meta">
-              <p class="when" data-now-when>now — {now.since ? `since ${now.since}` : 'in hand'}</p>
-              <h3 class="title" data-now-title>{now.title}</h3>
-              <p class="byline" hidden={!bylineOf(now)} data-now-byline>{bylineOf(now)}</p>
-              <p class="note" hidden={!cfg.notes[now.slug]} data-now-note>{cfg.notes[now.slug] ?? ''}</p>
+              <p class="when" data-now-when>
+                now — {now.since ? `since ${now.since}` : 'in hand'}
+              </p>
+              <h3 class="title" data-now-title>
+                {now.title}
+              </h3>
+              <p class="byline" hidden={!bylineOf(now)} data-now-byline>
+                {bylineOf(now)}
+              </p>
+              <p class="note" hidden={!cfg.notes[now.slug]} data-now-note>
+                {cfg.notes[now.slug] ?? ''}
+              </p>
             </div>
           </div>
         )}
@@ -111,7 +120,9 @@ const shelf = [
                     data-byline={bylineOf(s)}
                     data-since={s.since ?? ''}
                     data-progress={s.progress ?? ''}
-                    aria-current={s.group === 'reading' && s.slug === now?.slug ? 'true' : undefined}
+                    aria-current={
+                      s.group === 'reading' && s.slug === now?.slug ? 'true' : undefined
+                    }
                     aria-label={
                       s.group === 'reading'
                         ? `${s.title}${s.author ? ` by ${s.author}` : ''} — bring forward`
@@ -144,7 +155,11 @@ const shelf = [
             </div>
 
             <p class="caption">
-              <span class="cap-text" data-caption data-idle={`the last ${spines.length} — tip a spine; click to take one down`}>
+              <span
+                class="cap-text"
+                data-caption
+                data-idle={`the last ${spines.length} — tip a spine; click to take one down`}
+              >
                 the last {spines.length} — tip a spine; click to take one down
               </span>
               <span class="cap-right">spine width ∝ pages</span>
@@ -207,7 +222,9 @@ const shelf = [
     height: 250px;
     transform-style: preserve-3d;
     /* the island overrides this inline while the pointer is inside; this is the settle on leave */
-    transition: transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 500ms ease;
+    transition:
+      transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1),
+      box-shadow 500ms ease;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
     border-radius: 2px 3px 3px 2px;
     background: var(--surface);
@@ -238,11 +255,7 @@ const shelf = [
     right: -4px;
     width: 5px;
     border-radius: 0 2px 2px 0;
-    background: repeating-linear-gradient(
-      to bottom,
-      #cfc6b6 0 1px,
-      #9d947f 1px 2px
-    );
+    background: repeating-linear-gradient(to bottom, #cfc6b6 0 1px, #9d947f 1px 2px);
     opacity: 0.72;
   }
   .sheen {
@@ -526,8 +539,8 @@ const shelf = [
     /* longhands, not the shorthand: one invalid var() substitution in a `background`
        shorthand drops every longhand it set, including the colour underneath */
     background-color: var(--casing);
-    background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.22)),
-      var(--cover);
+    background-image:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.22)), var(--cover);
     background-size: cover, cover;
     background-position: center, center;
     background-repeat: no-repeat, no-repeat;

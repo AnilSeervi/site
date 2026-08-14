@@ -192,7 +192,9 @@ class AsReading extends HTMLElement {
 
     const { title = '', author = '', note = '', group } = book.dataset;
     const hint =
-      group === 'reading' && book.getAttribute('aria-current') !== 'true' ? 'click to bring it up' : '';
+      group === 'reading' && book.getAttribute('aria-current') !== 'true'
+        ? 'click to bring it up'
+        : '';
     cap.textContent = [title, author && `— ${author}`, note ? `· ${note}` : hint && `· ${hint}`]
       .filter(Boolean)
       .join(' ');
@@ -321,7 +323,8 @@ class AsReading extends HTMLElement {
       const i = this.#visible.indexOf(held);
       if (i < 0) continue;
       // never lean across the bookend: the two groups are separate runs of books
-      const near = (b?: HTMLButtonElement) => b && !b.dataset.state && b.dataset.group === held.dataset.group;
+      const near = (b?: HTMLButtonElement) =>
+        b && !b.dataset.state && b.dataset.group === held.dataset.group;
       const left = this.#visible[i - 1];
       const right = this.#visible[i + 1];
       if (near(left)) left!.dataset.lean = 'left';

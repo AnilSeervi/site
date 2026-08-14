@@ -22,12 +22,20 @@ export async function getStaticPaths() {
         entry,
         kind: 'post' as const,
         prev: older
-          ? { kicker: '← previous', title: shortTitle(older.data.title), href: `/writing/${older.id}` }
+          ? {
+              kicker: '← previous',
+              title: shortTitle(older.data.title),
+              href: `/writing/${older.id}`
+            }
           : undefined,
         next:
           i === 0
             ? { kicker: "newest — you're here", title: 'back to the index →', href: '/writing' }
-            : { kicker: 'next →', title: shortTitle(newer!.data.title), href: `/writing/${newer!.id}` }
+            : {
+                kicker: 'next →',
+                title: shortTitle(newer!.data.title),
+                href: `/writing/${newer!.id}`
+              }
       }
     };
   });

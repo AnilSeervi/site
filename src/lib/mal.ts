@@ -132,4 +132,3 @@ export async function getShelf(accessToken: string): Promise<MALShelf | null> {
     mean: stats.mean_score ?? 0
   };
 }
-

@@ -67,7 +67,11 @@ function el(type: string, style: Record<string, unknown>, children?: unknown): E
 function buildCard(card: Card): El {
   const title = card.kind === 'entry' ? card.title : card.kind === 'page' ? card.label : site.title;
   const meta =
-    card.kind === 'entry' ? card.meta : card.kind === 'page' ? 'staff software engineer · zenduty → xurrent' : site.url.replace('https://', '');
+    card.kind === 'entry'
+      ? card.meta
+      : card.kind === 'page'
+        ? 'staff software engineer · zenduty → xurrent'
+        : site.url.replace('https://', '');
 
   const titleBlock: El[] = [
     el(

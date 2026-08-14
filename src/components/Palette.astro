@@ -598,9 +598,7 @@ const payload = {
               cur = getComputedStyle(document.documentElement)
                 .getPropertyValue('--as-accent')
                 .trim();
-            const idx = this.data.accents.findIndex(
-              (c) => c.toLowerCase() === cur.toLowerCase()
-            );
+            const idx = this.data.accents.findIndex((c) => c.toLowerCase() === cur.toLowerCase());
             const next = this.data.accents[(idx + 1) % this.data.accents.length];
             document.documentElement.style.setProperty('--as-accent', next);
             try {

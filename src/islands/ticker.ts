@@ -136,11 +136,7 @@ class AsTicker extends HTMLElement {
     }
 
     const act = moving?.disabled ? null : moving?.latestAny;
-    if (
-      act?.name &&
-      act.startedAt &&
-      Date.now() - Date.parse(act.startedAt) <= FRESH_MS
-    ) {
+    if (act?.name && act.startedAt && Date.now() - Date.parse(act.startedAt) <= FRESH_MS) {
       const rel = relativeBucket(act.startedAt);
       if (rel) {
         const name = String(act.name).toLowerCase();

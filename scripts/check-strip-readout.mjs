@@ -39,14 +39,13 @@ const readLine = (page) =>
         word: e.textContent,
         color: getComputedStyle(e).color
       })),
-      dimmed: [...(out?.querySelectorAll('.ro-dim') ?? [])].map(
-        (e) => getComputedStyle(e).color
-      ),
+      dimmed: [...(out?.querySelectorAll('.ro-dim') ?? [])].map((e) => getComputedStyle(e).color),
       clipped: (out?.scrollWidth ?? 0) > (slot?.clientWidth ?? 0)
     };
   });
 
-const HEAD = /^(sun|mon|tue|wed|thu|fri|sat) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{1,2} — /;
+const HEAD =
+  /^(sun|mon|tue|wed|thu|fri|sat) (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec) \d{1,2} — /;
 
 // mocked payload — one of each shape the composer has to handle
 const day = (date, extra) => ({ date, ...extra });
@@ -117,7 +116,10 @@ console.log('\npass 1 — live /api/moving');
   check('strip built', n === 90, `${n} bars`);
 
   const idle = await readLine(page);
-  check('legend holds the line at rest', idle.legendHidden === false && idle.readoutHidden === true);
+  check(
+    'legend holds the line at rest',
+    idle.legendHidden === false && idle.readoutHidden === true
+  );
 
   const idleH = await page.locator('.strip-meta').evaluate((e) => e.getBoundingClientRect().height);
 
@@ -135,7 +137,9 @@ console.log('\npass 1 — live /api/moving');
   check('no line overflows the slot', clipped === 0, `${clipped}/${n} clipped`);
   console.log(`        last three: ${samples.map((s) => `“${s}”`).join('  ')}`);
 
-  const hoverH = await page.locator('.strip-meta').evaluate((e) => e.getBoundingClientRect().height);
+  const hoverH = await page
+    .locator('.strip-meta')
+    .evaluate((e) => e.getBoundingClientRect().height);
   check('swap does not reflow the line', idleH === hoverH, `${idleH}px → ${hoverH}px`);
 
   // the bucket words must not fall back to the inherited --faint (#5e5749)
@@ -164,8 +168,14 @@ console.log('\npass 2 — mocked shapes');
 
   const want = [
     ['rest day', 'mon jul 20 — rest'],
-    ['run day: km + pace, ×3 fold', 'tue jul 21 — run 1h15 · 10.5 km · 7:10/km — bengaluru running ×3'],
-    ['two buckets, names in bucket order', 'wed jul 22 — racquet 35m · lift 29m — table tennis, strength'],
+    [
+      'run day: km + pace, ×3 fold',
+      'tue jul 21 — run 1h15 · 10.5 km · 7:10/km — bengaluru running ×3'
+    ],
+    [
+      'two buckets, names in bucket order',
+      'wed jul 22 — racquet 35m · lift 29m — table tennis, strength'
+    ],
     ['indoor day: no distance', 'thu jul 23 — lift 36m — strength'],
     ['over an hour → 1h43', 'fri jul 24 — other 1h43 · 7.2 km — bengaluru walking']
   ];

@@ -36,7 +36,11 @@ function check(name, actual, expected) {
   }
 }
 
-check('signature base string (RFC 5849 §3.4.1.1 + Errata 2550)', result.baseString, EXPECTED_BASE_STRING);
+check(
+  'signature base string (RFC 5849 §3.4.1.1 + Errata 2550)',
+  result.baseString,
+  EXPECTED_BASE_STRING
+);
 check('HMAC-SHA1 signature (RFC 5849 §3.4.2)', result.signature, EXPECTED_SIGNATURE);
 
 // percent-encoding edge cases (RFC 3986 unreserved set only)

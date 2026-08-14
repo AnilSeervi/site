@@ -42,9 +42,12 @@ await page.addInitScript(() => {
 // instead, which is the condition the assertions below actually depend on.
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 await page
-  .waitForFunction(() => document.querySelector('as-ticker[data-live]')?.dataset.load !== 'waiting', {
-    timeout: 15000
-  })
+  .waitForFunction(
+    () => document.querySelector('as-ticker[data-live]')?.dataset.load !== 'waiting',
+    {
+      timeout: 15000
+    }
+  )
   .catch(() => {}); // fall through and let the assertions report what they see
 await page.waitForTimeout(400);
 
@@ -157,7 +160,15 @@ console.log(
   JSON.stringify(
     {
       browserTz,
-      clock: { clockText, istNow: `${String(istH).padStart(2, '0')}:${String(istM).padStart(2, '0')}`, formatOk: !!m, clockOk, clockDiffMin, expectGreet, greetOk },
+      clock: {
+        clockText,
+        istNow: `${String(istH).padStart(2, '0')}:${String(istM).padStart(2, '0')}`,
+        formatOk: !!m,
+        clockOk,
+        clockDiffMin,
+        expectGreet,
+        greetOk
+      },
       clockIntervalsAtHome: clockIntervals,
       ticker: {
         transitions,

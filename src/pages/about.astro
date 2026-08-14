@@ -28,7 +28,12 @@ const deployLabel = deployedAt
   <!-- portrait + facts -->
   <div class="portrait-grid">
     <div class="portrait">
-      <as-ascii-portrait data-cells="60x75" data-cells-mobile="52x65" role="img" aria-label="ASCII-art portrait of Anil Seervi">
+      <as-ascii-portrait
+        data-cells="60x75"
+        data-cells-mobile="52x65"
+        role="img"
+        aria-label="ASCII-art portrait of Anil Seervi"
+      >
         <canvas
           class="ascii-portrait"
           width="480"
@@ -64,10 +69,7 @@ const deployLabel = deployedAt
           /* explicit `first`/`last` classes: lane, cards and milestones render
              after these, so :first-child/:last-child would match nothing. */
           <span
-            class:list={[
-              'cal-year',
-              { first: i === 0, last: i === calendar.years.length - 1 }
-            ]}
+            class:list={['cal-year', { first: i === 0, last: i === calendar.years.length - 1 }]}
             style={`grid-row:${i + 1}`}
           >
             {y}
@@ -133,8 +135,8 @@ const deployLabel = deployedAt
       }
     </div>
     <div class="cal-hint">
-      — <span class="desktop-only">click</span><span class="mobile-only">tap</span> a card or the
-      striped lane; what shipped there slides up
+      — <span class="desktop-only">click</span><span class="mobile-only">tap</span> a card or the striped
+      lane; what shipped there slides up
     </div>
     <!-- detail sheet — markup contract in ~/islands/drawer.ts -->
     <as-drawer class="cal-drawer" hidden>
@@ -184,9 +186,9 @@ const deployLabel = deployedAt
   <!-- colophon -->
   <Section label="COLOPHON" />
   <div class="colophon">
-    Set in <em>Newsreader</em>, Schibsted Grotesk and <span class="mono">Spline Sans Mono</span> —
-    each name in its own face. Built with Astro — islands for the live feeds, view transitions
-    between every page. Deployed on Vercel ▲<span class="desktop-only"
+    Set in <em>Newsreader</em>, Schibsted Grotesk and <span class="mono">Spline Sans Mono</span> — each
+    name in its own face. Built with Astro — islands for the live feeds, view transitions between every
+    page. Deployed on Vercel ▲<span class="desktop-only"
       >, <time data-deploy datetime={deployedAt.toISOString().slice(0, 10)}
         >last deploy {deployLabel}</time
       >. Live data from Spotify, GitHub, MyAnimeList, Garmin, Hardcover and Open-Meteo</span

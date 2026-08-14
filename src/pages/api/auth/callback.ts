@@ -67,8 +67,9 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
           primary: boolean;
           verified: boolean;
         }>;
-        email = (emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified))
-          ?.email ?? null;
+        email =
+          (emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified))?.email ??
+          null;
       }
     }
 

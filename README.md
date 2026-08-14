@@ -44,15 +44,15 @@ scripts/          Playwright probes and the Hardcover sync
 
 ## Live data
 
-| section    | source                                    |
-| ---------- | ----------------------------------------- |
-| listening  | Spotify                                   |
-| coding     | GitHub contributions                      |
-| watching   | MyAnimeList                               |
-| moving     | Garmin activities                         |
-| reading    | Hardcover                                 |
-| weather    | Open-Meteo (no key needed)                |
-| guestbook  | Turso (libSQL) + GitHub OAuth for sign-in |
+| section   | source                                    |
+| --------- | ----------------------------------------- |
+| listening | Spotify                                   |
+| coding    | GitHub contributions                      |
+| watching  | MyAnimeList                               |
+| moving    | Garmin activities                         |
+| reading   | Hardcover                                 |
+| weather   | Open-Meteo (no key needed)                |
+| guestbook | Turso (libSQL) + GitHub OAuth for sign-in |
 
 Credentials, by name only — see the provider in `src/lib/` for what each one is
 for:

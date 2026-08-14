@@ -22,7 +22,14 @@ for (let i = 0; i < 24; i++) {
     let n = 0;
     let cx = 0;
     for (let j = 0; j < d.length; j += 4) {
-      if (d[j] > 170 && d[j + 1] > 120 && d[j + 1] < 190 && d[j + 2] < 110 && d[j] > d[j + 1] && d[j + 1] > d[j + 2]) {
+      if (
+        d[j] > 170 &&
+        d[j + 1] > 120 &&
+        d[j + 1] < 190 &&
+        d[j + 2] < 110 &&
+        d[j] > d[j + 1] &&
+        d[j + 1] > d[j + 2]
+      ) {
         n++;
         cx += ((j / 4) % c.width) / c.width;
       }
@@ -39,5 +46,7 @@ for (let i = 0; i < 24; i++) {
   }
   await p.waitForTimeout(1800);
 }
-console.log(found >= 0 ? `brass marker visible at sample ${found}` : 'NO marker across full rotation');
+console.log(
+  found >= 0 ? `brass marker visible at sample ${found}` : 'NO marker across full rotation'
+);
 await b.close();

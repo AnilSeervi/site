@@ -94,7 +94,9 @@ async function getPlaylistName(token: string, href: string): Promise<string | nu
 }
 
 /** me/player/currently-playing: 204 or empty body → not playing; only `track` items count. */
-async function getNowPlaying(token: string): Promise<{ isPlaying: boolean; now: SpotifyNow | null }> {
+async function getNowPlaying(
+  token: string
+): Promise<{ isPlaying: boolean; now: SpotifyNow | null }> {
   const res = await fetch(NOW_PLAYING_ENDPOINT, { headers: authHeaders(token) });
 
   if (res.status === 204) return { isPlaying: false, now: null };

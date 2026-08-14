@@ -56,9 +56,7 @@ await page.waitForFunction(() => {
   const el = document.querySelector('[data-typeon]');
   return el && el.textContent.length >= 1 && el.textContent.length < 11;
 });
-out.midTypingText = await page.evaluate(
-  () => document.querySelector('[data-typeon]').textContent
-);
+out.midTypingText = await page.evaluate(() => document.querySelector('[data-typeon]').textContent);
 out.typeonTimersDuringTyping = await page.evaluate(() => window.__typeonTimers());
 
 await Promise.all([
@@ -77,10 +75,7 @@ await page.evaluate(() => {
     if (window.__tl.length > 140) clearInterval(iv);
   }, 20);
 });
-await Promise.all([
-  page.waitForURL((u) => u.pathname === '/'),
-  page.click('header .brand')
-]);
+await Promise.all([page.waitForURL((u) => u.pathname === '/'), page.click('header .brand')]);
 await page.waitForTimeout(2600);
 
 const tl = await page.evaluate(() => window.__tl);

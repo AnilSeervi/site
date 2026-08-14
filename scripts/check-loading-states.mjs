@@ -9,7 +9,14 @@ const check = (name, ok, detail = '') => {
   if (!ok) failures++;
 };
 const txt = async (page, sel) =>
-  (await page.locator(sel).textContent().catch(() => ''))?.replace(/\s+/g, ' ').trim() ?? '';
+  (
+    await page
+      .locator(sel)
+      .textContent()
+      .catch(() => '')
+  )
+    ?.replace(/\s+/g, ' ')
+    .trim() ?? '';
 
 // Wait on the island's own settle signal — a fixed delay races a slow real feed on dev.
 const liveArrived = (page) =>
@@ -31,7 +38,11 @@ const browser = await chromium.launch();
   await page.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
   await liveArrived(page).catch(() => {});
   const total = await txt(page, '[data-live="contrib-total"]');
-  check('github error → caption "github is quiet — try later"', total === 'github is quiet — try later', total);
+  check(
+    'github error → caption "github is quiet — try later"',
+    total === 'github is quiet — try later',
+    total
+  );
   check(
     'github error → dot-field placeholder stays (not .arrived)',
     !(await page.locator('[data-contrib]').evaluate((el) => el.classList.contains('arrived')))
@@ -55,11 +66,18 @@ const browser = await chromium.launch();
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/moving', (r) =>
-    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ latest: null, latestAny: null, month: null, days: [] }) })
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ latest: null, latestAny: null, month: null, days: [] })
+    })
   );
   await page.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
   await movingSettled(page).catch(() => {});
-  check('moving empty days → whole MOVING block hidden', await page.locator('as-moving').isHidden());
+  check(
+    'moving empty days → whole MOVING block hidden',
+    await page.locator('as-moving').isHidden()
+  );
   await page.close();
 }
 
@@ -69,25 +87,40 @@ const browser = await chromium.launch();
     r.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ isPlaying: false, now: null, last: { title: 'Test Track', artist: 'Test Artist', url: '#', playedAt: '' } })
+      body: JSON.stringify({
+        isPlaying: false,
+        now: null,
+        last: { title: 'Test Track', artist: 'Test Artist', url: '#', playedAt: '' }
+      })
     })
   );
   await page.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
   await liveArrived(page).catch(() => {});
   check('spotify no now → now row hidden', await page.locator('[data-row="now"]').isHidden());
   const last = await txt(page, '[data-live="last"]');
-  check('spotify no now → last played shows', last.includes('Test Track') && last.includes('Test Artist'), last);
+  check(
+    'spotify no now → last played shows',
+    last.includes('Test Track') && last.includes('Test Artist'),
+    last
+  );
   await page.close();
 }
 
 {
   const page = await browser.newPage({ viewport: { width: 1000, height: 1500 } });
   await page.route('**/api/mal', (r) =>
-    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ disabled: true }) })
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ disabled: true })
+    })
   );
   await page.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
   await liveArrived(page).catch(() => {});
-  check('mal disabled → MYANIMELIST section hidden', await page.locator('[data-section="mal"]').isHidden());
+  check(
+    'mal disabled → MYANIMELIST section hidden',
+    await page.locator('[data-section="mal"]').isHidden()
+  );
   await page.close();
 }
 

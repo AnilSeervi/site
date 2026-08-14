@@ -90,7 +90,9 @@ results.staggerAnimations = await page.evaluate(() => {
   return [...document.querySelectorAll('.as-enter')].map((el) => {
     const cs = getComputedStyle(el);
     return {
-      tag: el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''),
+      tag:
+        el.tagName.toLowerCase() +
+        (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : ''),
       name: cs.animationName,
       delay: cs.animationDelay,
       running: el.getAnimations().length

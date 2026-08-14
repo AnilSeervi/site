@@ -22,7 +22,9 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1000, height: 1400 } });
 
 const [spotify, github, mal, weather] = await Promise.all(
-  ['spotify', 'github', 'mal', 'weather'].map((f) => fetch(`${BASE}/api/${f}`).then((r) => r.json()))
+  ['spotify', 'github', 'mal', 'weather'].map((f) =>
+    fetch(`${BASE}/api/${f}`).then((r) => r.json())
+  )
 );
 
 console.log('\npass 1 · real data');
@@ -33,7 +35,10 @@ check(
   'clock row',
   /^\d{2}:\d{2} ist · bengaluru$/.test(await text(page.locator('[data-row="clock"] as-clock')))
 );
-check('coords row', (await text(page.locator('[data-row="coords"] .nval'))) === '12.97° N · 77.59° E');
+check(
+  'coords row',
+  (await text(page.locator('[data-row="coords"] .nval'))) === '12.97° N · 77.59° E'
+);
 
 if (weather.temp != null && weather.phrase) {
   const got = await text(page.locator('[data-live="weather"]'));
@@ -75,7 +80,11 @@ if (spotify.error) {
   }
   if (spotify.last) {
     const got = await text(page.locator('[data-live="last"]'));
-    check('last played matches /api/spotify last', got === `${spotify.last.title} — ${spotify.last.artist}`, got);
+    check(
+      'last played matches /api/spotify last',
+      got === `${spotify.last.title} — ${spotify.last.artist}`,
+      got
+    );
   } else {
     check('last row hidden (null feed)', await page.locator('[data-row="last"]').isHidden());
   }
@@ -110,10 +119,22 @@ if (Array.isArray(github.days)) {
       const all = x.getImageData(0, 0, cv.width, cv.height).data;
       let brass = 0;
       for (let i = 0; i < all.length; i += 4) {
-        if (all[i + 3] > 100 && all[i] > 190 && all[i + 1] > 130 && all[i + 1] < 190 && all[i + 2] < 110) brass++;
+        if (
+          all[i + 3] > 100 &&
+          all[i] > 190 &&
+          all[i + 1] > 130 &&
+          all[i + 1] < 190 &&
+          all[i + 2] < 110
+        )
+          brass++;
       }
       const probe = ([w, d]) => {
-        const q = x.getImageData(Math.round((w * 13.5 + 5) * 2), Math.round((d * 13.5 + 5) * 2), 1, 1).data;
+        const q = x.getImageData(
+          Math.round((w * 13.5 + 5) * 2),
+          Math.round((d * 13.5 + 5) * 2),
+          1,
+          1
+        ).data;
         return [...q];
       };
       return { brass, hot: hot ? probe(hot) : null, cold: cold ? probe(cold) : null };
@@ -130,16 +151,26 @@ if (Array.isArray(github.days)) {
   );
   check(
     'hot cell probe is brass rgba(217,165,74,…)',
-    px.hot && Math.abs(px.hot[0] - 217) < 8 && Math.abs(px.hot[1] - 165) < 8 && Math.abs(px.hot[2] - 74) < 8 && px.hot[3] > 100,
+    px.hot &&
+      Math.abs(px.hot[0] - 217) < 8 &&
+      Math.abs(px.hot[1] - 165) < 8 &&
+      Math.abs(px.hot[2] - 74) < 8 &&
+      px.hot[3] > 100,
     String(px.hot)
   );
   check('cold cell probe is faint parchment', px.cold && px.cold[3] < 40, String(px.cold));
 } else {
-  check('github section hidden (null feed)', await page.locator('[data-section="github"]').isHidden());
+  check(
+    'github section hidden (null feed)',
+    await page.locator('[data-section="github"]').isHidden()
+  );
 }
 
 if (mal.watching) {
-  const tail = mal.watching.epTotal == null ? `episode ${mal.watching.ep}` : `episode ${mal.watching.ep} of ${mal.watching.epTotal}`;
+  const tail =
+    mal.watching.epTotal == null
+      ? `episode ${mal.watching.ep}`
+      : `episode ${mal.watching.ep} of ${mal.watching.epTotal}`;
   // Only the base title is in <em>; a season/part suffix stays outside it, lowercased.
   const split = mal.watching.title.match(
     /^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i
@@ -183,13 +214,14 @@ check('MOVING section absent', (await page.locator('text=/MOVING · GARMIN/').co
 check('GUESTBOOK section absent', (await page.locator('text=/GUESTBOOK/').count()) === 0);
 check(
   'globe placeholder 280×280 + caption',
-  (await page.locator('.globe-ph').evaluate((el) => `${el.offsetWidth}×${el.offsetHeight}`)) === '280×280' &&
-  (await text(page.locator('.globe-cap'))) === 'bengaluru — home'
+  (await page.locator('.globe-ph').evaluate((el) => `${el.offsetWidth}×${el.offsetHeight}`)) ===
+    '280×280' && (await text(page.locator('.globe-cap'))) === 'bengaluru — home'
 );
 check(
   'footer copy',
-  (await text(page.locator('footer .left'))).endsWith('/api/spotify · /api/github · /api/moving · /api/mal') &&
-  (await text(page.locator('footer a.chain'))) === 'next — ~/about →'
+  (await text(page.locator('footer .left'))).endsWith(
+    '/api/spotify · /api/github · /api/moving · /api/mal'
+  ) && (await text(page.locator('footer a.chain'))) === 'next — ~/about →'
 );
 
 const shot = process.env.SHOT_PATH;
@@ -203,7 +235,12 @@ await page2.route('**/api/spotify', (route) =>
     body: JSON.stringify({
       isPlaying: true,
       now: { title: 'One More Time', artist: 'Daft Punk', url: '', context: 'discovery weekly' },
-      last: { title: 'Harder, Better, Faster, Stronger', artist: 'Daft Punk', url: '', playedAt: '' }
+      last: {
+        title: 'Harder, Better, Faster, Stronger',
+        artist: 'Daft Punk',
+        url: '',
+        playedAt: ''
+      }
     })
   })
 );
@@ -212,7 +249,8 @@ await waitForFeeds(page2);
 check('now row visible', await page2.locator('[data-row="now"]').isVisible());
 check(
   'now row text (title — artist · context)',
-  (await text(page2.locator('[data-live="now"]'))) === 'One More Time — Daft Punk · discovery weekly'
+  (await text(page2.locator('[data-live="now"]'))) ===
+    'One More Time — Daft Punk · discovery weekly'
 );
 check(
   'ctx suffix in its mono-faint span',
@@ -244,7 +282,10 @@ await page3.route('**/api/mal', (route) =>
 );
 await page3.route('**/api/github', (route) => route.fulfill({ status: 500, body: 'nope' }));
 await page3.route('**/api/weather', (route) =>
-  route.fulfill({ contentType: 'application/json', body: JSON.stringify({ temp: null, phrase: null }) })
+  route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({ temp: null, phrase: null })
+  })
 );
 await page3.goto(`${BASE}/live`, { waitUntil: 'domcontentloaded' });
 await waitForFeeds(page3);

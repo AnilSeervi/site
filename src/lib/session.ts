@@ -16,8 +16,7 @@ export interface SessionUser {
 }
 
 const secret = (import.meta.env.SESSION_SECRET ?? import.meta.env.NEXTAUTH_SECRET) as
-  | string
-  | undefined;
+  string | undefined;
 
 /** True when a signing secret is present. */
 export const isSessionConfigured = Boolean(secret);

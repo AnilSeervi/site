@@ -21,7 +21,8 @@ const src = srcUrl(project);
         <p class="chip">
           {project.siteUp && (
             <span class="up">
-              <span class="dot" aria-hidden="true" />active
+              <span class="dot" aria-hidden="true" />
+              active
             </span>
           )}
           {project.live === 'devfolio' && (
@@ -44,7 +45,12 @@ const src = srcUrl(project);
     <p class="links">
       {
         src && (
-          <a href={src} target="_blank" rel="noopener noreferrer" aria-label={`${project.name} source on GitHub`}>
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${project.name} source on GitHub`}
+          >
             <GitHubMark />
           </a>
         )

@@ -86,11 +86,13 @@ const ogImageURL = new URL(ogImage, site.url);
           <span class="brand-short" aria-hidden="true">~/anil</span>
         </a>
         <nav aria-label="Main">
-          {site.nav.map((item) => (
-            <a href={item.href} data-navlink>
-              {item.label}
-            </a>
-          ))}
+          {
+            site.nav.map((item) => (
+              <a href={item.href} data-navlink>
+                {item.label}
+              </a>
+            ))
+          }
           <button class="cmdk" aria-label="Open command palette" data-palette-open>⌘K</button>
         </nav>
       </header>

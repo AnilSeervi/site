@@ -34,7 +34,11 @@ console.log('\npass 1 · signed out');
   check('meta text', (await text(auth)) === 'sign with github →', await text(auth));
   check('say input hidden', await page.locator('[data-gb-say]').isHidden());
   const entries = page.locator('[data-gb-entries] .gb-entry');
-  check('real entries replaced placeholders', (await entries.count()) === 3, String(await entries.count()));
+  check(
+    'real entries replaced placeholders',
+    (await entries.count()) === 3,
+    String(await entries.count())
+  );
   const first = await text(entries.first().locator('.gb-attr'));
   check('attribution format', /·\s+[a-z]{3} \d{4}$/.test(first), first);
   await page.close();
@@ -63,7 +67,14 @@ const created = [];
   const url = new URL(BASE);
   const context = await browser.newContext({ viewport: { width: 1000, height: 1200 } });
   await context.addCookies([
-    { name: 'as-session', value: token, domain: url.hostname, path: '/', httpOnly: true, sameSite: 'Lax' }
+    {
+      name: 'as-session',
+      value: token,
+      domain: url.hostname,
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax'
+    }
   ]);
   const page = await context.newPage();
   await page.goto(`${BASE}${PAGE_PATH}`, { waitUntil: 'domcontentloaded' });
@@ -100,7 +111,11 @@ const created = [];
 
   const canvas = page.locator('as-doodle canvas');
   const box = await canvas.boundingBox();
-  check('canvas display size 320×140', box.width === 320 && box.height === 140, `${box.width}×${box.height}`);
+  check(
+    'canvas display size 320×140',
+    box.width === 320 && box.height === 140,
+    `${box.width}×${box.height}`
+  );
   await page.mouse.move(box.x + 40, box.y + 40);
   await page.mouse.down();
   await page.mouse.move(box.x + 200, box.y + 90, { steps: 12 });
@@ -127,11 +142,14 @@ const created = [];
     'doodle img is png data URL',
     ((await img.getAttribute('src')) ?? '').startsWith('data:image/png;base64,')
   );
-  check('canvas cleared after ink', !(await canvas.evaluate((cv) => {
-    const d = cv.getContext('2d').getImageData(0, 0, 640, 280).data;
-    for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
-    return false;
-  })));
+  check(
+    'canvas cleared after ink',
+    !(await canvas.evaluate((cv) => {
+      const d = cv.getContext('2d').getImageData(0, 0, 640, 280).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
+      return false;
+    }))
+  );
 
   let extraPost = false;
   page.on('request', (r) => {

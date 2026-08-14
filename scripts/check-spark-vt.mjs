@@ -1,7 +1,9 @@
 // check-spark-vt.mjs — soft-navs home → /work, reports painted px per as-spark canvas. Run: node scripts/check-spark-vt.mjs
 import { chromium } from 'playwright';
 const browser = await chromium.launch();
-const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })).newPage();
+const page = await (
+  await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
+).newPage();
 await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
 const hasVT = await page.evaluate(() => !!document.querySelector('a[href="/work"]'));
 await page.click('header a[href="/work"], nav a[href="/work"], a[href="/work"]');

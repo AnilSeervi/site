@@ -56,15 +56,20 @@ const store = {
 const rl = createInterface({ input: stdin, output: stdout });
 const promptMfaCode = async () => rl.question('Garmin asked for an MFA code — enter it: ');
 
-const redact = (s) => (typeof s === 'string' && s.length > 0 ? `set (${s.length} chars)` : 'missing');
+const redact = (s) =>
+  typeof s === 'string' && s.length > 0 ? `set (${s.length} chars)` : 'missing';
 
 try {
   console.log(`Logging in to Garmin SSO as ${email.replace(/^(.).*(@.*)$/, '$1***$2')} ...`);
   const { oauth1, oauth2 } = await loginWithPassword(store, { email, password }, { promptMfaCode });
 
   console.log('\nTokens seeded into kv:');
-  console.log(`  ${KV_KEYS.oauth1}  oauth_token ${redact(oauth1.oauth_token)}, secret ${redact(oauth1.oauth_token_secret)}${oauth1.mfa_token ? `, mfa_token ${redact(oauth1.mfa_token)}` : ''}`);
-  console.log(`  ${KV_KEYS.oauth2}  access_token ${redact(oauth2.access_token)}, expires ${new Date(oauth2.expires_at).toISOString()}`);
+  console.log(
+    `  ${KV_KEYS.oauth1}  oauth_token ${redact(oauth1.oauth_token)}, secret ${redact(oauth1.oauth_token_secret)}${oauth1.mfa_token ? `, mfa_token ${redact(oauth1.mfa_token)}` : ''}`
+  );
+  console.log(
+    `  ${KV_KEYS.oauth2}  access_token ${redact(oauth2.access_token)}, expires ${new Date(oauth2.expires_at).toISOString()}`
+  );
 
   const displayName = await getDisplayName(store, oauth2.access_token);
   console.log(`\nVerified — displayName: ${displayName}`);
@@ -80,7 +85,9 @@ try {
     console.log(`Vitals smoke-read failed (tokens are still seeded): ${e.message}`);
   }
 
-  console.log('\nDone. The server now refreshes OAuth2 from the stored OAuth1 token — no more prompts.');
+  console.log(
+    '\nDone. The server now refreshes OAuth2 from the stored OAuth1 token — no more prompts.'
+  );
 } catch (e) {
   console.error(`\nBootstrap failed: ${e.message}`);
   process.exitCode = 1;

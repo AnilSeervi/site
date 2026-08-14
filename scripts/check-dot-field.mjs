@@ -55,11 +55,14 @@ out.geometry = await page.evaluate(() => {
 });
 
 const samplePixel = (cssX, cssY) =>
-  page.evaluate(([x, y]) => {
-    const cv = document.querySelector('as-dot-field canvas');
-    const d = cv.getContext('2d').getImageData(x * 2, y * 2, 1, 1).data;
-    return [d[0], d[1], d[2], d[3]];
-  }, [cssX, cssY]);
+  page.evaluate(
+    ([x, y]) => {
+      const cv = document.querySelector('as-dot-field canvas');
+      const d = cv.getContext('2d').getImageData(x * 2, y * 2, 1, 1).data;
+      return [d[0], d[1], d[2], d[3]];
+    },
+    [cssX, cssY]
+  );
 
 // Dot lattice: px = 13 + 26k. Near-center dot for a 1280x800 viewport: (637, 403).
 const HOT = [637, 403]; // dot we point at (g = 1)
@@ -83,9 +86,7 @@ out.hover = {
 out.rafBurst = await page.evaluate(() => {
   const before = window.__lc.raf;
   for (let i = 0; i < 60; i++) {
-    window.dispatchEvent(
-      new PointerEvent('pointermove', { clientX: 600 + i, clientY: 400 })
-    );
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 600 + i, clientY: 400 }));
   }
   return window.__lc.raf - before;
 });
@@ -110,9 +111,7 @@ out.afterResize.dot = await samplePixel(13, 13);
 
 const counts = () =>
   page.evaluate(() =>
-    Object.fromEntries(
-      Object.entries(window.__lc.outstanding).map(([k, v]) => [k, v.length])
-    )
+    Object.fromEntries(Object.entries(window.__lc.outstanding).map(([k, v]) => [k, v.length]))
   );
 const clientNav = async (href) => {
   await page.evaluate((h) => {

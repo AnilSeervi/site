@@ -44,7 +44,9 @@ const homeProjects = projects.filter((p) => p.home);
 
   <div class="whoami as-enter" style="animation-delay:0s">
     <span class="cmd"><span class="accent">~ ❯</span> whoami</span>
-    <as-clock data-format="greeting" data-greeting>09:06 ist · good morning, from bengaluru</as-clock>
+    <as-clock data-format="greeting" data-greeting
+      >09:06 ist · good morning, from bengaluru</as-clock
+    >
   </div>
 
   <div class="hero">
@@ -56,7 +58,11 @@ const homeProjects = projects.filter((p) => p.home);
         >
       </h1>
       <as-spark data-kind="hero" class="as-enter" style="animation-delay:.12s">
-        <canvas class="spark-hero" width="640" height="44" style="width:320px;height:22px"
+        <canvas
+          class="spark-hero"
+          width="640"
+          height="44"
+          style="width:320px;height:22px"
           aria-hidden="true"></canvas>
         <span class="spark-cap" aria-hidden="true"
           ><span class="accent">❯</span>git log --since=1y<span class="cap-caret"></span></span
@@ -126,7 +132,12 @@ const homeProjects = projects.filter((p) => p.home);
             <span class="pdesc">{p.home}</span>
             <p class="plinks">
               {srcUrl(p) && (
-                <a href={srcUrl(p)} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub`}>
+                <a
+                  href={srcUrl(p)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${p.name} source on GitHub`}
+                >
                   <GitHubMark size={14} />
                 </a>
               )}
@@ -696,4 +707,3 @@ const homeProjects = projects.filter((p) => p.home);
   import '~/islands/ascii-portrait';
   import '~/islands/home-data';
 </script>
-

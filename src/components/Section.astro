@@ -12,7 +12,15 @@ interface Props {
   /** renders a placeholder right meta the island flips to 'live'; excludes `meta` */
   phaseNote?: boolean;
 }
-const { label, meta, metaMobile, metaHref, external = false, mb = 20, phaseNote = false } = Astro.props;
+const {
+  label,
+  meta,
+  metaMobile,
+  metaHref,
+  external = false,
+  mb = 20,
+  phaseNote = false
+} = Astro.props;
 const newTab = !!metaHref && /^https?:\/\//.test(metaHref);
 const hasMobile = metaMobile !== undefined;
 ---
@@ -20,7 +28,13 @@ const hasMobile = metaMobile !== undefined;
 <div class="section-head" style={`margin-bottom:${mb}px`}>
   <span class="label">{label}</span>
   <span class="rule" aria-hidden="true"></span>
-  {phaseNote && <span class="meta note" data-live="phase-note">fetching…</span>}
+  {
+    phaseNote && (
+      <span class="meta note" data-live="phase-note">
+        fetching…
+      </span>
+    )
+  }
   {
     meta &&
       (metaHref ? (

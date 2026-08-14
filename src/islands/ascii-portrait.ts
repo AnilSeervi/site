@@ -255,7 +255,10 @@ class AsAsciiPortrait extends HTMLElement {
           t = Math.exp(-(d / 80) * (d / 80));
         }
         const nz = Math.sin(ix * 127.1 + iy * 311.7 + this.#frame * 0.93) * 43758.5453;
-        const b = Math.max(0, Math.min(1, (lum + (nz - Math.floor(nz) - 0.5) * 0.16) * (0.72 + 0.42 * t)));
+        const b = Math.max(
+          0,
+          Math.min(1, (lum + (nz - Math.floor(nz) - 0.5) * 0.16) * (0.72 + 0.42 * t))
+        );
         const ch = RAMP[Math.round(b * (RAMP.length - 1))]!;
         if (ch === ' ') continue;
         const v = 50 + 185 * b;

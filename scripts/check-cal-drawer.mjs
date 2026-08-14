@@ -54,8 +54,16 @@ console.log('\ndesktop');
   });
   check('year bands are minmax(92px, auto)', bands.rows === 'minmax(92px, auto)', bands.rows);
   check('every year carries a milestone', bands.groups === 7, `${bands.groups}/7`);
-  check('bands hold at most two — the list stays curated', Math.max(...bands.perBand) <= 2, bands.perBand.join('/'));
-  check('no milestone echoes a card tick or footer', bands.echoes.length === 0, bands.echoes.join(' | '));
+  check(
+    'bands hold at most two — the list stays curated',
+    Math.max(...bands.perBand) <= 2,
+    bands.perBand.join('/')
+  );
+  check(
+    'no milestone echoes a card tick or footer',
+    bands.echoes.length === 0,
+    bands.echoes.join(' | ')
+  );
 
   await page.locator('[data-cal="zd"]').click();
   await settle(page);
@@ -106,8 +114,8 @@ console.log('\ndesktop');
   check('‹ wraps back to oss', (await shown()) === 'oss');
   s = await state(page);
   check('stepping never closes the sheet', s.hidden === false && s.open === true);
-  const ariaOnStep = await page.evaluate(
-    () => document.querySelector('[data-cal="oss"]')?.getAttribute('aria-expanded')
+  const ariaOnStep = await page.evaluate(() =>
+    document.querySelector('[data-cal="oss"]')?.getAttribute('aria-expanded')
   );
   check('aria-expanded follows the step', ariaOnStep === 'true', `${ariaOnStep}`);
   await page.keyboard.press('Escape');
@@ -129,7 +137,11 @@ console.log('\ndesktop');
       return Math.round(Math.abs(textBottom(t) - yr[`20${m[1]}`]));
     });
   });
-  check('ticks sit on their year’s line', drift.every((d) => d <= 1), `drift ${drift.join(', ')}px`);
+  check(
+    'ticks sit on their year’s line',
+    drift.every((d) => d <= 1),
+    `drift ${drift.join(', ')}px`
+  );
 
   const legend = await page.evaluate(() => {
     const y = document.querySelector('.cal-year');
@@ -178,7 +190,11 @@ console.log('\ndesktop');
   await page.mouse.up();
   await page.waitForTimeout(500);
   s = await state(page);
-  check('small slow drag springs back open', s.hidden === false && s.open === true, JSON.stringify(s));
+  check(
+    'small slow drag springs back open',
+    s.hidden === false && s.open === true,
+    JSON.stringify(s)
+  );
   await page.keyboard.press('Escape');
   await page.close();
 }

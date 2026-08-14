@@ -76,7 +76,9 @@ class AsDotField extends HTMLElement {
           a = 0.045 + 0.3 * g;
           brass = g > 0.3;
         }
-        x.fillStyle = brass ? `rgba(217,165,74,${a.toFixed(3)})` : `rgba(237,230,218,${a.toFixed(3)})`;
+        x.fillStyle = brass
+          ? `rgba(217,165,74,${a.toFixed(3)})`
+          : `rgba(237,230,218,${a.toFixed(3)})`;
         x.beginPath();
         x.arc(px, py, 1.1, 0, 6.284);
         x.fill();

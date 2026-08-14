@@ -116,7 +116,9 @@ console.log('\npass 1 — live /api/github');
 
   const idle = await readLine(page);
   check('total holds the line at rest', idle.totalHidden === false && idle.readoutHidden === true);
-  const idleH = await page.locator('.contrib-meta').evaluate((e) => e.getBoundingClientRect().height);
+  const idleH = await page
+    .locator('.contrib-meta')
+    .evaluate((e) => e.getBoundingClientRect().height);
 
   let bad = 0;
   let mismatched = 0;
@@ -155,7 +157,9 @@ console.log('\npass 1 — live /api/github');
   const inGutterY = await readLine(page);
   check('gutter between rows reads as no cell', inGutterY.readoutHidden === true);
 
-  const hoverH = await page.locator('.contrib-meta').evaluate((e) => e.getBoundingClientRect().height);
+  const hoverH = await page
+    .locator('.contrib-meta')
+    .evaluate((e) => e.getBoundingClientRect().height);
   check('swap does not reflow the line', idleH === hoverH, `${idleH}px → ${hoverH}px`);
 
   await page.mouse.move(5, 5);
@@ -166,7 +170,7 @@ console.log('\npass 1 — live /api/github');
 
 function shortOf(anchor, w, d) {
   const WD = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  const MO = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const MO = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
   const at = new Date(anchor + (w * 7 + d) * DAY_MS);
   return `${WD[at.getUTCDay()]} ${MO[at.getUTCMonth()]} ${at.getUTCDate()}`;
 }
@@ -180,8 +184,18 @@ console.log('\npass 2 — mocked line shapes');
 
   const want = [
     ['unique peak day', 10, 3, 'wed oct 15 — 41 contributions — busiest day of the year'],
-    ['mid-streak day', 20, 3, 'wed dec 24 — 4 contributions · 20 that week — day 3 of a 5-day streak'],
-    ['first day of the streak', 20, 1, 'mon dec 22 — 4 contributions · 20 that week — day 1 of a 5-day streak'],
+    [
+      'mid-streak day',
+      20,
+      3,
+      'wed dec 24 — 4 contributions · 20 that week — day 3 of a 5-day streak'
+    ],
+    [
+      'first day of the streak',
+      20,
+      1,
+      'mon dec 22 — 4 contributions · 20 that week — day 1 of a 5-day streak'
+    ],
     ['tied peak week claims nothing', 30, 2, 'tue mar 3 — 15 contributions · 30 that week'],
     ['lone day, week holds nothing else', 40, 6, 'sat may 16 — 7 contributions'],
     ['week clause when the week holds more', 45, 1, 'mon jun 15 — 3 contributions · 9 that week'],

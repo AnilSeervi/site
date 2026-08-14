@@ -39,29 +39,37 @@ const loopPts = [];
 for (let i = 0; i <= 48; i++) {
   const t = (2 * Math.PI * i) / 48;
   const j = i === 0 || i === 48 ? 0 : (rnd() - 0.5) * 0.0006;
-  loopPts.push([
-    12.976 + 0.003 * Math.sin(t) + j,
-    77.59 + 0.0048 * Math.cos(t) + j
-  ]);
+  loopPts.push([12.976 + 0.003 * Math.sin(t) + j, 77.59 + 0.0048 * Math.cos(t) + j]);
 }
 const LOOP = polyline.encode(loopPts);
 
 // last Saturday, 06:30 IST (expressed as the true UTC instant)
 const nowIst = istDate(Date.now());
 const daysSinceSat = (nowIst.getUTCDay() + 1) % 7 || 7; // ≥1 — always in the past
-const satIstMidnight = Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) - daysSinceSat * 86400000;
+const satIstMidnight =
+  Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) -
+  daysSinceSat * 86400000;
 const latestStart = new Date(satIstMidnight + 6.5 * 3600000 - IST_MIN * 60000).toISOString();
 
 // 90 days, oldest→newest, ~1/4 rest, mixed buckets, deterministic
 const BUCKETS = ['run', 'lift', 'racquet'];
 const days = [];
-const todayIstMidnight = Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate());
+const todayIstMidnight = Date.UTC(
+  nowIst.getUTCFullYear(),
+  nowIst.getUTCMonth(),
+  nowIst.getUTCDate()
+);
 for (let i = 89; i >= 0; i--) {
   const d = new Date(todayIstMidnight - i * 86400000);
   const date = d.toISOString().slice(0, 10);
   const r = rnd();
   if (r < 0.24) days.push({ date, seconds: 0, bucket: 'rest' });
-  else days.push({ date, seconds: Math.round(1200 + rnd() * 4200), bucket: BUCKETS[Math.floor(rnd() * 3)] });
+  else
+    days.push({
+      date,
+      seconds: Math.round(1200 + rnd() * 4200),
+      bucket: BUCKETS[Math.floor(rnd() * 3)]
+    });
 }
 const maxSeconds = Math.max(...days.map((d) => d.seconds));
 
@@ -93,7 +101,9 @@ function expectBucket(iso) {
   const h = then.getUTCHours();
   const slot = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
   const dd =
-    Math.floor(Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) / 86400000) -
+    Math.floor(
+      Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) / 86400000
+    ) -
     Math.floor(Date.UTC(then.getUTCFullYear(), then.getUTCMonth(), then.getUTCDate()) / 86400000);
   return dd === 0 ? `this ${slot}` : `yesterday ${slot}`;
 }
@@ -119,7 +129,10 @@ await page1.goto(`${BASE}${PAGE}`, { waitUntil: 'domcontentloaded' });
 await page1.waitForResponse('**/api/moving', { timeout: 20000 });
 await page1.waitForTimeout(500);
 if (real.disabled || !Array.isArray(real.days) || real.days.length === 0) {
-  check('section renders NOTHING while strava is disabled/down', await page1.locator('as-moving').isHidden());
+  check(
+    'section renders NOTHING while strava is disabled/down',
+    await page1.locator('as-moving').isHidden()
+  );
   check(
     'no visible MOVING header',
     (await page1.locator('text=/MOVING · GARMIN/').count()) === 0 ||
@@ -151,10 +164,18 @@ check('runner path shares the same d', dRunner === dBase);
 const coords = (dBase ?? '').match(/-?[\d.]+/g)?.map(Number) ?? [];
 const xs = coords.filter((_, i) => i % 2 === 0);
 const ys = coords.filter((_, i) => i % 2 === 1);
-const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+const [minX, maxX, minY, maxY] = [
+  Math.min(...xs),
+  Math.max(...xs),
+  Math.min(...ys),
+  Math.max(...ys)
+];
 check(
   'route normalized into the 230×150 viewBox with ~12px inset',
-  minX >= 11.5 && maxX <= 218.5 && minY >= 11.5 && maxY <= 138.5 &&
+  minX >= 11.5 &&
+    maxX <= 218.5 &&
+    minY >= 11.5 &&
+    maxY <= 138.5 &&
     (maxX - minX > 200 || maxY - minY > 120),
   `x ${minX.toFixed(1)}–${maxX.toFixed(1)}, y ${minY.toFixed(1)}–${maxY.toFixed(1)}`
 );
@@ -163,7 +184,9 @@ check(
   (maxX - minX) / (maxY - minY) > 1.1,
   `ratio ${((maxX - minX) / (maxY - minY)).toFixed(2)}`
 );
-const startDot = await page2.locator('[data-route-start]').evaluate((el) => [el.getAttribute('cx'), el.getAttribute('cy')]);
+const startDot = await page2
+  .locator('[data-route-start]')
+  .evaluate((el) => [el.getAttribute('cx'), el.getAttribute('cy')]);
 check(
   'start dot sits on the first path point',
   dBase?.startsWith(`M${startDot[0]} ${startDot[1]}`),
@@ -173,16 +196,22 @@ const runnerAnim = await page2.locator('[data-route-runner]').evaluate((el) => {
   const cs = getComputedStyle(el);
   return `${cs.animationName} ${cs.animationDuration} ${cs.animationTimingFunction} ${cs.animationIterationCount}`;
 });
-check('runner animates as-run 7s linear infinite', runnerAnim === 'as-run 7s linear infinite', runnerAnim);
+check(
+  'runner animates as-run 7s linear infinite',
+  runnerAnim === 'as-run 7s linear infinite',
+  runnerAnim
+);
 check(
   'etch caption',
-  (await text(page2.locator('[data-live="etch-cap"]'))) === `the shape of ${latestWeekday} — cubbon park loop`,
+  (await text(page2.locator('[data-live="etch-cap"]'))) ===
+    `the shape of ${latestWeekday} — cubbon park loop`,
   await text(page2.locator('[data-live="etch-cap"]'))
 );
 
 check(
   'last run row',
-  (await text(page2.locator('[data-live="lastrun"]'))) === `12.4 km · 58:12 · 4:41/km — ${latestWeekday}, before the heat`,
+  (await text(page2.locator('[data-live="lastrun"]'))) ===
+    `12.4 km · 58:12 · 4:41/km — ${latestWeekday}, before the heat`,
   await text(page2.locator('[data-live="lastrun"]'))
 );
 check('last run label', (await text(page2.locator('[data-live="lastrun-label"]'))) === 'last run');
@@ -193,12 +222,15 @@ check(
 );
 check(
   'vo2max row',
-  (await text(page2.locator('[data-live="vo2max"]'))) === '52 — garmin calls it “superior”; the legs disagree',
+  (await text(page2.locator('[data-live="vo2max"]'))) ===
+    '52 — garmin calls it “superior”; the legs disagree',
   await text(page2.locator('[data-live="vo2max"]'))
 );
 check(
   'vo2max numeral is accent',
-  (await page2.locator('[data-live="vo2max"] .accent').evaluate((el) => getComputedStyle(el).color)) === 'rgb(217, 165, 74)'
+  (await page2
+    .locator('[data-live="vo2max"] .accent')
+    .evaluate((el) => getComputedStyle(el).color)) === 'rgb(217, 165, 74)'
 );
 check(
   'resting hr row',
@@ -207,7 +239,11 @@ check(
 );
 const dot = await page2.locator('[data-rhr-dot]').evaluate((el) => {
   const cs = getComputedStyle(el);
-  return { name: cs.animationName, dur: cs.animationDuration, size: `${el.offsetWidth}×${el.offsetHeight}` };
+  return {
+    name: cs.animationName,
+    dur: cs.animationDuration,
+    size: `${el.offsetWidth}×${el.offsetHeight}`
+  };
 });
 check('rhr dot runs as-beat + as-pulse', dot.name === 'as-beat, as-pulse', dot.name);
 const durs = dot.dur.split(',').map((s) => parseFloat(s));
@@ -230,13 +266,19 @@ const barInfo = await page2.locator('[data-strip]').evaluate((strip) => {
   }));
 });
 const colorSet = new Set(barInfo.map((b) => b.bg));
-check('mixed buckets (4 distinct colors incl. rest)', colorSet.size === 4, [...colorSet].join(' | '));
+check(
+  'mixed buckets (4 distinct colors incl. rest)',
+  colorSet.size === 4,
+  [...colorSet].join(' | ')
+);
 const runBg = 'rgb(217, 165, 74)';
 const liftBg = 'rgb(146, 199, 140)';
 const racquetBg = 'rgb(207, 198, 182)';
 check(
   'bucket colors run/lift/racquet',
-  barInfo.some((b) => b.bg === runBg) && barInfo.some((b) => b.bg === liftBg) && barInfo.some((b) => b.bg === racquetBg)
+  barInfo.some((b) => b.bg === runBg) &&
+    barInfo.some((b) => b.bg === liftBg) &&
+    barInfo.some((b) => b.bg === racquetBg)
 );
 const restBars = barInfo.filter((b, i) => days[i].bucket === 'rest');
 check(
@@ -244,25 +286,36 @@ check(
   restBars.every((b) => b.h === '4px' && b.bg === 'rgba(237, 230, 218, 0.12)'),
   `${restBars.length} rest bars`
 );
-const active = barInfo.map((b, i) => ({ b, day: days[i] })).filter(({ day }) => day.bucket !== 'rest');
-const heightsOk = active.every(({ b, day }) => b.h === `${Math.round(12 + 18 * (day.seconds / maxSeconds))}px`);
+const active = barInfo
+  .map((b, i) => ({ b, day: days[i] }))
+  .filter(({ day }) => day.bucket !== 'rest');
+const heightsOk = active.every(
+  ({ b, day }) => b.h === `${Math.round(12 + 18 * (day.seconds / maxSeconds))}px`
+);
 check('active heights 12–30px linear vs 90-day max', heightsOk);
 check(
   'rise stagger — delay = index × 16ms',
   barInfo[0].delay === '0ms' && barInfo[10].delay === '160ms' && barInfo[89].delay === '1424ms',
   `${barInfo[0].delay} / ${barInfo[10].delay} / ${barInfo[89].delay}`
 );
-check('bars rose (as-rise fired via IO)', barInfo.every((b) => b.anim === 'as-rise'));
+check(
+  'bars rose (as-rise fired via IO)',
+  barInfo.every((b) => b.anim === 'as-rise')
+);
 check(
   'legend + caption row',
-  (await text(page2.locator('as-moving .strip-meta > span').first())) === 'run · lift · racquet — anything that moved counts' &&
+  (await text(page2.locator('as-moving .strip-meta > span').first())) ===
+    'run · lift · racquet — anything that moved counts' &&
     (await text(page2.locator('as-moving .strip-meta > span').last())) === 'last 90 days'
 );
 check(
   'legend keys are color-coded',
-  (await page2.locator('.k-run').evaluate((el) => getComputedStyle(el).color)) === 'rgb(217, 165, 74)' &&
-    (await page2.locator('.k-lift').evaluate((el) => getComputedStyle(el).color)) === 'rgb(146, 199, 140)' &&
-    (await page2.locator('.k-racquet').evaluate((el) => getComputedStyle(el).color)) === 'rgb(207, 198, 182)'
+  (await page2.locator('.k-run').evaluate((el) => getComputedStyle(el).color)) ===
+    'rgb(217, 165, 74)' &&
+    (await page2.locator('.k-lift').evaluate((el) => getComputedStyle(el).color)) ===
+      'rgb(146, 199, 140)' &&
+    (await page2.locator('.k-racquet').evaluate((el) => getComputedStyle(el).color)) ===
+      'rgb(207, 198, 182)'
 );
 
 const shot = process.env.SHOT_PATH;
@@ -272,13 +325,22 @@ if (shot) {
 }
 await page2.close();
 
-const page2r = await browser.newPage({ viewport: { width: 1000, height: 1400 }, reducedMotion: 'reduce' });
+const page2r = await browser.newPage({
+  viewport: { width: 1000, height: 1400 },
+  reducedMotion: 'reduce'
+});
 await mockRoutes(page2r);
 await page2r.goto(`${BASE}${PAGE}`, { waitUntil: 'domcontentloaded' });
 await page2r.waitForSelector('as-moving:not([hidden])', { timeout: 10000 });
 await page2r.waitForTimeout(300);
-check('reduced motion: runner overlay hidden, base path kept', await page2r.locator('[data-route-runner]').isHidden());
-check('reduced motion: base path still visible', await page2r.locator('[data-route-base]').isVisible());
+check(
+  'reduced motion: runner overlay hidden, base path kept',
+  await page2r.locator('[data-route-runner]').isHidden()
+);
+check(
+  'reduced motion: base path still visible',
+  await page2r.locator('[data-route-base]').isVisible()
+);
 check(
   'reduced motion: bars visible instantly (rise class, no IO wait)',
   await page2r.locator('[data-strip]').evaluate((el) => el.classList.contains('rise'))
@@ -309,7 +371,11 @@ await page3.route('**/api/moving', (route) =>
 await page3.route('**/api/spotify', (route) =>
   route.fulfill({
     contentType: 'application/json',
-    body: JSON.stringify({ isPlaying: true, now: { title: 'One More Time', artist: 'Daft Punk', url: '', context: null }, last: null })
+    body: JSON.stringify({
+      isPlaying: true,
+      now: { title: 'One More Time', artist: 'Daft Punk', url: '', context: null },
+      last: null
+    })
   })
 );
 await page3.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
@@ -329,7 +395,11 @@ await page4.route('**/api/moving', (route) =>
 await page4.route('**/api/spotify', (route) =>
   route.fulfill({
     contentType: 'application/json',
-    body: JSON.stringify({ isPlaying: true, now: { title: 'One More Time', artist: 'Daft Punk', url: '', context: null }, last: null })
+    body: JSON.stringify({
+      isPlaying: true,
+      now: { title: 'One More Time', artist: 'Daft Punk', url: '', context: null },
+      last: null
+    })
   })
 );
 await page4.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
@@ -340,7 +410,10 @@ await page4.close();
 // and the placeholder rotation keeps running — that is what this check reads.
 const stale = {
   ...STRAVA_MOCK,
-  latestAny: { ...STRAVA_MOCK.latestAny, startedAt: new Date(Date.now() - 72 * 3600000).toISOString() }
+  latestAny: {
+    ...STRAVA_MOCK.latestAny,
+    startedAt: new Date(Date.now() - 72 * 3600000).toISOString()
+  }
 };
 const page5 = await browser.newPage({ viewport: { width: 1000, height: 900 } });
 await page5.route('**/api/moving', (route) =>

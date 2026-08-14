@@ -61,8 +61,18 @@ function alive<T extends { disabled?: boolean }>(r: PromiseSettledResult<T>): T 
 
 const WEEKDAYS_SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const MONTHS_SHORT = [
-  'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-  'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec'
 ] as const;
 
 /** 'thu jul 30' from an ISO date — read as UTC so it stays a plain calendar day */
@@ -198,7 +208,12 @@ class AsLiveData extends HTMLElement {
     }
 
     if (s?.now) {
-      this.#setParts('now', s.now.title, ` — ${s.now.artist}${s.now.context ? ' · ' : ''}`, s.now.context);
+      this.#setParts(
+        'now',
+        s.now.title,
+        ` — ${s.now.artist}${s.now.context ? ' · ' : ''}`,
+        s.now.context
+      );
     } else {
       this.#hideRow('now');
     }
@@ -236,7 +251,9 @@ class AsLiveData extends HTMLElement {
     }
     const flat = days.flat();
     const weekTotals =
-      g.weeks?.length === days.length ? g.weeks : days.map((w) => w.reduce((a, b) => a + (b || 0), 0));
+      g.weeks?.length === days.length
+        ? g.weeks
+        : days.map((w) => w.reduce((a, b) => a + (b || 0), 0));
     const best = Math.max(0, ...flat);
     const bestWeek = Math.max(0, ...weekTotals);
     this.#grid = {
@@ -298,7 +315,9 @@ class AsLiveData extends HTMLElement {
     if (m?.watching) {
       const { title, ep, epTotal } = m.watching;
       // only the base title is italicised; a trailing season/part suffix stays upright + lowercase
-      const split = title.match(/^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i);
+      const split = title.match(
+        /^(.*?)\s+((?:\d+(?:st|nd|rd|th)\s+season|season\s+\d+|part\s+\d+)\b.*)$/i
+      );
       const base = split ? split[1]! : title;
       const suffix = split ? ` ${split[2]!.toLowerCase()}` : '';
       const eps = epTotal == null ? ` — episode ${ep}` : ` — episode ${ep} of ${epTotal}`;

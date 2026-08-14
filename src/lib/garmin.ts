@@ -50,8 +50,7 @@ export async function hasStoredGarminTokens(): Promise<boolean> {
   if (!isDbConfigured) return false;
   try {
     return (
-      (await kvStore.get(KV_KEYS.oauth1)) !== null ||
-      (await kvStore.get(KV_KEYS.oauth2)) !== null
+      (await kvStore.get(KV_KEYS.oauth1)) !== null || (await kvStore.get(KV_KEYS.oauth2)) !== null
     );
   } catch {
     return false;

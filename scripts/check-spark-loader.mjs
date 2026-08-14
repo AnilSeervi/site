@@ -105,7 +105,11 @@ async function run(name, { delay = 0, status = 200, reduced = false, ms = 3600, 
   await page.route('**/api/github', async (route) => {
     if (delay) await new Promise((r) => setTimeout(r, delay));
     if (status !== 200) return route.fulfill({ status, body: 'nope' });
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PAYLOAD) });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(PAYLOAD)
+    });
   });
 
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -139,7 +143,9 @@ async function run(name, { delay = 0, status = 200, reduced = false, ms = 3600, 
     headDotFrames: drawing.length,
     revealEdges: drawing.map((s) => s.edge),
     final: { base: last.base, brass: last.brass, cream: last.cream, W: last.W },
-    baselineAtBoot: samples[0] ? { t: samples[0].t, base: samples[0].base, brass: samples[0].brass } : null,
+    baselineAtBoot: samples[0]
+      ? { t: samples[0].t, base: samples[0].base, brass: samples[0].brass }
+      : null,
     roleShift: +(layoutAfter.role - layoutBefore.role).toFixed(2),
     boxHeight: [layoutBefore.box, layoutAfter.box]
   };
@@ -160,7 +166,10 @@ results.push(await run('mobile 390', { delay: 600, width: 390 }));
  * The returning page must start from `boot` (no data-values), not inherit state.
  */
 async function runNav() {
-  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({
+    viewport: { width: 1400, height: 900 },
+    deviceScaleFactor: 2
+  });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -185,7 +194,10 @@ async function runNav() {
   await page.waitForTimeout(400);
   const onReturn = await page.evaluate(() => {
     const el = document.querySelector('as-spark[data-kind="hero"]');
-    return { values: el?.getAttribute('data-values') ?? 'ABSENT', cap: el?.getAttribute('data-cap') };
+    return {
+      values: el?.getAttribute('data-values') ?? 'ABSENT',
+      cap: el?.getAttribute('data-cap')
+    };
   });
   await page.waitForTimeout(2600);
   const settled = await page.evaluate(() => {

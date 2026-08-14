@@ -42,7 +42,7 @@ const WMO_PHRASES: ReadonlyArray<readonly [min: number, max: number, phrase: str
   [85, 86, 'snow showers'],
   [87, 90, 'hail rattling down'], // showers of snow/ice pellets or hail
   [91, 94, 'thunder just passed'], // thunderstorm during preceding hour
-  [95, 99, 'thunder somewhere'],
+  [95, 99, 'thunder somewhere']
 ];
 
 function phraseFor(code: number): string {
@@ -56,8 +56,8 @@ const json = (body: unknown, sMaxage: number) =>
   new Response(JSON.stringify(body), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': `public, s-maxage=${sMaxage}, stale-while-revalidate=${sMaxage * 2}`,
-    },
+      'Cache-Control': `public, s-maxage=${sMaxage}, stale-while-revalidate=${sMaxage * 2}`
+    }
   });
 
 export const GET: APIRoute = async () => {

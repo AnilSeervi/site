@@ -29,7 +29,10 @@ function asVital(x: unknown): number | null {
 }
 
 /** data/fitness.json — fresh disk read (picks up dev edits), else the snapshot. */
-async function readFitnessFile(): Promise<{ vo2max: number | null; restingHr: number | null } | null> {
+async function readFitnessFile(): Promise<{
+  vo2max: number | null;
+  restingHr: number | null;
+} | null> {
   try {
     const raw = await readFile(new URL('../../../data/fitness.json', import.meta.url), 'utf8');
     const parsed: unknown = JSON.parse(raw);

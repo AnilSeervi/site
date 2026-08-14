@@ -42,7 +42,8 @@ async function checkPage(ctx, url, key) {
   const s2 = await page.evaluate(eval(SAMPLE), sel);
 
   const box = await page.locator(sel).boundingBox();
-  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const cx = box.x + box.width / 2,
+    cy = box.y + box.height / 2;
   const baseline = await page.evaluate(eval(REGION), { sel, half: 60 });
   await page.mouse.move(cx, cy);
   await page.waitForTimeout(250);
@@ -160,7 +161,9 @@ async function loadCase(key, { delayMs = 0, abort = false } = {}) {
   const early = await page.evaluate(eval(SAMPLE), sel);
   await page.waitForTimeout(300); // past it
   const mid = await page.evaluate(eval(SAMPLE), sel);
-  const midPhase = await page.evaluate(() => document.querySelector('as-ascii-portrait')?.dataset.load);
+  const midPhase = await page.evaluate(
+    () => document.querySelector('as-ascii-portrait')?.dataset.load
+  );
   await page.waitForTimeout(delayMs + 900);
   const late = await page.evaluate(eval(SAMPLE), sel);
 

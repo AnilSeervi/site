@@ -12,7 +12,8 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
 const snippets = await getCollection('snippets');
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-const dateLabel = (d: Date) => `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate()).padStart(2, '0')}`;
+const dateLabel = (d: Date) =>
+  `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCDate()).padStart(2, '0')}`;
 
 /** newest post overall reads `latest`; the rest `sep 06` style */
 const labels = new Map(posts.map((p, i) => [p.id, i === 0 ? 'latest' : dateLabel(p.data.date)]));
@@ -63,7 +64,9 @@ const jarDesc = (d: string) => (d.charAt(0).toLowerCase() + d.slice(1)).replace(
     {
       groups.map((group) => (
         <section class="group" data-group>
-          <span class="ghost" aria-hidden="true">{group.year}</span>
+          <span class="ghost" aria-hidden="true">
+            {group.year}
+          </span>
           <div class="year-head">
             <span class="year">{group.year}</span>
             <span class="rule" aria-hidden="true" />

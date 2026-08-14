@@ -23,11 +23,7 @@ function accentRgb(): [number, number, number] {
     .replace('#', '');
   if (/^[0-9a-f]{3}$/i.test(hex)) hex = [...hex].map((c) => c + c).join('');
   if (!/^[0-9a-f]{6}$/i.test(hex)) hex = 'd9a54a';
-  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [
-    number,
-    number,
-    number
-  ];
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
 }
 
 class AsGlobe extends HTMLElement {

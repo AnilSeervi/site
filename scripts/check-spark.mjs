@@ -2,7 +2,10 @@
 import { chromium } from 'playwright';
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
+const ctx = await browser.newContext({
+  viewport: { width: 1400, height: 900 },
+  deviceScaleFactor: 2
+});
 const page = await ctx.newPage();
 
 // Kept as source so it can be eval'd inside the page: stroke-pixel stats + a shape signature.
@@ -37,17 +40,25 @@ const sampleFn = `(el) => {
 // so a complete polyline exists no earlier than ~2.2s + fetch: poll, don't sleep blind.
 await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
 await page
-  .waitForFunction(() => document.querySelector('as-spark[data-kind="hero"]')?.dataset.values, null, {
-    timeout: 8000
-  })
+  .waitForFunction(
+    () => document.querySelector('as-spark[data-kind="hero"]')?.dataset.values,
+    null,
+    {
+      timeout: 8000
+    }
+  )
   .catch(() => {});
 await page.waitForTimeout(1400);
 
 const hero = await page.$eval('as-spark[data-kind="hero"]', eval(sampleFn));
-const homeRows = await page.$$eval('as-spark:not([data-kind="hero"])', (els, fnSrc) => {
-  const fn = eval(fnSrc);
-  return els.map((el) => ({ status: el.dataset.status, seed: el.dataset.seed, ...fn(el) }));
-}, sampleFn);
+const homeRows = await page.$$eval(
+  'as-spark:not([data-kind="hero"])',
+  (els, fnSrc) => {
+    const fn = eval(fnSrc);
+    return els.map((el) => ({ status: el.dataset.status, seed: el.dataset.seed, ...fn(el) }));
+  },
+  sampleFn
+);
 
 // The hero must draw the real series; a match against the synthetic seed-7 curve below
 // means the retired invented-history fallback is back on screen.
@@ -60,7 +71,8 @@ const heroCheck = await page.evaluate(() => {
   const inkNear = (ex, ey) => {
     for (let dy = -4; dy <= 4; dy++)
       for (let dx = -4; dx <= 4; dx++) {
-        const px = Math.round(ex + dx), py = Math.round(ey + dy);
+        const px = Math.round(ex + dx),
+          py = Math.round(ey + dy);
         if (px < 0 || py < 0 || px >= cv.width || py >= cv.height) continue;
         if (d[(py * cv.width + px) * 4 + 3] > 40) return true;
       }
@@ -77,9 +89,20 @@ const heroCheck = await page.evaluate(() => {
   const real = el.dataset.values ? JSON.parse(el.dataset.values) : null;
 
   // recomputed here only to prove it is NOT on screen
-  const mul = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  const rnd = mul(7), synth = [];
-  for (let w = 0; w < 52; w++) { let v = 0; for (let k = 0; k < 7; k++) v += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55); synth.push(v); }
+  const mul = (a) => () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const rnd = mul(7),
+    synth = [];
+  for (let w = 0; w < 52; w++) {
+    let v = 0;
+    for (let k = 0; k < 7; k++) v += Math.max(0, Math.sin(w / 4.6) * 0.7 + rnd() * 1.5 - 0.55);
+    synth.push(v);
+  }
 
   return {
     hasRealData: !!real,

@@ -121,7 +121,20 @@ async function graphql(token) {
 
 /* ---------- normalize ---------- */
 
-const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+const MONTHS = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december'
+];
 
 const slugify = (s) =>
   s
@@ -191,7 +204,10 @@ const exists = (p) =>
     () => false
   );
 
-const hex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+const hex = (n) =>
+  Math.max(0, Math.min(255, Math.round(n)))
+    .toString(16)
+    .padStart(2, '0');
 
 /** Average cover colour clamped into the casing band and mixed toward the page
     black; a straight average comes out either white or mud. */

@@ -79,7 +79,20 @@ const WEEKDAYS = [
   'saturday'
 ] as const;
 
-const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
+const MONTHS = [
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'may',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'oct',
+  'nov',
+  'dec'
+] as const;
 
 /** IST wall clock of a UTC instant */
 function istDate(iso: string): Date | null {
@@ -283,11 +296,7 @@ class AsMoving extends HTMLElement {
 
   // ---- vitals rows ---------------------------------------------------------
 
-  #applyVitals(
-    latest: MovingLatest | null,
-    month: MovingRes['month'],
-    fitness: FitnessRes | null
-  ) {
+  #applyVitals(latest: MovingLatest | null, month: MovingRes['month'], fitness: FitnessRes | null) {
     if (latest) {
       const label = this.querySelector<HTMLElement>('[data-live="lastrun-label"]');
       if (label) label.textContent = latest.isRun ? 'last run' : 'last ride';

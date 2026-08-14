@@ -93,7 +93,9 @@ if (!code) {
   process.exit(1);
 }
 
-const basic = Buffer.from(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`).toString('base64');
+const basic = Buffer.from(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`).toString(
+  'base64'
+);
 const res = await fetch('https://accounts.spotify.com/api/token', {
   method: 'POST',
   headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -120,6 +122,8 @@ if (!data.refresh_token) {
 writeKey(ENV_FILE, KEY, data.refresh_token);
 spawn('pbcopy', { stdio: ['pipe', 'ignore', 'ignore'] }).stdin.end(data.refresh_token);
 
-console.log(`\n✓ ${KEY} written to ${ENV_FILE} (${data.refresh_token.length} chars) and copied to the clipboard.`);
+console.log(
+  `\n✓ ${KEY} written to ${ENV_FILE} (${data.refresh_token.length} chars) and copied to the clipboard.`
+);
 console.log('  granted scopes:', data.scope ?? '(none reported)');
 console.log('\nnext: paste it into the Vercel project env, then restart the dev server.');

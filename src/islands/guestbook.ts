@@ -116,7 +116,9 @@ class AsGuestbook extends HTMLElement {
   async #init() {
     const signal = this.#ac?.signal;
     const [gb, me] = await Promise.allSettled([
-      fetch('/api/guestbook', { signal }).then((r) => (r.ok ? (r.json() as Promise<GuestbookRes>) : null)),
+      fetch('/api/guestbook', { signal }).then((r) =>
+        r.ok ? (r.json() as Promise<GuestbookRes>) : null
+      ),
       fetch('/api/auth/me', { signal }).then((r) => (r.ok ? (r.json() as Promise<MeRes>) : null))
     ]);
 
@@ -155,11 +157,9 @@ class AsGuestbook extends HTMLElement {
     const doodle = this.querySelector<AsDoodle>('as-doodle');
     const input = this.querySelector<HTMLInputElement>('[data-gb-input]');
 
-    this.querySelector('[data-gb-clear]')?.addEventListener(
-      'click',
-      () => doodle?.clear(),
-      { signal }
-    );
+    this.querySelector('[data-gb-clear]')?.addEventListener('click', () => doodle?.clear(), {
+      signal
+    });
 
     this.querySelector('[data-gb-ink]')?.addEventListener(
       'click',
