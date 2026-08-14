@@ -1,0 +1,19 @@
+{
+  // Pins the formatter to Prettier for this workspace. Without this, whichever
+  // formatter each machine has installed wins, and files come back reformatted
+  // to that person's editor settings — which is how src/config/site.ts and
+  // src/lib/github.ts ended up tab-indented while the other 69 files use spaces.
+  //
+  // Prettier's own user-level settings (prettier.useTabs and friends) are
+  // ignored once .prettierrc.json exists, so the repo config is the one source.
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[astro]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "editor.codeActionsOnSave": { "source.organizeImports": "never" }
+}

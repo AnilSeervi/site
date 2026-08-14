@@ -10,7 +10,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.3",
@@ -42,6 +44,8 @@
     "@types/node": "^26.1.1",
     "drizzle-kit": "^0.31.10",
     "playwright": "^1.61.1",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
     "satori": "^0.29.0",
     "sharp": "^0.35.3",
     "typescript": "^5.9.3"
