@@ -37,7 +37,15 @@ await page.addInitScript(() => {
   window.__activeIntervals = () => [...window.__timers.intervals.values()];
 });
 
-await page.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
+// domcontentloaded, not networkidle — the live feeds keep the network busy, so
+// networkidle never fires. Wait for the ticker to leave its waiting state
+// instead, which is the condition the assertions below actually depend on.
+await page.goto('http://localhost:4321/', { waitUntil: 'domcontentloaded' });
+await page
+  .waitForFunction(() => document.querySelector('as-ticker[data-live]')?.dataset.load !== 'waiting', {
+    timeout: 15000
+  })
+  .catch(() => {}); // fall through and let the assertions report what they see
 await page.waitForTimeout(400);
 
 // ---------- CLOCK ----------

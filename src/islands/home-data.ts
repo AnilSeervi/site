@@ -5,6 +5,8 @@
  * On failure the placeholders stay, but the hero spark is still settled.
  */
 
+import { feed } from './feed';
+
 interface GitHubData {
   weeks?: number[] | null;
   followers?: number | null;
@@ -12,7 +14,7 @@ interface GitHubData {
   stars?: number | null;
   devfolioStars?: number | null;
   devfolioForks?: number | null;
-  lastPush?: { repo: string; commits: number; ago: string } | null;
+  lastPush?: { repo: string; commits: number | null; ago: string } | null;
   sparks?: Record<string, number[]>;
   disabled?: boolean;
 }
@@ -43,12 +45,14 @@ class AsHomeData extends HTMLElement {
   async #load() {
     const root: ParentNode = this.closest('main') ?? document;
 
-    const res = await fetch('/api/github');
-    if (!res.ok) {
+    let data: GitHubData;
+    try {
+      // shared with <as-ticker>, which wants the same payload on this page
+      data = await feed<GitHubData>('/api/github');
+    } catch {
       this.#settleSpark(null);
       return;
     }
-    const data = (await res.json()) as GitHubData;
     if (data.disabled) {
       this.#settleSpark(null);
       return;

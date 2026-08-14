@@ -1,6 +1,8 @@
 // <as-ticker> — cycles the data-items label/value pairs; with data-live it also
 // fetches the feeds. The 260ms dip must stay ≥ the spans' `transition: opacity .25s`.
 
+import { feed } from './feed';
+
 type Item = [string, string];
 
 const FRESH_MS = 48 * 3600 * 1000; // "recent enough to brag about" window
@@ -39,11 +41,7 @@ function relativeBucket(startedAt: string): string | null {
   return dayDiff === 0 ? `this ${slot}` : `yesterday ${slot}`;
 }
 
-async function json(url: string): Promise<Record<string, any>> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
-}
+const json = (url: string) => feed<Record<string, any>>(url);
 
 function settled<T>(r: PromiseSettledResult<T>): T | null {
   return r.status === 'fulfilled' ? r.value : null;
@@ -127,8 +125,14 @@ class AsTicker extends HTMLElement {
     const push = github?.lastPush;
     if (push?.repo && (push.ago === 'earlier today' || push.ago === 'yesterday')) {
       const short = String(push.repo).split('/').pop()!.toLowerCase();
-      const n = Number(push.commits) || 0;
-      items.push(['shipping', `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`]);
+      // null count = GitHub didn't say; drop the number rather than print "0 commits"
+      const n = typeof push.commits === 'number' ? push.commits : null;
+      items.push([
+        'shipping',
+        n === null
+          ? `pushed to ${short}, ${push.ago}`
+          : `${n} commit${n === 1 ? '' : 's'} to ${short}, ${push.ago}`
+      ]);
     }
 
     const act = moving?.disabled ? null : moving?.latestAny;

@@ -43,7 +43,10 @@ export async function getContributions(): Promise<Contributions> {
   const res = await fetch(GRAPHQL, {
     method: 'POST',
     headers: { ...headers(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: CONTRIBUTIONS_QUERY, variables: { login: USER } })
+    body: JSON.stringify({
+      query: CONTRIBUTIONS_QUERY,
+      variables: { login: USER }
+    })
   });
   if (!res.ok) throw new Error(`GitHub GraphQL ${res.status}`);
   const json = await res.json();
@@ -51,8 +54,9 @@ export async function getContributions(): Promise<Contributions> {
   if (!user) throw new Error('GitHub GraphQL returned no user');
 
   const calendar = user.contributionsCollection.contributionCalendar;
-  const allWeeks: { contributionDays: { contributionCount: number; date: string }[] }[] =
-    calendar.weeks;
+  const allWeeks: {
+    contributionDays: { contributionCount: number; date: string }[];
+  }[] = calendar.weeks;
 
   // GitHub returns ~53 columns; keep the last 52 and pad the short current week to 7.
   const kept = allWeeks.slice(-52);
@@ -89,8 +93,12 @@ export interface RepoStats {
 
 export async function getRepoStats(): Promise<RepoStats> {
   // GitHub caps per_page at 100 — paginate so 100+ repos count correctly
-  const repos: { fork: boolean; full_name: string; stargazers_count: number; forks_count: number }[] =
-    [];
+  const repos: {
+    fork: boolean;
+    full_name: string;
+    stargazers_count: number;
+    forks_count: number;
+  }[] = [];
   for (let page = 1; page <= 5; page++) {
     const res = await fetch(`${REST}/users/${USER}/repos?per_page=100&page=${page}`, {
       headers: headers()
@@ -115,8 +123,63 @@ export async function getRepoStats(): Promise<RepoStats> {
 
 export interface LastPush {
   repo: string;
-  commits: number;
+  /** commits the push added; null when GitHub won't say — callers must handle it */
+  commits: number | null;
   ago: string;
+}
+
+/** a branch's first push reports this as `before`, so there is nothing to compare against */
+const ZERO_SHA = '0000000000000000000000000000000000000000';
+
+/**
+ * PushEvent payloads no longer carry `commits` or `size` — they arrive as just
+ * repository_id, push_id, ref, head, before, on every events endpoint (user,
+ * user public, and repo alike) — so the count comes from comparing the two SHAs
+ * the payload does give.
+ *
+ * Counted along the FIRST-PARENT chain, not `total_commits`. A merge makes the
+ * other side's history reachable, and `total_commits` counts all of it: merging
+ * this repo's old 54-commit history under the rebuild reported 57 for a push
+ * that added 3. Those 54 were already on the remote. First-parent measures what
+ * the push actually added to the branch, which is the old `distinct_size`.
+ *
+ * null rather than 0 when nothing can be resolved: a branch's first push has no
+ * `before`, and a force-push leaves one that no longer exists (404). 0 would
+ * render as "0 commits", which is a claim; null lets the caller say less.
+ */
+async function pushSize(repo: string, before?: string, head?: string): Promise<number | null> {
+  if (!repo || !before || !head || before === ZERO_SHA) return null;
+  try {
+    const res = await fetch(`${REST}/repos/${repo}/compare/${before}...${head}`, {
+      headers: headers()
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const total: number | null =
+      typeof json?.total_commits === 'number' ? json.total_commits : null;
+
+    // parents come with the compare payload, so the walk costs no extra request
+    const commits: { sha: string; parents?: { sha: string }[] }[] = Array.isArray(json?.commits)
+      ? json.commits
+      : [];
+    const parents = new Map(commits.map((c) => [c.sha, c.parents?.[0]?.sha]));
+
+    let sha: string | undefined = head;
+    let steps = 0;
+    // compare truncates commits[] at 250, so the chain can dead-end; bail out
+    // to total_commits rather than report a count that stopped early
+    while (sha && sha !== before && steps <= 250) {
+      if (!parents.has(sha)) return total;
+      sha = parents.get(sha);
+      steps++;
+    }
+    // a real push adds at least one commit, so 0 means the walk was wrong —
+    // say nothing rather than render "0 commits"
+    if (sha === before) return steps || null;
+    return total;
+  } catch {
+    return null;
+  }
 }
 
 /** Bucket an ISO timestamp by UTC calendar-day distance from now. */
@@ -145,17 +208,26 @@ export async function getLastPush(): Promise<LastPush | null> {
     type: string;
     created_at: string;
     repo?: { name: string };
-    payload?: { size?: number; commits?: unknown[] };
+    payload?: {
+      size?: number;
+      commits?: unknown[];
+      before?: string;
+      head?: string;
+    };
   }[] = await res.json();
 
   const push = events.find((event) => event.type === 'PushEvent');
   if (!push) return null;
 
-  return {
-    repo: push.repo?.name ?? '',
-    commits: push.payload?.commits?.length ?? push.payload?.size ?? 0,
-    ago: agoBucket(push.created_at)
-  };
+  const repo = push.repo?.name ?? '';
+  // the first two are what the payload used to carry; keep reading them in case
+  // they come back, and fall through to the compare when they don't
+  const commits =
+    push.payload?.commits?.length ??
+    push.payload?.size ??
+    (await pushSize(repo, push.payload?.before, push.payload?.head));
+
+  return { repo, commits, ago: agoBucket(push.created_at) };
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

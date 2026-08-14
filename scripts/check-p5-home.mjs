@@ -99,11 +99,17 @@ check(
 
 release();
 
+// Gate on the hero spark's data-values, not on [data-proof=repos] matching the
+// API: the SSR placeholder already equals repoCount whenever the count hasn't
+// moved since the last deploy, so that condition is true before release and the
+// wait returned instantly, snapshotting mid-update. #load sets data-values on
+// every exit path, so it is the one signal that means "as-home-data finished".
 await page.waitForFunction(
-  (expected) => document.querySelector('[data-proof=repos]')?.textContent === expected,
-  String(github.repoCount),
+  () => document.querySelector('as-spark[data-kind="hero"]')?.hasAttribute('data-values'),
+  null,
   { timeout: 10000 }
 );
+await page.waitForTimeout(1100); // the spark's 900ms reveal, so pixels have moved
 const after = await snap();
 
 check(
