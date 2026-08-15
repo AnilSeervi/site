@@ -63,9 +63,9 @@ import Reading from '~/components/live/Reading.astro';
                 style="height:10px;width:31%"></span></span
             >
             <span class="track hi" data-val data-live="now"
-              ><em data-part="title"></em><span data-part="tail"></span><span
-                class="ctx"
-                data-part="ctx"></span></span
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span><span class="ctx" data-part="ctx"></span></span
             >
           </span>
         </div>
@@ -74,7 +74,9 @@ import Reading from '~/components/live/Reading.astro';
           <span class="tcell">
             <span class="sk" data-sk aria-hidden="true" style="height:13px;width:40%"></span>
             <span class="track muted" data-val data-live="last"
-              ><em data-part="title"></em><span data-part="tail"></span></span
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
             >
           </span>
         </div>
@@ -116,7 +118,9 @@ import Reading from '~/components/live/Reading.astro';
           <span class="tcell">
             <span class="sk" data-sk aria-hidden="true" style="height:13px;width:60%"></span>
             <span class="track hi" data-val data-live="watching"
-              ><em data-part="title"></em><span data-part="tail"></span></span
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
             >
           </span>
         </div>
@@ -125,7 +129,9 @@ import Reading from '~/components/live/Reading.astro';
           <span class="tcell">
             <span class="sk" data-sk aria-hidden="true" style="height:13px;width:52%"></span>
             <span class="track hi" data-val data-live="manga"
-              ><em data-part="title"></em><span data-part="tail"></span></span
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
             >
           </span>
         </div>
@@ -142,6 +148,11 @@ import Reading from '~/components/live/Reading.astro';
     </section>
 
     <Guestbook />
+
+    <!-- cursor-following cover preview; src + position set in ~/islands/live-data.ts -->
+    <div class="art-peek" data-art-peek aria-hidden="true">
+      <img alt="" decoding="async" referrerpolicy="no-referrer" />
+    </div>
   </as-live-data>
 
   <div class="foot">
@@ -337,6 +348,80 @@ import Reading from '~/components/live/Reading.astro';
   .tcell,
   .nvcell {
     min-width: 0;
+  }
+
+  /* ---- cover preview that follows the cursor ----
+     The rows stay pure text; the artwork only appears while a row is hovered,
+     riding just off the pointer. Nothing reserves space for it, so a track
+     without a cover changes no layout at all.
+
+     position: fixed + a translate on every move — never top/left, which would
+     lay out on each frame. pointer-events: none so it can sit under the cursor
+     without stealing the hover it depends on. */
+  .art-peek {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity 220ms ease,
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .art-peek[data-on] {
+    opacity: 1;
+  }
+  .art-peek img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 132px;
+    max-height: 176px;
+    border-radius: 3px;
+    border: 1px solid var(--hair-card);
+    background: var(--ascii-bg);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    /* the wrapper's transform carries the cursor position, so the settle
+       animates on the image instead — scale there is free of the tracking */
+    transform: scale(0.94);
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .art-peek[data-on] img {
+    transform: none;
+  }
+
+  /* source links on the row titles — underline only on hover, so a row of
+     links doesn't read as a wall of underlines */
+  .tlink {
+    color: inherit;
+    text-decoration-line: none;
+  }
+  .tlink[href]:hover,
+  .tlink[href]:focus-visible {
+    text-decoration-line: underline;
+  }
+  /* no href means no source to point at; keep it inert rather than a dead link */
+  .tlink:not([href]) {
+    cursor: inherit;
+  }
+  /* the transform carries the cursor position, so it must not be animated on
+     move — only the fade is. Re-declared here to beat the shared transition. */
+  .art-peek[data-tracking] {
+    transition: opacity 160ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .art-peek {
+      transition: none;
+    }
+  }
+  /* no cursor, no preview — touch gets the text it always had */
+  @media (hover: none) {
+    .art-peek {
+      display: none;
+    }
   }
   /* 'now' skeleton is two stacked bars — center it against the eq label */
   .lrow[data-row='now'] {

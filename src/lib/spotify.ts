@@ -17,6 +17,8 @@ export interface SpotifyNow {
   title: string;
   artist: string;
   url: string;
+  /** album cover URL, or null when the track has no artwork */
+  art: string | null;
   /** Name of the playlist being played from, when applicable. */
   context: string | null;
 }
@@ -25,6 +27,8 @@ export interface SpotifyLast {
   title: string;
   artist: string;
   url: string;
+  /** album cover URL, or null when the track has no artwork */
+  art: string | null;
   /** ISO timestamp of when the track finished playing. */
   playedAt: string;
 }
@@ -40,6 +44,21 @@ interface SpotifyTrack {
   name?: string;
   artists?: Array<{ name?: string }>;
   external_urls?: { spotify?: string };
+  album?: { images?: Array<{ url?: string; width?: number; height?: number }> };
+}
+
+/**
+ * Smallest album image at least ART_MIN_PX wide. Spotify returns 640/300/64;
+ * the art is dithered down to an 18-cell grid, so 640 is ~40x more pixels than
+ * survive the reduction, and 64 is too soft once the contrast stretch runs.
+ */
+const ART_MIN_PX = 128;
+
+function albumArt(track: SpotifyTrack): string | null {
+  const usable = (track.album?.images ?? [])
+    .filter((i): i is { url: string; width: number } => !!i.url && (i.width ?? 0) >= ART_MIN_PX)
+    .sort((a, b) => a.width - b.width);
+  return usable[0]?.url ?? track.album?.images?.[0]?.url ?? null;
 }
 
 /** Exchange the long-lived refresh token for a short-lived access token. */
@@ -68,14 +87,20 @@ function authHeaders(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
 
-function trackFields(track: SpotifyTrack): { title: string; artist: string; url: string } {
+function trackFields(track: SpotifyTrack): {
+  title: string;
+  artist: string;
+  url: string;
+  art: string | null;
+} {
   return {
     title: track.name ?? '',
     artist: (track.artists ?? [])
       .map((a) => a.name)
       .filter(Boolean)
       .join(', '),
-    url: track.external_urls?.spotify ?? ''
+    url: track.external_urls?.spotify ?? '',
+    art: albumArt(track)
   };
 }
 

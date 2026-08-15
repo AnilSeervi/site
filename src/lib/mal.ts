@@ -12,11 +12,24 @@ const refreshToken = import.meta.env.MAL_REFRESH_TOKEN;
 
 export const isMALConfigured = Boolean(clientId && clientSecret && refreshToken);
 
+/** MAL serves `medium` at ~225px and `large` at ~600px; some entries have neither. */
+interface MALPicture {
+  medium?: string;
+  large?: string;
+}
+
+/** medium is plenty — the preview caps at 176px tall. */
+const pictureUrl = (p?: MALPicture): string | null => p?.medium ?? p?.large ?? null;
+
 export interface MALWatching {
   title: string;
   ep: number;
   epTotal: number | null;
   updatedAt: string;
+  /** poster URL, or null when the entry has no picture */
+  art: string | null;
+  /** myanimelist page for the entry, or null when MAL gave no id */
+  url: string | null;
 }
 
 export interface MALManga {
@@ -25,6 +38,10 @@ export interface MALManga {
   ch: number;
   chTotal: number | null;
   vol: number;
+  /** poster URL, or null when the entry has no picture */
+  art: string | null;
+  /** myanimelist page for the entry, or null when MAL gave no id */
+  url: string | null;
 }
 
 export interface MALShelf {
@@ -68,11 +85,11 @@ async function malFetch<T>(path: string, accessToken: string): Promise<T> {
 export async function getWatching(accessToken: string): Promise<MALWatching | null> {
   const data = await malFetch<{
     data?: Array<{
-      node?: { title?: string; num_episodes?: number };
+      node?: { id?: number; title?: string; num_episodes?: number; main_picture?: MALPicture };
       list_status?: { num_episodes_watched?: number; updated_at?: string };
     }>;
   }>(
-    '/users/@me/animelist?status=watching&sort=list_updated_at&fields=list_status,num_episodes&limit=1',
+    '/users/@me/animelist?status=watching&sort=list_updated_at&fields=list_status,num_episodes,main_picture&limit=1',
     accessToken
   );
 
@@ -84,7 +101,9 @@ export async function getWatching(accessToken: string): Promise<MALWatching | nu
     ep: entry.list_status?.num_episodes_watched ?? 0,
     // MAL reports 0 for shows whose episode count isn't finalized.
     epTotal: entry.node.num_episodes ? entry.node.num_episodes : null,
-    updatedAt: entry.list_status?.updated_at ?? ''
+    updatedAt: entry.list_status?.updated_at ?? '',
+    art: pictureUrl(entry.node.main_picture),
+    url: entry.node.id ? `https://myanimelist.net/anime/${entry.node.id}` : null
   };
 }
 
@@ -92,11 +111,11 @@ export async function getWatching(accessToken: string): Promise<MALWatching | nu
 export async function getManga(accessToken: string): Promise<MALManga | null> {
   const data = await malFetch<{
     data?: Array<{
-      node?: { title?: string; num_chapters?: number };
+      node?: { id?: number; title?: string; num_chapters?: number; main_picture?: MALPicture };
       list_status?: { num_chapters_read?: number; num_volumes_read?: number };
     }>;
   }>(
-    '/users/@me/mangalist?status=reading&sort=list_updated_at&fields=list_status,num_chapters&limit=1',
+    '/users/@me/mangalist?status=reading&sort=list_updated_at&fields=list_status,num_chapters,main_picture&limit=1',
     accessToken
   );
 
@@ -108,7 +127,9 @@ export async function getManga(accessToken: string): Promise<MALManga | null> {
     ch: entry.list_status?.num_chapters_read ?? 0,
     // MAL reports 0 for unfinalized chapter counts, same as episodes.
     chTotal: entry.node.num_chapters ? entry.node.num_chapters : null,
-    vol: entry.list_status?.num_volumes_read ?? 0
+    vol: entry.list_status?.num_volumes_read ?? 0,
+    art: pictureUrl(entry.node.main_picture),
+    url: entry.node.id ? `https://myanimelist.net/manga/${entry.node.id}` : null
   };
 }
 

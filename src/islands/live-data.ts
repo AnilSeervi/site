@@ -10,12 +10,14 @@ interface SpotifyNow {
   artist: string;
   url: string;
   context: string | null;
+  art?: string | null;
 }
 interface SpotifyLast {
   title: string;
   artist: string;
   url: string;
   playedAt: string;
+  art?: string | null;
 }
 interface SpotifyRes {
   disabled?: boolean;
@@ -36,8 +38,22 @@ interface GithubRes {
 }
 interface MalRes {
   disabled?: boolean;
-  watching?: { title: string; ep: number; epTotal: number | null; updatedAt: string } | null;
-  manga?: { title: string; ch: number; chTotal: number | null; vol: number } | null;
+  watching?: {
+    title: string;
+    ep: number;
+    epTotal: number | null;
+    updatedAt: string;
+    art?: string | null;
+    url?: string | null;
+  } | null;
+  manga?: {
+    title: string;
+    ch: number;
+    chTotal: number | null;
+    vol: number;
+    art?: string | null;
+    url?: string | null;
+  } | null;
   shelf?: { anime: number; episodes: number; days: number; mean: number } | null;
 }
 interface WeatherRes {
@@ -130,6 +146,10 @@ class AsLiveData extends HTMLElement {
   #phase = new LoadPhase(this);
   /** the LISTENING head note reads 'live' only if spotify actually answered */
   #spotifyOk = true;
+  /** pending rAF for the cover preview's position; 0 when idle */
+  #peekRaf = 0;
+  /** bumped on every hover so a slow image can't reveal itself after the pointer moved on */
+  #peekToken = 0;
 
   connectedCallback() {
     this.#phase.start();
@@ -138,12 +158,22 @@ class AsLiveData extends HTMLElement {
     const contrib = this.querySelector('as-contrib');
     contrib?.addEventListener('contrib:day', this.#onContribDay);
     contrib?.addEventListener('contrib:leave', this.#onContribLeave);
+
+    // delegated so rows that gain a cover later are covered without rebinding
+    this.addEventListener('pointerover', this.#onPeekOver);
+    this.addEventListener('pointermove', this.#onPeekMove);
+    this.addEventListener('pointerout', this.#onPeekOut);
   }
 
   disconnectedCallback() {
     const contrib = this.querySelector('as-contrib');
     contrib?.removeEventListener('contrib:day', this.#onContribDay);
     contrib?.removeEventListener('contrib:leave', this.#onContribLeave);
+    this.removeEventListener('pointerover', this.#onPeekOver);
+    this.removeEventListener('pointermove', this.#onPeekMove);
+    this.removeEventListener('pointerout', this.#onPeekOut);
+    if (this.#peekRaf) cancelAnimationFrame(this.#peekRaf);
+    this.#peekRaf = 0;
     this.#phase.cancel();
   }
 
@@ -176,6 +206,109 @@ class AsLiveData extends HTMLElement {
 
   #part(live: string, part: string): HTMLElement | null {
     return this.querySelector<HTMLElement>(`[data-live="${live}"] [data-part="${part}"]`);
+  }
+
+  /**
+   * Hang a cover URL on its row. Nothing is fetched here — the image loads on
+   * first hover, so a visitor who never points at a row never pays for four
+   * covers, and rows without art simply have no attribute to match.
+   */
+  #setArt(key: string, url: string | null | undefined) {
+    const row = this.querySelector<HTMLElement>(`.lrow[data-row="${key}"]`);
+    if (!row) return;
+    if (url) row.dataset.artSrc = url;
+    else delete row.dataset.artSrc;
+  }
+
+  /** the shared floating preview; one element for every row */
+  #peek(): HTMLElement | null {
+    return this.querySelector<HTMLElement>('[data-art-peek]');
+  }
+
+  #onPeekOver = (e: PointerEvent) => {
+    // touch has no hover: a tap would pin the preview open with no way to
+    // dismiss it, so leave those pointers alone entirely
+    if (e.pointerType === 'touch') return;
+    const row = (e.target as Element | null)?.closest<HTMLElement>('.lrow[data-art-src]');
+    if (!row) return;
+    const peek = this.#peek();
+    const img = peek?.querySelector('img');
+    if (!peek || !img) return;
+
+    const src = row.dataset.artSrc!;
+    this.#movePeek(peek, e.clientX, e.clientY);
+
+    // Show only once the bytes are actually here. Revealing on assignment
+    // meant an empty bordered box appeared first and the cover snapped in
+    // under it — the fade has to start from a loaded image, not an empty one.
+    if (img.getAttribute('src') === src && img.complete && img.naturalWidth > 0) {
+      peek.dataset.on = '';
+      return;
+    }
+
+    const token = ++this.#peekToken;
+    delete peek.dataset.on;
+    delete peek.dataset.tracking;
+    img.onload = () => {
+      // a different row was hovered while this was loading, or the pointer left
+      if (token !== this.#peekToken) return;
+      peek.dataset.on = '';
+    };
+    img.onerror = () => {
+      if (token === this.#peekToken) delete peek.dataset.on;
+    };
+    img.src = src;
+  };
+
+  #onPeekMove = (e: PointerEvent) => {
+    const peek = this.#peek();
+    if (!peek || !('on' in peek.dataset)) return;
+    if (this.#peekRaf) return; // one position per frame, not one per event
+    this.#peekRaf = requestAnimationFrame(() => {
+      this.#peekRaf = 0;
+      this.#movePeek(peek, e.clientX, e.clientY);
+    });
+  };
+
+  #onPeekOut = (e: PointerEvent) => {
+    const row = (e.target as Element | null)?.closest('.lrow[data-art-src]');
+    if (!row) return;
+    // moving between children of the same row is not leaving it
+    const to = e.relatedTarget as Node | null;
+    if (to && row.contains(to)) return;
+    const peek = this.#peek();
+    if (!peek) return;
+    this.#peekToken++; // strand any in-flight load so it can't pop up after this
+    delete peek.dataset.on;
+    delete peek.dataset.tracking;
+  };
+
+  /**
+   * Offset below-right of the cursor, flipped near the viewport edge so the
+   * preview never leaves the screen. data-tracking drops the transform
+   * transition once it is already visible — otherwise every move would ease
+   * toward the cursor and lag behind it.
+   */
+  #movePeek(peek: HTMLElement, x: number, y: number) {
+    const GAP = 18;
+    const w = peek.offsetWidth || 132;
+    const h = peek.offsetHeight || 176;
+    const left = x + GAP + w > innerWidth ? x - GAP - w : x + GAP;
+    const top = Math.min(Math.max(GAP, y - h / 2), innerHeight - h - GAP);
+    peek.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
+    if ('on' in peek.dataset) peek.dataset.tracking = '';
+  }
+
+  /**
+   * Point a row's title at its source. Removing the attribute rather than
+   * blanking it matters: an <a> with no href is not focusable and not
+   * clickable, which is what an entry with no known page should be.
+   */
+  #setLink(live: string, url: string | null | undefined) {
+    const a = this.#part(live, 'link');
+    if (!a) return;
+    if (url) a.setAttribute('href', url);
+    else a.removeAttribute('href');
   }
 
   /** fill the pre-rendered title/tail(/ctx) fragments of a value element */
@@ -214,11 +347,16 @@ class AsLiveData extends HTMLElement {
         ` — ${s.now.artist}${s.now.context ? ' · ' : ''}`,
         s.now.context
       );
+      this.#setArt('now', s.now.art);
+      this.#setLink('now', s.now.url);
     } else {
       this.#hideRow('now');
     }
-    if (s?.last) this.#setParts('last', s.last.title, ` — ${s.last.artist}`);
-    else this.#hideRow('last');
+    if (s?.last) {
+      this.#setParts('last', s.last.title, ` — ${s.last.artist}`);
+      this.#setArt('last', s.last.art);
+      this.#setLink('last', s.last.url);
+    } else this.#hideRow('last');
   }
 
   #applyGithub(g: GithubRes | null) {
@@ -322,6 +460,8 @@ class AsLiveData extends HTMLElement {
       const suffix = split ? ` ${split[2]!.toLowerCase()}` : '';
       const eps = epTotal == null ? ` — episode ${ep}` : ` — episode ${ep} of ${epTotal}`;
       this.#setParts('watching', base, `${suffix}${eps}`);
+      this.#setArt('watching', m.watching.art);
+      this.#setLink('watching', m.watching.url);
     } else {
       this.#hideRow('watching');
     }
@@ -330,6 +470,8 @@ class AsLiveData extends HTMLElement {
       const { title, ch, chTotal, vol } = m.manga;
       const chapters = chTotal == null ? `chapter ${ch}` : `chapter ${ch} of ${chTotal}`;
       this.#setParts('manga', title, ` — ${chapters}${vol ? `, vol ${vol}` : ''}`);
+      this.#setArt('manga', m.manga.art);
+      this.#setLink('manga', m.manga.url);
     } else {
       this.#hideRow('manga');
     }
