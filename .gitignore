@@ -14,6 +14,10 @@ body-of-work.html
 resume-work-inventory.md
 resume-work-additions.md
 
+# database dumps from scripts/db-backup.mjs — these carry the kv table's Garmin
+# OAuth tokens and the guestbook's email addresses. Never commit one.
+backups/
+
 # design handoffs stay local — they were purged from history on 2026-08-11 and
 # this keeps `git add -A` from walking 44M of prototype HTML and screenshots
 # back in. Delete the directories, not this line, if you ever want them gone.
