@@ -1,0 +1,300 @@
+---
+title: Deep cloning nested objects natively without using lodash
+date: 2023-04-01
+excerpt: Use native API structuredClone to deep copy nested objects
+firstLine: "structuredClone has been sitting in the platform this whole time."
+tag: javascript
+coverURL: unsplash/photo-1627962479236-258e33f56c52
+---
+
+Did you know that you could easily clone deeply nested objects in JavaScript
+without using lodash, all just by using a single function ?
+
+Yes, `structuredClone()` function lets you do just that and it's built into the
+Web APIs.
+
+```js {10}
+const currentUser = {
+  full_name: {
+    first_name: 'Anil',
+    last_name: 'Seervi'
+  },
+  joined_at: new Date(0),
+  languages: ['English', 'JavaScript']
+};
+
+const cloneUser = structuredClone(currentUser);
+```
+
+In the example, you can notice that nested object `full_name`, **Date** Object
+`joined_at` and the **Array** `languages` are all well preserved and cloned into
+`cloneUser` variable.
+
+```js
+currentUser.full_name; // Object: {first_name: "Anil", last_name: "Seervi"}
+currentUser.joined_at; // Date: Thu Jan 01 1970 05:30:00 GMT+0530 (India Standard Time)
+currentUser.languages; // Array: ["English", "JavaScript"]
+```
+
+That's right, `structuredClone` can clone many other types of _Objects_. We'll
+discuss all the other types and also it's restrictions in the following
+sections. But before that let's have a look at the syntax of `structuredClone`.
+
+## Syntax
+
+```js
+structuredClone(value);
+structuredClone(value, options);
+```
+
+#### Parameters
+
+`value` : The object to be cloned. This can be
+any [structured-cloneable type](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types).
+`options`(optional) : An object with the following properties: `transfer` : An
+array
+of [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects) that
+will be moved rather than cloned to the returned object.
+
+#### Return Type
+
+The returned value is
+a [deep copy](https://developer.mozilla.org/en-US/docs/Glossary/Deep_copy) of
+the original `value`.
+
+#### Exceptions
+
+`DataCloneError` [`DOMException`](https://developer.mozilla.org/en-US/docs/Web/API/DOMException)
+
+Thrown if any part of the input value is not serializable.
+
+## Structured cloneable types
+
+```js
+const multipleTypesObject = {
+  set: new Set([1, 3, 2]),
+  map: new Map([[3, 2]]),
+  regex: /foobar/,
+  deep: { array: [{ file: new File(someBlobData, 'file.txt') }] },
+  error: new Error('Hello!')
+};
+multipleTypesObject.circular = multipleTypesObject;
+
+const fullyCloned = structuredClone(multipleTypesObject);
+// ✅ All good, fully and deeply copied!
+```
+
+`structuredClone` can not only clone `Primitive types`, additionally it can
+also:
+
+- Clone infinitely nested objects and arrays
+- Clone circular references
+- Clone a wide variety of JavaScript types, such
+  as `Date`, `Set`, `Map`, `Error`, `RegExp`, `ArrayBuffer`, `Blob`, `File`, `ImageData`,
+  and [many more](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types)
+- Transfer
+  any [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects)
+  from original Object to cloned Object.
+
+## Preserving circular references
+
+Using `structuredClone` to deep copy an Object will also preserve any circular
+references in that object. Have a look at the example below where `itself`
+preserves it's reference to the parent Object.
+
+```js {6,10}
+// Create an object with a value and a circular reference to itself.
+const user = { name: 'Anil' };
+user.itself = user;
+
+// Clone it
+const clone = structuredClone(user);
+
+console.assert(clone !== user); // the objects are not the same (not same identity)
+console.assert(clone.name === 'Anil'); // they do have the same values
+console.assert(clone.itself === clone); // and the circular reference is preserved
+```
+
+## Transferring values
+
+Apart from deeply cloning objects, you can also transfer certain
+[Transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects) from
+original object to the cloned object, using the `transfer` property of
+the `options` parameter. Transferring makes the original object unusable.
+
+```js
+// 16MB = 1024 * 1024 * 16
+const uInt8Array = Uint8Array.from({ length: 1024 * 1024 * 16 }, (v, i) => i);
+
+console.log(uInt8Array.byteLength); // 16777216
+
+const transferred = structuredClone(uInt8Array, {
+  transfer: [uInt8Array.buffer]
+});
+console.log(uInt8Array.byteLength); // 0, because it was buffer was transferred
+```
+
+## Why not spread the objects?
+
+It is important to note that spreading the object will only make a shallow copy
+and not a deep copy.
+
+```js
+const currentUser = {
+  full_name: {
+    first_name: 'Anil',
+    last_name: 'Seervi'
+  },
+  joined_at: new Date(0),
+  languages: ['English', 'JavaScript']
+};
+
+const spreadObject = {
+  ...currentUser,
+  full_name: { ...currentUser.full_name }
+};
+
+// 🚩 oops - we just added "CSS" to both the copy *and* the original array
+spreadObject.languages.push('CSS');
+
+// 🚩 oops - we just updated the date for the copy *and* original date
+spreadObject.joined_at.setTime(969);
+```
+
+Which means that nested objects will just share the same references and updating
+one will also update the other.
+
+## Why not just `JSON.parse(JSON.stringify(x))`?
+
+So you happen to know this trick, its fast and has gotten the job done for you,
+but do you also know what are its shortcomings ?
+
+Let's take an example to understand that :
+
+```js
+const event = {
+  title: 'Pusblish new article',
+  date: new Date('4/1/2023')
+};
+
+// 🚩 JSON.stringify converted the `date` to a string
+const wrongEvent = JSON.parse(JSON.stringify(event));
+
+console.log(wrongEvent);
+/*
+{
+  title: "Publish new article",
+  date: "2023-03-31T18:30:00.000Z"
+}
+*/
+```
+
+So you see in this example how `date` which was supposed to be a `Date` object
+was converted to a _string_.
+
+There are more types of objects that `JSON.parse(JSON.stringify(x))` can't
+convert properly. Let's use the structured cloneable types example to see what
+output we get.
+
+```js
+const multipleTypesObject = {
+  set: new Set([1, 3, 2]),
+  map: new Map([[3, 2]]),
+  regex: /foobar/,
+  deep: { array: [{ file: new File(someBlobData, 'file.txt') }] },
+  error: new Error('Hello!')
+};
+
+const totallyWrongCopy = JSON.parse(JSON.stringify(multipleTypesObject));
+```
+
+If we try logging `totallyWrongCopy` we would get :
+
+```js
+{
+  "set": {},
+  "map": {},
+  "regex": {},
+  "deep": {
+    "array": [
+      { file:{}}
+    ]
+  },
+  "error": {},
+}
+```
+
+Where as using a `structuredClone` would have cloned everything just fine. One
+more thing to note is that you cannot `JSON.stringify` a circular object.
+
+## What can `structuredClone` _not_ clone ?
+
+- [`Function`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function) objects
+  cannot be duplicated by the structured clone algorithm; attempting to throws
+  a `DataCloneError` exception.
+- Cloning DOM nodes likewise throws a `DataCloneError` exception.
+- Certain object properties are not preserved:
+  - The `lastIndex` property
+    of [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp) objects
+    is not preserved.
+  - Property descriptors, setters, getters, and similar metadata-like features
+    are not duplicated. For example, if an object is marked readonly with
+    a [property descriptor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor),
+    it will be read/write in the duplicate, since that's the default.
+  - The prototype chain is not walked or duplicated.
+
+```js
+// Throws DataCloneError
+structuredClone({ fn: () => {} });
+
+// Throws DataCloneError
+structuredClone({ el: document.body });
+
+structuredClone({
+  get foo() {
+    return 'bar';
+  }
+});
+// Becomes: { foo: 'bar' }
+
+// 🚩 Object prototypes
+class MyClass {
+  foo = 'bar';
+  myMethod() {
+    /* ... */
+  }
+}
+const myClass = new MyClass();
+
+const cloned = structuredClone(myClass);
+// Becomes: { foo: 'bar' }
+
+cloned instanceof myClass; // false
+```
+
+## Full list of supported types
+
+More simply put, anything not in the below list cannot be cloned:
+
+### [JS Built-ins](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#javascript_types)
+
+`Array`, `ArrayBuffer`, `Boolean`, `DataView`, `Date`, `Error` types (those
+specifically listed below), `Map` , `Object` but only plain objects (e.g. from
+object
+literals), [Primitive types](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values),
+except `symbol` (aka `number`, `string`, `null`, `undefined`, `boolean`, `BigInt`), `RegExp`, `Set`, `TypedArray`
+
+### Error types
+
+`Error`, `EvalError`, `RangeError`, `ReferenceError` , `SyntaxError`, `TypeError`, `URIError`
+
+### [Web/API types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#webapi_types)
+
+`AudioData`, `Blob`, `CryptoKey`, `DOMException`, `DOMMatrix`, `DOMMatrixReadOnly`, `DOMPoint`, `DomQuad`, `DomRect`, `File`, `FileList`, `FileSystemDirectoryHandle`, `FileSystemFileHandle`, `FileSystemHandle`, `ImageBitmap`, `ImageData`, `RTCCertificate`, `VideoFrame`
+
+## Browsers and Runtime support for `structuredClone`
+
+Apart from the availability in workers, `structuredClone` has pretty good
+support in all major browsers and runtimes.
+
+![](https://cdn.sanity.io/images/9u3oysk9/production/7708a1ce05285415126b60984b5355dce49d2453-1598x790.png)

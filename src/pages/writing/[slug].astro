@@ -1,0 +1,79 @@
+---
+import { getCollection, render } from 'astro:content';
+import Article from '~/layouts/Article.astro';
+import Sidenote from '~/components/Sidenote.astro';
+import Step from '~/components/mdx/Step.astro';
+import CrashDemo from '~/components/mdx/CrashDemo.astro';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+  );
+  const snippets = await getCollection('snippets');
+
+  const shortTitle = (t: string) => t.split(':')[0];
+
+  const postPaths = posts.map((entry, i) => {
+    const older = posts[i + 1];
+    const newer = posts[i - 1];
+    return {
+      params: { slug: entry.id },
+      props: {
+        entry,
+        kind: 'post' as const,
+        prev: older
+          ? {
+              kicker: '← previous',
+              title: shortTitle(older.data.title),
+              href: `/writing/${older.id}`
+            }
+          : undefined,
+        next:
+          i === 0
+            ? { kicker: "newest — you're here", title: 'back to the index →', href: '/writing' }
+            : {
+                kicker: 'next →',
+                title: shortTitle(newer!.data.title),
+                href: `/writing/${newer!.id}`
+              }
+      }
+    };
+  });
+
+  const snippetPaths = snippets.map((entry) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      kind: 'snippet' as const,
+      prev: undefined,
+      next: { kicker: 'from the jar', title: 'back to the index →', href: '/writing' }
+    }
+  }));
+
+  return [...postPaths, ...snippetPaths];
+}
+
+const { entry, kind, prev, next } = Astro.props;
+const { Content } = await render(entry);
+
+const words = (entry.body ?? '').split(/\s+/).filter(Boolean).length;
+const minutes = Math.max(1, Math.round(words / 225));
+
+const metaParts =
+  kind === 'post'
+    ? [String(entry.data.date.getFullYear()), entry.data.tag, `${minutes} min`]
+    : ['snippet', entry.data.tag, `${minutes} min`];
+
+const description = kind === 'post' ? entry.data.excerpt : entry.data.description;
+---
+
+<Article
+  title={entry.data.title}
+  description={description}
+  slug={entry.id}
+  metaParts={metaParts}
+  prev={prev}
+  next={next}
+>
+  <Content components={{ Sidenote, Step, Error: CrashDemo }} />
+</Article>

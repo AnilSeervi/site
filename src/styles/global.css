@@ -1,0 +1,276 @@
+/* ---- global tokens & base ---- */
+
+:root {
+  /* without this the light UA canvas flashes white for a frame during
+     navigation — behind the view-transition snapshots, and on overscroll */
+  color-scheme: dark;
+
+  /* color tokens */
+  --bg: #0f0d0b;
+  --surface: #141110;
+  --ascii-bg: #100e0c;
+  --text-hi: #ede6da;
+  --text: #d8d0c2;
+  --text-soft: #c9c0af;
+  --text-muted: #a99f8c;
+  --meta: #8a8171;
+  --faint: #5e5749;
+  --sep-strong: #3e382e;
+  --sep-strong-2: #4a443c;
+  --live-green: #92c78c;
+  --quote: #cfc6b6;
+  --error: #ce7b5b;
+  --as-accent: #d9a54a;
+
+  /* hairlines */
+  --hair-row: rgba(237, 230, 218, 0.07);
+  --hair-card: rgba(237, 230, 218, 0.1);
+  --hair-rule: rgba(237, 230, 218, 0.12);
+  --hair-input: rgba(237, 230, 218, 0.18);
+
+  /* type */
+  --font-serif: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans:
+    'Schibsted Grotesk Variable', 'Schibsted Grotesk', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(217, 165, 74, 0.35);
+}
+
+/* opt in with `text-decoration-line: underline`, never the `text-decoration`
+   shorthand — the shorthand resets the thickness/offset/colour set here */
+a {
+  color: inherit;
+  text-decoration-line: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 42%, transparent);
+  transition: color 180ms ease;
+}
+
+:focus-visible {
+  outline: 1px solid var(--as-accent);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* breakpoint visibility helpers — swap copy that differs on mobile without JS */
+.mobile-only {
+  display: none;
+}
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+  .mobile-only {
+    display: revert;
+  }
+}
+
+/* the open sheet sits inside .page (a z-index:1 stacking context) so it can't
+   out-stack the body-level chip at z-index 90 — the chip yields instead. Lives
+   here because a scoped rule in either component can't name the other. */
+body:has(as-drawer[data-open]) .cmd-chip {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* dot-grid background layer — lives on a transition:persist element in Base */
+.dot-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(237, 230, 218, 0.05) 1px, transparent 1.2px);
+  background-size: 26px 26px;
+}
+
+/* ---- keyframes ---- */
+@keyframes as-eq {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes as-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(146, 199, 140, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(146, 199, 140, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(146, 199, 140, 0);
+  }
+}
+@keyframes as-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes as-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes as-run {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+@keyframes as-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes as-beat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  8% {
+    transform: scale(1.5);
+  }
+  16% {
+    transform: scale(1);
+  }
+  24% {
+    transform: scale(1.3);
+  }
+}
+
+/* staggered entrance — applied via .as-enter + inline animation-delay */
+.as-enter {
+  animation: as-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ---- loading / waiting states ----
+   never render a value you don't have: only the value slot is absent, and its
+   space stays reserved so arrival can't reflow the row */
+@keyframes as-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.34;
+  }
+}
+@keyframes as-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes as-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* skeleton bar — height/width set inline, as a fraction, never 100% */
+.sk {
+  border-radius: 3px;
+  background: rgba(237, 230, 218, 0.07);
+}
+.sk-dim {
+  background: rgba(237, 230, 218, 0.06);
+}
+.sk-faint {
+  background: rgba(237, 230, 218, 0.05);
+}
+
+/* phase gating on data-load = idle | waiting | arrived; [data-sk] is the
+   skeleton, [data-val] the value, exactly one shows. idle shows neither, so
+   data resolving under 180ms reaches the value without a skeleton flash.
+
+   The :is() tag prefix is load-bearing — it lifts specificity to (0,2,1) so
+   these beat Astro's scoped rules, which compile to `.foo[data-astro-cid…]`
+   at (0,2,0) and would otherwise tie and leave a skeleton on screen. */
+:is(as-live-data, as-moving)[data-load] [data-sk] {
+  display: none;
+}
+:is(as-live-data, as-moving)[data-load='waiting'] [data-sk] {
+  display: block;
+  animation: as-breathe 1.7s ease-in-out infinite;
+}
+/* value hidden until arrived, then it keeps whatever display its own CSS sets */
+:is(as-live-data, as-moving)[data-load='idle'] [data-val],
+:is(as-live-data, as-moving)[data-load='waiting'] [data-val] {
+  display: none;
+}
+:is(as-live-data, as-moving)[data-load='arrived'] [data-val] {
+  animation: as-fade 0.45s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  /* skeletons stop breathing and sit statically at .34 (the global override
+     above would otherwise freeze them at the 0% frame — full opacity) */
+  :is(as-live-data, as-moving)[data-load='waiting'] [data-sk] {
+    opacity: 0.34;
+  }
+}

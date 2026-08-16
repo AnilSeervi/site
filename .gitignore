@@ -1,9 +1,37 @@
-*.log
-.DS_Store
-.next
-node_modules
-.vercel
+node_modules/
+dist/
+.astro/
+.vercel/
 .env
-.sanity
-.env*.local
-.pnpm-store
+.env.*
+!.env.example
+.DS_Store
+.vercel
+.env*
+
+# private proof material — never publish (internal metrics, names)
+body-of-work.html
+resume-work-inventory.md
+resume-work-additions.md
+
+# database dumps from scripts/db-backup.mjs — these carry the kv table's Garmin
+# OAuth tokens and the guestbook's email addresses. Never commit one.
+backups/
+
+# design handoffs stay local — they were purged from history on 2026-08-11 and
+# this keeps `git add -A` from walking 44M of prototype HTML and screenshots
+# back in. Delete the directories, not this line, if you ever want them gone.
+design_handoff_*/
+
+# also purged on 2026-08-11, also still on disk. Setup notes are local because
+# they read as internal runbooks; these six scripts are spent scaffolding —
+# screenshot capture and two migrations that have already run. The check-*.mjs
+# probes and sync-hardcover.mjs stay tracked: the first are the test suite, the
+# second is what the daily workflow runs.
+docs/
+scripts/shot.mjs
+scripts/mshot.mjs
+scripts/shot-loading.mjs
+scripts/mcheck.mjs
+scripts/migrate-phase6.mjs
+scripts/migrate-views-slugs.mjs

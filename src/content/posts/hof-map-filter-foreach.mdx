@@ -1,0 +1,343 @@
+---
+title: Higher Order Array Functions — forEach, map and filter
+date: 2021-12-11
+excerpt: "Learn how to use Higher-Order Array Functions forEach, map and filter with examples."
+firstLine: "forEach, map, filter — three verbs that replace half your for-loops."
+tag: javascript
+coverURL: unsplash/photo-1528900983748-86d2417d082f
+---
+
+Array methods such as `forEach()`, `map()` and `filter()` are some of the
+_Higher Order **Array** Functions_ that come in very handy when you have to work
+with data that's in an Array.
+
+In this article we'll be discussing the following Higher-Order Functions, with
+examples :
+
+- `forEach()`
+- `map()`
+- `filter()`
+
+I'll be assuming that you have a basic understanding of what _Higher-Order
+Functions_ are and how to work with them, **if not**, I recommend you read my
+<a href="/writing/higher-order-functions-in-javascript">previous article</a> on it.
+
+## `Array.forEach()`
+
+`forEach()` method is very useful to perform certain operation(s) for every
+element in the Array.
+
+The `forEach()` method on an Array executes the provided _callback function_ for
+each element in the array in ascending index(starting 0).
+
+### Syntax
+
+```js
+forEach(callbackFn);
+forEach((element, index, array) => {
+  /* ... */
+});
+```
+
+#### Parameters
+
+`callbackFn`  
+Function to execute on each element. It accepts one to three arguments :
+
+`element` : The current element being processed in the array.  
+`index` : The index of `element` in array.  
+`array` : The array on which `forEach()` was called upon.
+
+The `forEach()` method doesn't return anything : `undefined`
+
+If you look at the signature of the callback function in this method, it looks
+similar to the `forEach()` function that I created in the previous
+<a href="/writing/higher-order-functions-in-javascript">**Higher-Order Functions**</a> article.
+
+### Examples
+
+Let's recreate the same example now using the `Array.forEach()` method :
+
+```js {3,8}
+const numbs = [5, 9, 10, 1]; // Array of numbers
+
+numbs.forEach((n, i, arr) => {
+  // n => element, i => index, arr => array(numbs)
+  arr[i] = n + 2; // add 2 to current element
+});
+
+numbs.forEach((n) => console.log(n)); // logs all element one-by-one
+// 7
+// 11
+// 12
+// 3
+```
+
+As the `forEach()` is a method on the array itself, we can call it on any array
+using the
+[_dot notation_](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation).
+
+In the above example we've called `Array.forEach()` _Higher-Order function_
+twice with arrow functions as callbacks, defined right withing `forEach()`'s
+parameters.
+
+Say we have an Array of full names and you are required to separate all the full
+names into `firstName` and `lastName` of an object and push them into an array
+that already contains same kind-of data. How'd you do it?
+
+```js
+const fullNames = [
+  'Adam Benson',
+  'Clare Donaldson',
+  'Ben Adams',
+  'Donald Clarkson'
+];
+```
+
+Here's how you can use the `forEach()` to push objects containing `firstName`
+and `lastName` property to the `names` array.
+
+```js {3}
+const names = [{ firstName: 'Anil', lastName: 'Seervi' }];
+
+fullNames.forEach((n) => {
+  const obj = ({}[ // empty object for initialization
+    (obj.firstName, obj.lastName)
+  ] = n.split` `); // split at spaces and destructure initialize
+  names.push(obj); // push the object to names array
+});
+
+console.log(names);
+/*
+[
+  { firstName: 'Anil', lastName: 'Seervi' }
+  { firstName: 'Adam', lastName: 'Benson' },
+  { firstName: 'Clare', lastName: 'Donaldson' },
+  { firstName: 'Ben', lastName: 'Adams' },
+  { firstName: 'Donald', lastName: 'Clarkson' }
+]
+*/
+```
+
+In the above example, within our callback, we create an empty object `obj` to
+store the properties. Then we split the current element of the array at spaces,
+destructure it right away storing it to properties `firstName` and `lastName` in
+the object `obj`. At last we push the object into the `names` array.
+
+## `Array.map()`
+
+`Array.map()` method comes very handy when you have to create a new array from
+executing a certain function on an existing array.
+
+The `Array.map()` method on an Array returns a new array populated with the
+return value of the _callback function_ called for every element in an array in
+ascending index(starting 0).
+
+### Syntax
+
+```js
+map(callbackFn);
+map((element, index, array) => {
+  /* ... */
+});
+// returns a new array populated with results of callbackFn
+```
+
+#### Parameters
+
+`callbackFn`  
+Function to execute on each element of `arr`. Each time `callbackFn` executes,
+the return value is added to the `newArray`. It accepts one to three arguments :
+
+`element` : The current element being processed in the array.  
+`index` : The index of `element` in array.  
+`array` : The array on which `map()` was called upon.
+
+#### Return value
+
+The `map()` method returns a **new Array** with each element being the result of
+the callback function.
+
+### Examples
+
+Let's assume we are given the following array and are told to produce another
+array of consisting of the sqaures of all the respective elements.
+
+```js
+const numbs = [5, 9, 10, 1]; // our boring array of numbers
+```
+
+The easiest way to do this will be by using the `Array.map()` method :
+
+```js {1}
+const squares = numbs.map((n) => n ** 2);
+// Yes, its easy as that!!
+
+console.log(numbs);
+// [ 5, 9, 10, 1 ]
+console.log(sqaures);
+// [ 25, 81, 100, 1 ]
+```
+
+That was so easy right. All we need to do is to call the `map()` method on our
+`numbs` array and return the square of the current element within it for our
+logic. As the `map()` method itself returns a new Array, we store it in the
+variable `sqaures`.
+
+Now let's look at another example where we'll convert an array of objects with
+`firstName` and `lastName` properties that we got as our output in the
+`forEach()` and create another array which will consist of only full names.
+Kinda the reverse of what we did in `forEach()` example.
+
+```js {11}
+// array of objects with firstName and lastName
+const names = [
+  { firstName: 'Anil' },
+  { firstName: 'Adam', lastName: 'Benson' },
+  { firstName: 'Clare', lastName: 'Donaldson' },
+  { firstName: 'Ben', lastName: 'Adams' },
+  { firstName: 'Donald', lastName: 'Clarkson' }
+];
+
+// create a new Array of fullNames using names Array
+const fullNames = names.map((name) => {
+  const full_name = `${name.firstName} ${name?.lastName || ''}`;
+  return full_name.trimEnd();
+});
+
+console.log(fullNames);
+// [ 'Anil', 'Adam Benson', 'Clare Donaldson', 'Ben Adams', 'Donald Clarkson' ]
+```
+
+Above, the first thing you'll notice while looking at the example is we don't
+have `lastName` property for my name and our logic will have to handle that too.
+
+Within the callback of our `map()` method we are using template literals to
+concatenate `firstName` and `lastName`(if any: using optional chaining) to form
+the `full_name`. And returning trimmed `full_name` from the callback.
+
+## `Array.filter()`
+
+As the name implies, this method is used to filter out the array which meets a
+certain condition.
+
+`Array.filter()` method on the Array returns an new Array with only the elements
+that pass the test condition within the _callback function_.
+
+### Syntax
+
+```js
+filter(callbackFn);
+filter((element, index, array) => {
+  /* ... */
+});
+// returns a new array with elements that satisfy the callback condition.
+```
+
+#### Parameters
+
+`callbackFn`  
+Function is a predicate to execute on each element of `arr`. Each time
+`callbackFn` is called, only the `element`'s that coerce to `true` are added
+into the new Array. It accepts one to three arguments :
+
+`element` : The current element being processed in the array.  
+`index` : The index of `element` in array.  
+`array` : The array on which `filter()` was called upon.
+
+##### Return Value
+
+The `filter()` method returns a **new Array** with only the elements that
+satisfy the test condition in the `callbackFn`.
+
+### Examples
+
+To keep it easier to understand I'm taking our same old `numbs` array to work
+on.
+
+```js
+const numbs = [5, 9, 10, 1, 6, 3]; // hey, I'm bigger this time :)
+```
+
+lets pose a couple question so to `filter` our boring array.
+
+<Step number="Q1" title="Obtain an array of Odd Numbers from numbs"/>
+
+```js {1}
+const odd = numbs.filter((n) => n % 2 !== 0);
+
+console.log(odd);
+// [ 5, 9, 1, 3]
+```
+
+Within the callback, we return true only for _odd_ numbers in our array which
+in-turn returns all odd numbers in our `numbs` array.
+
+<Step number="Q2" title="Obtain an array of Prime Numbers from numbs"/>
+
+```js {7}
+function isPrime(numb) {
+  for (let i = 2, s = Math.sqrt(numb); i <= s; i++)
+    if (numb % i === 0) return !1;
+  return numb > 1;
+}
+
+console.log(numbs.filter(isPrime));
+// [ 5, 3 ]
+```
+
+Here `isPrime` is our callback for `filter` method which gets called with every
+element in `numbs` and acts as our condition to filter out numbers that are
+_prime_.
+
+Below is a composite example of both `map()` and `filter()` methods. I'm going
+to create an Array that'll contain names of my GitHub Repos which are majorly
+written with **SCSS**.
+
+The example is an _async_
+[`IIFE`(Immediately Invoked Function Expression)](https://developer.mozilla.org/en-US/docs/Glossary/IIFE)
+Function that'll get _called as soon as it's defined_. Within our async
+function, I'm fetching the data related to my GitHub repos in JSON format using
+GitHub's REST API.
+
+The API returns an Array of Objects that contain information about my public
+GitHub repositories listed alphabetically. You can see the response of the API
+by visiting the below URL:
+
+- Maximum of 30 repos: https://api.github.com/users/AnilSeervi/repos
+- All the repos : https://api.github.com/users/anilseervi/repos?per_page=100
+
+> The API only returns a maximum of 30 repos without any query parameters.
+
+```js {7,8}
+(async function jsRepos() {
+  const res = await fetch(
+    'https://api.github.com/users/AnilSeervi/repos?per_page=100'
+  ); // fetch the JSON from API
+  const data = await res.json(); // parse JSON to JavaScript Object
+
+  const filterJSRepos = data.filter((i) => i.language === 'SCSS'); // filter the Repos based on language
+  const repoNames = filterReposData.map((i) => i.name); // Create an array of filtered Repo names
+
+  console.log(repoNames);
+  // ['DevFolio', 'mdn-minimalist', 'ts-portfolio']
+})();
+```
+
+The response(in JSON) fetched from the **URL** is stored in `res` and then
+converted to a JavaScript Object that is stored in `data`.
+
+> Note: The names and number of repos may change based on the time you are
+> reading this. Now we have an Array of objects of all the repos which we need
+> to be filtered based on the `language` property. Objects whose language
+> property is `SCSS` are filtered into `filterJSRepos` constant.
+
+After filtering the Repos, we can now grab just the `name` property of the
+filtered Repos using `map()` and _voila_, there's our array that contains the
+names of my repos those majorly contain **SCSS**.
+
+I hope this article helped you understand the **Higher-Order Array
+Functions**(`forEach()`, `map()`, `filter()`).
+
+Thank you for reading my blog. Let's connect on
+[Twitter!](https://twitter.com/linASeervi).

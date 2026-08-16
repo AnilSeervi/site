@@ -1,0 +1,45 @@
+# Formatting and types on every push and PR.
+#
+# The formatter config lives in .prettierrc.json, but a config alone only helps
+# people whose editor runs Prettier. This is the part that actually enforces it:
+# a file formatted to someone's personal editor settings fails here.
+name: ci
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: formatting
+        run: pnpm format:check
+
+      # astro check needs the content collections generated, which `astro sync`
+      # does; `pnpm check` on a cold clone otherwise fails on missing types.
+      - name: types
+        run: |
+          pnpm astro sync
+          pnpm check
+
+      - name: build
+        run: pnpm build

@@ -1,0 +1,384 @@
+---
+/** MOVING · GARMIN — route etching, vitals, 90-day strip. Ships hidden; the <as-moving> island (import '~/islands/moving') fills it and un-hides. */
+import Section from '~/components/Section.astro';
+---
+
+<as-moving hidden data-load="idle" data-section="moving">
+  <Section label="MOVING · GARMIN" />
+
+  <div class="mgrid" data-mgrid>
+    <div class="etch" data-etch>
+      <svg
+        class="route"
+        viewBox="0 0 230 150"
+        role="img"
+        aria-label="route shape of the latest activity"
+      >
+        <path
+          data-route-base
+          d=""
+          pathLength="1"
+          fill="none"
+          stroke="var(--as-accent)"
+          stroke-width="1.6"
+          stroke-linejoin="round"
+          stroke-opacity=".35"></path>
+        <path
+          class="runner"
+          data-route-runner
+          d=""
+          pathLength="1"
+          fill="none"
+          stroke="var(--text-hi)"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-dasharray="0.07 0.93"></path>
+        <g class="fix" data-route-fix style="transform:translate(115px,74px)">
+          <circle class="fix-ring" r="4" fill="none" stroke="var(--as-accent)" stroke-width="1"
+          ></circle>
+          <circle class="fix-dot" r="3" fill="var(--as-accent)"></circle>
+        </g>
+      </svg>
+      <span class="etch-cap" data-live="etch-cap">acquiring gps…</span>
+    </div>
+
+    <div class="vitals">
+      <div class="vrow" data-row="lastrun">
+        <span class="vlabel" data-live="lastrun-label">last run</span>
+        <span class="vcell">
+          <span class="sk" data-sk aria-hidden="true" style="height:13px;width:62%"></span>
+          <span class="vval hi" data-val data-live="lastrun"
+            ><span data-part="head"></span><span class="dim" data-part="tail"></span></span
+          >
+        </span>
+      </div>
+      <div class="vrow" data-row="month">
+        <span class="vlabel">this month</span>
+        <span class="vcell">
+          <span class="sk sk-dim" data-sk aria-hidden="true" style="height:13px;width:46%"></span>
+          <span class="vval" data-val data-live="month"></span>
+        </span>
+      </div>
+      <div class="vrow" data-row="vo2max">
+        <span class="vlabel">vo2max</span>
+        <span class="vcell">
+          <span class="sk sk-dim" data-sk aria-hidden="true" style="height:13px;width:38%"></span>
+          <span class="vval" data-val data-live="vo2max"
+            ><span class="accent" data-part="num"></span><span data-part="tail"></span></span
+          >
+        </span>
+      </div>
+      <div class="vrow" data-row="rhr">
+        <span class="vlabel">resting hr</span>
+        <span class="vcell">
+          <span class="sk-rhr" data-sk aria-hidden="true"
+            ><span class="beat-inert"></span><span class="sk sk-dim" style="height:13px;width:120px"
+            ></span></span
+          >
+          <span class="vval beatrow" data-val data-live="rhr"
+            ><span class="beat" data-rhr-dot aria-hidden="true"></span><span data-part="text"
+            ></span></span
+          >
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip" data-strip role="img" aria-label="daily activity, last 90 days">
+    <span class="strip-sk" data-sk aria-hidden="true"></span>
+  </div>
+  <!-- legend and hover readout share this one line, never both — no reflow -->
+  <div class="strip-meta">
+    <span class="meta-slot" data-val
+      ><span data-legend
+        ><span class="k-run">run</span> · <span class="k-lift">lift</span> · <span class="k-racquet"
+          >racquet</span
+        > · <span class="k-other">other</span><span class="desktop-only">
+          — anything that moved counts</span
+        ></span
+      ><span class="readout" data-readout hidden></span></span
+    >
+    <span class="desktop-only">last 90 days</span><span class="mobile-only">last 60 days</span>
+  </div>
+</as-moving>
+
+<style>
+  as-moving {
+    display: block;
+  }
+  /* the display:block above out-cascades the UA [hidden] rule — restate it */
+  as-moving[hidden] {
+    display: none;
+  }
+
+  .mgrid {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 40px;
+    align-items: start;
+    margin-bottom: 26px;
+  }
+  /* no decodable route → the vitals take the full width */
+  .mgrid.no-etch {
+    grid-template-columns: 1fr;
+  }
+
+  .etch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .route {
+    width: 230px;
+    height: 150px;
+    display: block;
+  }
+  .etch-cap {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .vitals {
+    display: flex;
+    flex-direction: column;
+  }
+  .vrow {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: center;
+    /* reserve the row height so the skeleton → value swap never reflows */
+    min-height: 44px;
+  }
+  .vrow:last-child {
+    border-bottom: none;
+  }
+  .vcell {
+    min-width: 0;
+  }
+  .vlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+  .vval {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .vval.hi {
+    color: var(--text-hi);
+  }
+  .vval .dim {
+    color: var(--faint);
+  }
+  .vval .accent {
+    color: var(--as-accent);
+  }
+  .beatrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  /* the beat/pulse animation (duration = 60/RHR s) is set inline by the island */
+  .beat {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--live-green);
+  }
+
+  /* ---- waiting skeletons ---- */
+  as-moving[data-load='waiting'] .sk-rhr {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .beat-inert {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(237, 230, 218, 0.14);
+  }
+  as-moving[data-load='waiting'] .strip-sk {
+    animation: as-breathe 1.9s ease-in-out infinite;
+  }
+  .strip-sk {
+    flex: 1;
+    height: 4px;
+    border-radius: 1px;
+    background: rgba(237, 230, 218, 0.08);
+  }
+
+  /* ---- route — GPS-acquire ---- */
+  /* hidden until the unfurl animation runs dashoffset 1 → 0 */
+  [data-route-base] {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .fix {
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .fix-ring {
+    transform-box: fill-box;
+    transform-origin: center;
+    opacity: 0;
+  }
+  as-moving[data-load='waiting'] .fix-ring,
+  as-moving.locking .fix-ring {
+    animation: as-ping 1.5s ease-out infinite;
+  }
+  @keyframes as-ping {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(5);
+      opacity: 0;
+    }
+  }
+  .runner {
+    opacity: 0;
+  }
+  as-moving.unfurl [data-route-base] {
+    animation: as-draw 1.1s ease-out both;
+  }
+  as-moving.settled .runner {
+    opacity: 1;
+    animation: as-run 7s linear infinite;
+  }
+  as-moving[data-load='arrived'] .vitals .vrow:nth-of-type(2) [data-val] {
+    animation-delay: 0.06s;
+  }
+  as-moving[data-load='arrived'] .vitals .vrow:nth-of-type(3) [data-val] {
+    animation-delay: 0.12s;
+  }
+  as-moving[data-load='arrived'] .vitals .vrow:nth-of-type(4) [data-val] {
+    animation-delay: 0.18s;
+  }
+
+  /* :global — the island builds these spans, so they carry no scope attribute */
+  .strip {
+    display: flex;
+    align-items: flex-end;
+    gap: 2.5px;
+    height: 30px;
+    margin-bottom: 10px;
+  }
+  .strip :global(span) {
+    flex: 1;
+    border-radius: 1px;
+    transform-origin: bottom;
+    transition: filter 120ms ease;
+  }
+  /* bars are ~6px wide — brighten on hover, an outline would swamp one */
+  @media (hover: hover) and (pointer: fine) {
+    .strip {
+      cursor: crosshair;
+    }
+    .strip :global(span:hover) {
+      filter: brightness(1.45);
+    }
+  }
+  /* bars stay down until the IntersectionObserver fires the rise */
+  .strip:not(.rise) :global(span) {
+    transform: scaleY(0);
+  }
+  .strip.rise :global(span) {
+    /* per-bar animation-delay is inline; `both` holds a bar down until its turn */
+    animation: as-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  /* the flat-bar placeholder must not be pushed to scaleY(0) by the rules above */
+  .strip:not(.rise) .strip-sk,
+  .strip .strip-sk {
+    transform: none;
+  }
+
+  .strip-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin-bottom: 48px;
+    /* hold the line so the empty → text swap never reflows */
+    min-height: 16px;
+  }
+  .meta-slot {
+    min-width: 0;
+    /* a long Garmin activity name must not shove `last 90 days` off the line */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .readout {
+    color: var(--text-muted);
+  }
+
+  /* :global — the readout spans are island-built and carry no scope attribute */
+  .strip-meta :global(.k-run) {
+    color: var(--as-accent);
+  }
+  .strip-meta :global(.k-lift) {
+    color: var(--live-green);
+  }
+  .strip-meta :global(.k-racquet) {
+    color: var(--quote);
+  }
+  .strip-meta :global(.k-other) {
+    color: var(--meta);
+  }
+  .strip-meta :global(.ro-dim) {
+    color: var(--faint);
+  }
+
+  /* reduced motion: hide the perpetual runner lap outright; the global
+     0.01ms duration override covers the one-shot animations */
+  @media (prefers-reduced-motion: reduce) {
+    .runner {
+      display: none;
+    }
+  }
+
+  /* ================= mobile ================= */
+  @media (max-width: 768px) {
+    .mgrid {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .route {
+      width: 100%;
+      height: auto;
+    }
+    .etch-cap {
+      font-size: 10.5px;
+    }
+    .vrow {
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+    }
+    .vlabel {
+      font-size: 11px;
+    }
+    .vval {
+      font-size: 12px;
+    }
+    .strip {
+      gap: 2px;
+    }
+    .strip-meta {
+      font-size: 10.5px;
+      margin-bottom: 40px;
+    }
+  }
+</style>

@@ -1,0 +1,236 @@
+---
+/** Two-column project entry: identity and links left, prose right. */
+import type { Project } from '~/config/site';
+import { srcUrl } from '~/config/site';
+import GitHubMark from '~/components/icons/GitHubMark.astro';
+import ArrowUpRight from '~/components/icons/ArrowUpRight.astro';
+
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+const src = srcUrl(project);
+---
+
+<article class="spread">
+  <div class="left">
+    <a class="name" href={project.href} target="_blank" rel="noopener noreferrer">{project.name}</a>
+
+    {
+      (project.siteUp || project.live || project.metric) && (
+        <p class="chip">
+          {project.siteUp && (
+            <span class="up">
+              <span class="dot" aria-hidden="true" />
+              active
+            </span>
+          )}
+          {project.live === 'devfolio' && (
+            <span class="num">
+              {/* SSR values are fallbacks; the island overwrites both */}
+              {project.siteUp && ' · '}
+              <span data-proof="stars">★486</span> · <span data-proof="forks">165</span> forks
+            </span>
+          )}
+          {project.metric && (
+            <span class="num">
+              {project.siteUp && ' · '}
+              {project.metric}
+            </span>
+          )}
+        </p>
+      )
+    }
+
+    <p class="links">
+      {
+        src && (
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${project.name} source on GitHub`}
+          >
+            <GitHubMark />
+          </a>
+        )
+      }
+      <a
+        class="live"
+        href={project.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`open ${project.name}`}
+      >
+        <ArrowUpRight />
+      </a>
+    </p>
+  </div>
+
+  <div class="right">
+    <p class="desc">{project.work}</p>
+    <p class="why">{project.why}</p>
+    <p class="stack">{project.stack.join(' · ')}</p>
+  </div>
+</article>
+
+<style>
+  .spread {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 28px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--hair-row);
+  }
+
+  .left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: 23px;
+    line-height: 1.1;
+    color: var(--text-hi);
+    text-decoration: none;
+    transition: color 0.18s ease;
+  }
+  .name:hover {
+    color: var(--as-accent);
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--meta);
+    margin: 0;
+    white-space: nowrap;
+  }
+  .chip .up {
+    color: var(--live-green);
+  }
+  .chip .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 6px;
+    /* optical centring of the 5px dot against 11px text */
+    vertical-align: 1px;
+  }
+  .chip .num {
+    color: var(--meta);
+  }
+
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+  }
+  .links a {
+    display: inline-flex;
+    color: var(--meta);
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+  .links a:hover {
+    color: var(--text-hi);
+  }
+  .links a.live:hover {
+    transform: translate(1px, -1px);
+  }
+
+  .right {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .desc {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .why {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--meta);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .stack {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .spread {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 16px 0;
+    }
+    .left {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 4px 12px;
+    }
+    .name {
+      font-size: 19px;
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .links {
+      grid-column: 2;
+      grid-row: 1;
+      /* touch padding must sit on the anchors, not here; the negative margin
+         keeps the first glyph on the column edge */
+      gap: 0;
+      margin-left: -8px;
+    }
+    .links a {
+      padding: 15px 8px;
+      margin: -15px 0;
+    }
+    .links svg {
+      width: 14px;
+      height: 14px;
+    }
+    .chip {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 10.5px;
+    }
+    .right {
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .desc {
+      font-size: 14.5px;
+      line-height: 1.6;
+    }
+    .why {
+      font-size: 14px;
+    }
+    .stack {
+      font-size: 10.5px;
+    }
+  }
+</style>

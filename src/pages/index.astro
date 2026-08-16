@@ -1,0 +1,709 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import Section from '~/components/Section.astro';
+import { site, projects, srcUrl } from '~/config/site';
+import GitHubMark from '~/components/icons/GitHubMark.astro';
+import ArrowUpRight from '~/components/icons/ArrowUpRight.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const latest = posts.slice(0, 2);
+const rest = posts.slice(2);
+
+const WORDS = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve'
+];
+const restWord = WORDS[rest.length] ?? String(rest.length);
+const restYears = rest.map((p) => p.data.date.getFullYear());
+const yearRange = `${Math.min(...restYears)}–${String(Math.max(...restYears)).slice(2)}`;
+
+const shortDate = (d: Date) =>
+  `${d.toLocaleString('en-US', { month: 'short' }).toLowerCase()} ’${String(d.getFullYear()).slice(2)}`;
+
+const homeProjects = projects.filter((p) => p.home);
+---
+
+<Base>
+  <as-home-data aria-hidden="true"></as-home-data>
+
+  <div class="whoami as-enter" style="animation-delay:0s">
+    <span class="cmd"><span class="accent">~ ❯</span> whoami</span>
+    <as-clock data-format="greeting" data-greeting
+      >09:06 ist · good morning, from bengaluru</as-clock
+    >
+  </div>
+
+  <div class="hero">
+    <div class="hero-left">
+      <h1 class="as-enter" style="animation-delay:.06s">
+        <as-typeon
+          ><span data-typeon>Anil <em>Seervi</em></span><span class="caret" aria-hidden="true"
+          ></span></as-typeon
+        >
+      </h1>
+      <as-spark data-kind="hero" class="as-enter" style="animation-delay:.12s">
+        <canvas
+          class="spark-hero"
+          width="640"
+          height="44"
+          style="width:320px;height:22px"
+          aria-hidden="true"></canvas>
+        <span class="spark-cap" aria-hidden="true"
+          ><span class="accent">❯</span>git log --since=1y<span class="cap-caret"></span></span
+        >
+      </as-spark>
+      <div class="role as-enter" style="animation-delay:.18s">{site.role}</div>
+      <p class="intro as-enter" style="animation-delay:.24s">{site.intro}</p>
+      <div class="socials as-enter" style="animation-delay:.3s">
+        <a href={site.socials.github} target="_blank" rel="noopener noreferrer">github</a><span
+          class="dot-sep">·</span
+        >
+        <a href={site.socials.twitter} target="_blank" rel="noopener noreferrer">twitter</a><span
+          class="dot-sep">·</span
+        >
+        <a href={site.socials.linkedin} target="_blank" rel="noopener noreferrer">linkedin</a><span
+          class="dot-sep">·</span
+        >
+        <a href={site.socials.mail}>mail</a><span class="dot-sep">·</span>
+        <a class="rss" href={site.socials.rss}>rss</a>
+      </div>
+      <div class="now as-enter" style="animation-delay:.36s">
+        <span class="accent">❯</span> now — {site.now}
+      </div>
+    </div>
+    <as-ascii-portrait
+      data-cells="50x62"
+      data-cells-mobile="29x36"
+      class="as-enter"
+      style="animation-delay:.1s"
+      role="img"
+      aria-label="ASCII-art portrait of Anil Seervi"
+    >
+      <canvas
+        class="ascii-portrait"
+        width="400"
+        height="500"
+        aria-hidden="true"
+        style="width:200px;height:250px;background:var(--ascii-bg);border-radius:5px"></canvas>
+    </as-ascii-portrait>
+  </div>
+
+  <div class="proof as-enter" style="animation-delay:.42s">
+    <span><span class="stars" data-proof="stars">★485</span> devfolio</span><span class="sep"
+      >/</span
+    >
+    <span><span class="val" data-proof="repos">118</span> repos</span><span class="sep">/</span>
+    <span><span class="val" data-proof="followers">150</span> followers</span><span class="sep"
+      >/</span
+    >
+    <span>pull shark <span class="val" data-proof="shark">×3</span></span>
+    <span class="pushed"
+      ><span class="pulse" aria-hidden="true"></span><span data-proof="pushed"
+        >pushed earlier today</span
+      ></span
+    >
+  </div>
+
+  <section class="as-enter" style="animation-delay:.48s">
+    <Section label="01 · WORK" meta="all projects ↗" metaMobile="all ↗" metaHref="/work" external />
+    <div class="rows work-rows">
+      {
+        homeProjects.map((p) => (
+          <div class="prow">
+            <a class="pname" href={p.href} target="_blank" rel="noopener noreferrer">
+              {p.name}
+            </a>
+            <span class="pdesc">{p.home}</span>
+            <p class="plinks">
+              {srcUrl(p) && (
+                <a
+                  href={srcUrl(p)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${p.name} source on GitHub`}
+                >
+                  <GitHubMark size={14} />
+                </a>
+              )}
+              <a
+                class="plive"
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`open ${p.name}`}
+              >
+                <ArrowUpRight size={14} />
+              </a>
+            </p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="as-enter writing-sec" style="animation-delay:.54s">
+    <Section label="02 · WRITING" meta={`${posts.length} articles`} />
+    <div class="rows">
+      {
+        latest.map((post, i) => (
+          <a class="wrow" href={`/writing/${post.id}`}>
+            <span class="wtitle" transition:name={'title-' + post.id}>
+              {post.data.title}
+            </span>
+            <span class="wdate">{i === 0 ? 'latest' : shortDate(post.data.date)}</span>
+          </a>
+        ))
+      }
+      <a class="wmore" href="/writing"><span>{restWord} more, {yearRange} →</span></a>
+    </div>
+  </section>
+
+  <section class="as-enter" style="animation-delay:.6s">
+    <div class="live-head">
+      <Section label="03 · LIVE" meta="all feeds →" metaMobile="all →" metaHref="/live" />
+    </div>
+    <as-ticker class="ticker" data-ticker data-live data-load="waiting">
+      <span class="pulse" aria-hidden="true"></span>
+      <span class="tlabel" data-ticker-label></span>
+      <span class="tvalue" data-ticker-value>❯ listening for signals…</span>
+    </as-ticker>
+  </section>
+
+  <div class="foot">
+    <Footer>
+      <a href={site.socials.github} target="_blank" rel="noopener noreferrer">github</a>
+      <a href={site.socials.twitter} target="_blank" rel="noopener noreferrer">twitter</a>
+      <a href="/rss.xml">rss</a>
+    </Footer>
+  </div>
+</Base>
+
+<style>
+  .accent {
+    color: var(--as-accent);
+  }
+
+  /* 1 · whoami row */
+  .whoami {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--faint);
+    margin-bottom: 20px;
+  }
+  .whoami [data-greeting] {
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  /* 2 · hero */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 44px;
+    align-items: start;
+    margin-bottom: 56px;
+  }
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 52px;
+    margin: 0 0 6px;
+    color: var(--text-hi);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    min-height: 52px;
+  }
+  h1 em {
+    font-weight: 400;
+  }
+  .caret {
+    display: inline-block;
+    width: 5px;
+    height: 38px;
+    background: var(--as-accent);
+    margin-left: 12px;
+    vertical-align: -2px;
+    animation: as-caret 1.1s steps(1) infinite;
+  }
+
+  /* margin on the wrapper, not the canvas: it reserves the 22px box, so the
+     line draw can't shift layout */
+  .hero as-spark {
+    position: relative;
+    margin: 2px 0 12px;
+  }
+  .spark-hero {
+    display: block;
+  }
+  .spark-cap {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+  }
+  /* armed by the island via data-seq: declared unconditionally, the caption
+     fades out on first paint */
+  as-spark[data-seq] .spark-cap {
+    transition: opacity 0.25s ease;
+  }
+  as-spark[data-cap='on'] .spark-cap {
+    opacity: 1;
+  }
+  .cap-caret {
+    width: 7px;
+    height: 12px;
+    background: var(--as-accent);
+    animation: as-caret 1.1s steps(1) infinite;
+  }
+  /* reduced motion: the island draws the line in one shot, so no caption */
+  @media (prefers-reduced-motion: reduce) {
+    .spark-cap {
+      display: none;
+    }
+  }
+
+  .role {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--meta);
+    margin-bottom: 22px;
+  }
+
+  .intro {
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+    max-width: 23em;
+    text-wrap: pretty;
+  }
+
+  .socials {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .socials a {
+    color: var(--as-accent);
+    text-decoration-line: underline;
+    text-underline-offset: 3px;
+  }
+  .socials a:hover {
+    color: var(--text-hi);
+  }
+  .socials a.rss {
+    color: var(--meta);
+    text-decoration: none;
+  }
+  .socials a.rss:hover {
+    color: var(--text-hi);
+  }
+  .dot-sep {
+    color: var(--sep-strong-2);
+  }
+
+  .now {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+
+  .ascii-portrait {
+    display: block;
+    border: 1px solid var(--hair-card);
+    cursor: crosshair;
+  }
+
+  /* 3 · proof strip */
+  .proof {
+    display: flex;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+    align-items: baseline;
+    border-top: 1px solid var(--hair-card);
+    border-bottom: 1px solid var(--hair-card);
+    padding: 13px 0;
+    margin-bottom: 60px;
+  }
+  .proof .stars {
+    color: var(--as-accent);
+  }
+  .proof .val {
+    color: var(--text);
+  }
+  .proof .sep {
+    color: var(--sep-strong);
+  }
+  .pushed {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live-green);
+    animation: as-pulse 2.4s infinite;
+    flex: 0 0 auto;
+  }
+
+  /* 4 · work rows */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 58px;
+  }
+  .prow {
+    display: grid;
+    grid-template-columns: 132px 1fr auto;
+    gap: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: center;
+  }
+  .prow:last-child {
+    border-bottom: none;
+  }
+  .pname {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    color: var(--text-hi);
+  }
+  .pname:hover {
+    color: var(--as-accent);
+  }
+  .pdesc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .plinks {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+  }
+  .plinks a {
+    display: inline-flex;
+    color: var(--meta);
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+  .plinks a:hover {
+    color: var(--text-hi);
+  }
+  .plinks a.plive:hover {
+    transform: translate(1px, -1px);
+  }
+
+  /* 5 · writing rows */
+  .writing-sec :global(.section-head .meta) {
+    color: var(--faint);
+  }
+  .wrow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+    color: var(--text);
+    transition:
+      background 180ms ease,
+      color 180ms ease;
+  }
+  .wrow:hover {
+    color: var(--text-hi);
+    background: rgba(237, 230, 218, 0.035);
+  }
+  .wtitle {
+    font-family: var(--font-serif);
+    font-size: 19px;
+  }
+  .wdate {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+  .wmore {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 12px 0;
+    align-items: baseline;
+    color: var(--meta);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .wmore:hover {
+    color: var(--text-hi);
+  }
+  .wmore span {
+    display: inline-block;
+    transition: transform 180ms ease;
+  }
+  .wmore:hover span {
+    transform: translateX(4px);
+  }
+
+  /* 6 · live ticker */
+  .live-head :global(a.meta) {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .live-head :global(a.meta::before) {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live-green);
+    animation: as-pulse 2.4s infinite;
+  }
+  .ticker {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 0 16px;
+    border-bottom: 1px solid var(--hair-row);
+    margin-bottom: 60px;
+    /* 15px pad + 26px content + 16px pad — fixed so swaps can't change the height */
+    min-height: 57px;
+  }
+  .tlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--as-accent);
+    width: 80px;
+    flex: 0 0 auto;
+    transition: opacity 0.25s ease;
+  }
+  .tvalue {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--text);
+    transition: opacity 0.25s ease;
+  }
+
+  as-ticker[data-load='waiting'] .pulse {
+    background: rgba(237, 230, 218, 0.14);
+    animation: none;
+  }
+  as-ticker[data-load='waiting'] .tlabel {
+    display: none;
+  }
+  as-ticker[data-load='waiting'] .tvalue {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+
+  as-ticker {
+    display: flex;
+  }
+  as-spark,
+  as-ascii-portrait {
+    display: block;
+  }
+  as-clock {
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  /* the ticker's own margin owns the gap above the footer */
+  .foot :global(footer) {
+    margin-top: 0;
+  }
+
+  /* ================= mobile ================= */
+  @media (max-width: 768px) {
+    /* display:contents lifts .hero-left's children into the .hero grid so the
+       portrait (a sibling) can sit beside the name */
+    .hero {
+      grid-template-columns: 1fr 116px;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 44px;
+    }
+    .hero-left {
+      display: contents;
+    }
+    h1 {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 34px;
+      min-height: 70px;
+      line-height: 1.08;
+      letter-spacing: -0.4px;
+      margin: 0 0 8px;
+    }
+    .caret {
+      width: 4px;
+      height: 25px;
+      margin-left: 8px;
+    }
+    .hero as-ascii-portrait {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+    .ascii-portrait {
+      max-width: 100%;
+    }
+    .role {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: start;
+      font-size: 11.5px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .hero as-spark,
+    .intro,
+    .socials,
+    .now {
+      grid-column: 1 / -1;
+    }
+    .hero as-spark {
+      margin: 2px 0 14px;
+    }
+    .intro {
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+    }
+    .socials {
+      flex-wrap: wrap;
+      font-size: 12.5px;
+    }
+    .now {
+      font-size: 11.5px;
+    }
+
+    .proof {
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      margin-bottom: 44px;
+    }
+    .pushed {
+      margin-left: 0;
+      flex-basis: 100%;
+    }
+
+    /* work digest rows */
+    .rows {
+      margin-bottom: 44px;
+    }
+    .prow {
+      grid-template-columns: 1fr auto;
+      gap: 3px 12px;
+      padding: 13px 0;
+      align-items: baseline;
+    }
+    .pname {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 18px;
+    }
+    /* padding goes on the anchors, not the container: 44px touch targets
+       without growing the row */
+    .plinks {
+      grid-column: 2;
+      grid-row: 1;
+      gap: 0;
+      margin-right: -8px;
+    }
+    .plinks a {
+      padding: 15px 8px;
+      margin: -15px 0;
+    }
+    .pdesc {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    /* writing digest */
+    .wtitle {
+      font-size: 16.5px;
+      line-height: 1.4;
+    }
+    .wdate {
+      font-size: 11px;
+    }
+    .wmore {
+      font-size: 12px;
+    }
+
+    /* live ticker — single row, 64px label */
+    .ticker {
+      gap: 11px;
+      padding: 14px 0;
+      min-height: 40px;
+      margin-bottom: 56px;
+      align-items: baseline;
+    }
+    .tlabel {
+      width: 64px;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .tvalue {
+      font-size: 15.5px;
+      line-height: 1.5;
+    }
+  }
+</style>
+
+<script>
+  import '~/islands/typeon';
+  import '~/islands/clock';
+  import '~/islands/ticker';
+  import '~/islands/spark';
+  import '~/islands/ascii-portrait';
+  import '~/islands/home-data';
+</script>

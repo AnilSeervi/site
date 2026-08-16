@@ -1,0 +1,92 @@
+---
+/** Single-line archive entry: name, blurb, source icon. */
+import type { Project } from '~/config/site';
+import { srcUrl } from '~/config/site';
+import GitHubMark from '~/components/icons/GitHubMark.astro';
+
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+const src = srcUrl(project);
+---
+
+<div class="arow">
+  <a class="name" href={project.href} target="_blank" rel="noopener noreferrer">{project.name}</a>
+  <span class="blurb">{project.blurb ?? project.work}</span>
+  {
+    src && (
+      <a
+        class="src"
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${project.name} source on GitHub`}
+      >
+        <GitHubMark size={14} />
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .arow {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .arow + .arow {
+    margin-top: 12px;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    color: var(--meta);
+    text-decoration: none;
+    transition: color 180ms ease;
+    white-space: nowrap;
+  }
+  .name:hover {
+    color: var(--as-accent);
+  }
+
+  .blurb {
+    font-size: 14px;
+    /* one-off shade between --meta and --faint; deliberately not a token */
+    color: #6b6354;
+    min-width: 0;
+  }
+
+  .src {
+    margin-left: auto;
+    display: inline-flex;
+    align-self: center;
+    color: var(--faint);
+    transition: color 180ms ease;
+  }
+  .src:hover {
+    color: var(--text-hi);
+  }
+
+  @media (max-width: 768px) {
+    .arow {
+      gap: 10px;
+    }
+    .name {
+      font-size: 16px;
+    }
+    .blurb {
+      font-size: 13px;
+    }
+    /* 44px touch target; negative vertical margin preserves row height */
+    .src {
+      padding: 15px 0 15px 8px;
+      margin: -15px 0;
+    }
+    .src svg {
+      width: 13px;
+      height: 13px;
+    }
+  }
+</style>

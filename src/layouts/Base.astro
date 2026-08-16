@@ -1,0 +1,251 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
+import Palette from '~/components/Palette.astro';
+import { site } from '~/config/site';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
+/* only the non-italic wght file is loaded — every italic on the site is serif */
+import '@fontsource-variable/schibsted-grotesk/wght.css';
+import '@fontsource/spline-sans-mono/400.css';
+import '@fontsource/spline-sans-mono/500.css';
+import '~/styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** content column width — article pages use 640 */
+  column?: number;
+  /** hide the CSS dot grid (writing page uses its own canvas) */
+  noDots?: boolean;
+  /** site-relative path of the build-time OG card (see src/pages/og) */
+  ogImage?: string;
+}
+
+const {
+  title = site.title,
+  description = site.description,
+  column = 768,
+  noDots = false,
+  ogImage = '/og/site.png'
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, site.url);
+const ogImageURL = new URL(ogImage, site.url);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0F0D0B" />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon_32x32.png" />
+    <link rel="manifest" href="/static/favicons/site.webmanifest" />
+    <link rel="mask-icon" href="/static/favicons/safari-pinned-tab.svg" color="#D9A54A" />
+    <meta name="msapplication-TileColor" content="#ffffff" />
+    <meta name="msapplication-config" content="/static/favicons/browserconfig.xml" />
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
+    <script is:inline>
+      (function () {
+        try {
+          var a = localStorage.getItem('as-accent');
+          if (a) document.documentElement.style.setProperty('--as-accent', a);
+        } catch (e) {}
+      })();
+      document.addEventListener('astro:after-swap', function () {
+        try {
+          var a = localStorage.getItem('as-accent');
+          if (a) document.documentElement.style.setProperty('--as-accent', a);
+        } catch (e) {}
+      });
+    </script>
+    <ClientRouter />
+  </head>
+  <body>
+    {!noDots && <div class="dot-grid" transition:persist="dot-grid" aria-hidden="true" />}
+    <div class="page" style={`--column: ${column}px`}>
+      <header class="site-header" transition:persist="site-header">
+        <a class="brand" href="/">
+          <span class="brand-full">{site.handle}</span>
+          <span class="brand-short" aria-hidden="true">~/anil</span>
+        </a>
+        <nav aria-label="Main">
+          {
+            site.nav.map((item) => (
+              <a href={item.href} data-navlink>
+                {item.label}
+              </a>
+            ))
+          }
+          <button class="cmdk" aria-label="Open command palette" data-palette-open>⌘K</button>
+        </nav>
+      </header>
+      <main>
+        <slot />
+      </main>
+      <Palette />
+    </div>
+    <button
+      class="cmd-chip"
+      type="button"
+      aria-label="Open command palette"
+      data-palette-open
+      transition:persist="cmd-chip"
+    >
+      ❯
+    </button>
+    <as-views data-slug={Astro.url.pathname} aria-hidden="true"></as-views>
+    <Analytics />
+    <SpeedInsights />
+  </body>
+</html>
+
+<style>
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: calc(var(--column) + 48px);
+    margin: 0 auto;
+    padding: 70px 24px 60px;
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 64px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .brand {
+    color: var(--as-accent);
+  }
+  .brand:hover {
+    color: var(--text-hi);
+  }
+  .brand-short {
+    display: none;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  nav a {
+    color: var(--meta);
+  }
+  nav a:hover {
+    color: var(--text-hi);
+  }
+  nav a[data-active] {
+    color: var(--text-hi);
+  }
+
+  .cmdk {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    background: none;
+    border: 1px solid var(--hair-input);
+    border-radius: 5px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+  .cmdk:hover {
+    color: var(--text-hi);
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+
+  /* floating ❯ command chip — touch replacement for ⌘K (mobile only) */
+  .cmd-chip {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 16px;
+    z-index: 90;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: #12100e;
+    border: 1px solid color-mix(in srgb, var(--as-accent) 45%, transparent);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--as-accent);
+    cursor: pointer;
+    /* opacity animates the yield to an open <as-drawer> (see global.css) */
+    transition:
+      border-color 180ms ease,
+      opacity 200ms ease;
+  }
+  .cmd-chip:hover,
+  .cmd-chip:focus-visible {
+    border-color: var(--as-accent);
+  }
+
+  /* ---- mobile shell (≤768px) ---- */
+  @media (max-width: 768px) {
+    .page {
+      padding: 24px 30px 48px;
+    }
+    .site-header {
+      margin-bottom: 38px;
+      font-size: 11.5px;
+    }
+    nav {
+      gap: 13px;
+    }
+    .brand-full {
+      display: none;
+    }
+    .brand-short {
+      display: inline;
+    }
+    .cmdk {
+      display: none;
+    }
+    .cmd-chip {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  import '~/islands/views';
+
+  function markActive() {
+    const path = location.pathname;
+    document.querySelectorAll<HTMLAnchorElement>('[data-navlink]').forEach((a) => {
+      const href = a.getAttribute('href') ?? '';
+      const active = path === href || path.startsWith(href + '/');
+      if (active) a.setAttribute('data-active', '');
+      else a.removeAttribute('data-active');
+    });
+  }
+  markActive();
+  document.addEventListener('astro:page-load', markActive);
+</script>

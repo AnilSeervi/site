@@ -1,0 +1,48 @@
+---
+/** Margin sidenote: floats into the right margin ≥1240px, folds inline below. */
+interface Props {
+  n: number;
+}
+const { n } = Astro.props;
+---
+
+<sup class="sn-ref" aria-hidden="true">{n}</sup><span class="sn-note" role="note"
+  ><span class="sn-num" aria-hidden="true">{n} </span><slot /></span
+>
+
+<style>
+  .sn-ref {
+    color: var(--as-accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .sn-num {
+    color: var(--as-accent);
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+  }
+
+  .sn-note {
+    display: block;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--meta);
+    border-left: 1px solid rgba(217, 165, 74, 0.4);
+    padding-left: 12px;
+    margin: 12px 0;
+  }
+
+  @media (min-width: 1240px) {
+    .sn-note {
+      float: right;
+      clear: right;
+      width: 148px;
+      margin: 0 calc(-148px - 30px) 12px 0;
+      transform: translateY(2px);
+    }
+  }
+</style>

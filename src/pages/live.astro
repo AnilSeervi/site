@@ -1,0 +1,572 @@
+---
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import PageTitle from '~/components/PageTitle.astro';
+import Section from '~/components/Section.astro';
+import Globe from '~/components/live/Globe.astro';
+import Moving from '~/components/live/Moving.astro';
+import Guestbook from '~/components/live/Guestbook.astro';
+import Reading from '~/components/live/Reading.astro';
+---
+
+<Base
+  title="Live — Anil Seervi"
+  description="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
+  ogImage="/og/live.png"
+>
+  <as-live-data data-load="idle">
+    <div class="hero">
+      <div class="hero-left">
+        <PageTitle
+          title="live"
+          sub="What I'm listening to, shipping, moving and watching — straight from the APIs, unedited."
+        />
+        <div class="now-rows">
+          <div class="nrow" data-row="clock">
+            <span class="nlabel">clock</span>
+            <as-clock class="nval hi" data-format="time">09:06 ist · bengaluru</as-clock>
+          </div>
+          <div class="nrow" data-row="weather">
+            <span class="nlabel">weather</span>
+            <span class="nvcell">
+              <span class="sk" data-sk style="height:12px;width:58%"></span>
+              <span class="nval" data-val data-live="weather"></span>
+            </span>
+          </div>
+          <div class="nrow" data-row="coords">
+            <span class="nlabel">coords</span>
+            <span class="nval">12.97° N · 77.59° E</span>
+          </div>
+        </div>
+      </div>
+      <div class="globe-col">
+        <Globe />
+        <span class="globe-cap">bengaluru — home</span>
+      </div>
+    </div>
+
+    <Reading />
+
+    <section data-section="spotify">
+      <Section label="LISTENING · SPOTIFY" phaseNote />
+      <div class="rows">
+        <div class="lrow" data-row="now">
+          <span class="rlabel eq-label"
+            ><span class="eq" data-eq aria-hidden="true"
+              ><span></span><span></span><span></span></span
+            >now</span
+          >
+          <span class="tcell">
+            <span class="sk-now" data-sk aria-hidden="true"
+              ><span style="height:15px;width:54%"></span><span
+                class="sk-faint"
+                style="height:10px;width:31%"></span></span
+            >
+            <span class="track hi" data-val data-live="now"
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span><span class="ctx" data-part="ctx"></span></span
+            >
+          </span>
+        </div>
+        <div class="lrow" data-row="last">
+          <span class="rlabel">last played</span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:40%"></span>
+            <span class="track muted" data-val data-live="last"
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
+            >
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section data-section="github">
+      <Section
+        label="SHIPPING · GITHUB"
+        meta="@AnilSeervi ↗"
+        metaHref="https://github.com/AnilSeervi"
+        external
+      />
+      <div class="contrib-wrap" data-contrib>
+        <span class="gh-sk" data-gh-sk aria-hidden="true"></span>
+        <as-contrib>
+          <canvas width="1404" height="182" style="width:702px;height:91px" aria-hidden="true"
+          ></canvas>
+        </as-contrib>
+      </div>
+      <!-- one reserved line: total, or the hovered day in its place — never both, so no reflow -->
+      <div class="contrib-meta">
+        <span data-live="contrib-total"></span><span
+          class="contrib-readout"
+          data-contrib-readout
+          hidden><span data-part="main"></span><span class="dim" data-part="ctx"></span></span
+        >
+        <span class="desktop-only">52 weeks</span><span class="mobile-only">23 weeks shown</span>
+      </div>
+    </section>
+
+    <Moving />
+
+    <section class="watching-sec" data-section="mal">
+      <Section label="AIRING NOW · MYANIMELIST" meta="weeb stats, worn proudly" metaMobile="" />
+      <div class="rows">
+        <div class="lrow" data-row="watching">
+          <span class="rlabel">anime</span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:60%"></span>
+            <span class="track hi" data-val data-live="watching"
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
+            >
+          </span>
+        </div>
+        <div class="lrow" data-row="manga">
+          <span class="rlabel">manga</span>
+          <span class="tcell">
+            <span class="sk" data-sk aria-hidden="true" style="height:13px;width:52%"></span>
+            <span class="track hi" data-val data-live="manga"
+              ><a class="tlink" data-part="link" target="_blank" rel="noopener noreferrer"
+                ><em data-part="title"></em></a
+              ><span data-part="tail"></span></span
+            >
+          </span>
+        </div>
+        <div class="lrow" data-row="shelf">
+          <span class="rlabel">the shelf</span>
+          <span class="tcell">
+            <span class="sk sk-dim" data-sk aria-hidden="true" style="height:13px;width:55%"></span>
+            <span class="shelf" data-val data-live="shelf"
+              ><span data-part="head"></span><span class="accent" data-part="mean"></span></span
+            >
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <Guestbook />
+
+    <!-- cursor-following cover preview; src + position set in ~/islands/live-data.ts -->
+    <div class="art-peek" data-art-peek aria-hidden="true">
+      <img alt="" decoding="async" referrerpolicy="no-referrer" />
+    </div>
+  </as-live-data>
+
+  <div class="foot">
+    <Footer>
+      <a class="chain" href="/about">~/about →</a>
+    </Footer>
+  </div>
+</Base>
+
+<style>
+  as-live-data,
+  as-contrib {
+    display: block;
+  }
+
+  /* hero — title + right-now rows left, globe column right */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 48px;
+    align-items: center;
+    margin-bottom: 56px;
+  }
+  .hero-left :global(.sub) {
+    margin-bottom: 28px;
+    max-width: 30em;
+  }
+
+  .now-rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .nrow {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+  }
+  .nrow:last-child {
+    border-bottom: none;
+  }
+  .nlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+  .nval {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .nval.hi {
+    color: var(--text-hi);
+  }
+  .globe-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .globe-cap {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  /* section data rows (listening / watching) */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 52px;
+  }
+  .lrow {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hair-row);
+    align-items: baseline;
+  }
+  .lrow:last-child {
+    border-bottom: none;
+  }
+  .rlabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  /* equalizer — 3 bars, staggered as-eq; runs only while isPlaying */
+  .eq-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eq {
+    display: inline-flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 11px;
+  }
+  .eq span {
+    width: 2.5px;
+    height: 11px;
+    background: var(--live-green);
+    transform-origin: bottom;
+    animation: as-eq 1s ease-in-out infinite;
+    animation-play-state: paused;
+  }
+  .eq span:nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  .eq span:nth-child(3) {
+    animation-delay: 0.5s;
+  }
+  .eq.playing span {
+    animation-play-state: running;
+  }
+
+  .track {
+    font-size: 15.5px;
+  }
+  .track em {
+    font-family: var(--font-serif);
+    font-size: 17px;
+  }
+  .track.hi em {
+    color: var(--text-hi);
+  }
+  .track.muted {
+    color: var(--text-muted);
+  }
+  .ctx {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+
+  /* contribution field */
+  .contrib-wrap {
+    margin-bottom: 14px;
+    /* canvas is a fixed 702px; scroll instead of breaking layout on narrow */
+    overflow-x: auto;
+  }
+  as-contrib canvas {
+    display: block;
+  }
+  .contrib-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin-bottom: 48px;
+  }
+  /* no `display` here — [hidden] must keep winning while the total holds the line */
+  .contrib-readout {
+    color: var(--text-muted);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .contrib-readout .dim {
+    color: var(--faint);
+  }
+  as-contrib canvas {
+    cursor: crosshair;
+  }
+
+  /* watching */
+  .shelf {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .shelf .accent {
+    color: var(--as-accent);
+  }
+  .watching-sec :global(.section-head .meta) {
+    color: var(--faint);
+  }
+
+  /* footer gap is owned by the last section's margin */
+  .foot :global(footer) {
+    margin-top: 0;
+  }
+
+  /* ================= loading / waiting ================= */
+  .tcell,
+  .nvcell {
+    min-width: 0;
+  }
+
+  /* ---- cover preview that follows the cursor ----
+     The rows stay pure text; the artwork only appears while a row is hovered,
+     riding just off the pointer. Nothing reserves space for it, so a track
+     without a cover changes no layout at all.
+
+     position: fixed + a translate on every move — never top/left, which would
+     lay out on each frame. pointer-events: none so it can sit under the cursor
+     without stealing the hover it depends on. */
+  .art-peek {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity 220ms ease,
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .art-peek[data-on] {
+    opacity: 1;
+  }
+  .art-peek img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 132px;
+    max-height: 176px;
+    border-radius: 3px;
+    border: 1px solid var(--hair-card);
+    background: var(--ascii-bg);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    /* the wrapper's transform carries the cursor position, so the settle
+       animates on the image instead — scale there is free of the tracking */
+    transform: scale(0.94);
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .art-peek[data-on] img {
+    transform: none;
+  }
+
+  /* source links on the row titles — underline only on hover, so a row of
+     links doesn't read as a wall of underlines */
+  .tlink {
+    color: inherit;
+    text-decoration-line: none;
+  }
+  .tlink[href]:hover,
+  .tlink[href]:focus-visible {
+    text-decoration-line: underline;
+  }
+  /* no href means no source to point at; keep it inert rather than a dead link */
+  .tlink:not([href]) {
+    cursor: inherit;
+  }
+  /* the transform carries the cursor position, so it must not be animated on
+     move — only the fade is. Re-declared here to beat the shared transition. */
+  .art-peek[data-tracking] {
+    transition: opacity 160ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .art-peek {
+      transition: none;
+    }
+  }
+  /* no cursor, no preview — touch gets the text it always had */
+  @media (hover: none) {
+    .art-peek {
+      display: none;
+    }
+  }
+  /* 'now' skeleton is two stacked bars — center it against the eq label */
+  .lrow[data-row='now'] {
+    align-items: center;
+  }
+  /* the gap rides on margin: [data-load] gating owns display, so flex here
+     would be overridden to block */
+  .sk-now span {
+    display: block;
+    border-radius: 3px;
+    background: rgba(237, 230, 218, 0.07);
+  }
+  .sk-now span + span {
+    margin-top: 8px;
+  }
+  .sk-now span.sk-faint {
+    background: rgba(237, 230, 218, 0.05);
+  }
+
+  .eq {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+  as-live-data[data-load='waiting'] .eq {
+    opacity: 0.25;
+  }
+  as-live-data[data-load='waiting'] .eq span {
+    animation-play-state: running;
+  }
+
+  /* dot-field placeholder holds the 91px grid until the canvas lands */
+  .contrib-wrap {
+    position: relative;
+    min-height: 91px;
+  }
+  .gh-sk {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(237, 230, 218, 0.07) 2px, transparent 2.6px);
+    background-size: 13.5px 13px;
+    background-position: 2px 2px;
+    animation: as-breathe 1.9s ease-in-out infinite;
+  }
+  .contrib-wrap as-contrib canvas {
+    opacity: 0;
+  }
+  .contrib-wrap.arrived .gh-sk {
+    display: none;
+  }
+  .contrib-wrap.arrived as-contrib canvas {
+    opacity: 1;
+    animation: as-fade 0.5s ease both;
+  }
+  /* reserve the meta line so the empty → text (or error) swap never reflows */
+  .contrib-meta {
+    min-height: 16px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gh-sk {
+      opacity: 0.34;
+    }
+  }
+
+  /* ================= mobile ================= */
+  @media (max-width: 768px) {
+    /* display:contents lifts the title/sub/now-rows out of .hero-left so order
+       can interleave the globe, a sibling */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 40px;
+    }
+    .hero-left {
+      display: contents;
+    }
+    .hero-left :global(h1) {
+      order: 1;
+    }
+    .hero-left :global(.sub) {
+      order: 2;
+      margin-bottom: 26px;
+    }
+    .globe-col {
+      order: 3;
+      margin-bottom: 26px;
+    }
+    .now-rows {
+      order: 4;
+    }
+    .globe-cap {
+      font-size: 10.5px;
+    }
+
+    /* right-now rows: 76px label, still side-by-side */
+    .nrow {
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+    }
+    .nrow[data-row='coords'] {
+      display: none;
+    }
+    .nlabel {
+      font-size: 11px;
+    }
+    .nval {
+      font-size: 12px;
+    }
+    /* listening + watching rows: label above value */
+    .rows {
+      margin-bottom: 40px;
+    }
+    .lrow {
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 11px 0;
+    }
+    .rlabel {
+      font-size: 11px;
+    }
+    .track {
+      font-size: 14px;
+    }
+    .track em {
+      font-size: 16px;
+    }
+    .shelf {
+      font-size: 12px;
+    }
+
+    .contrib-wrap {
+      margin-bottom: 10px;
+    }
+    .contrib-meta {
+      font-size: 10.5px;
+      margin-bottom: 40px;
+    }
+  }
+</style>
+
+<script>
+  import '~/islands/clock';
+  import '~/islands/contrib';
+  import '~/islands/live-data';
+  import '~/islands/moving';
+  import '~/islands/reading';
+</script>

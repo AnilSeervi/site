@@ -1,0 +1,15 @@
+# Backs up .prettierrc.json for editors and tools that don't run Prettier.
+# Keep the two in agreement — Prettier reads this file too, and a mismatch here
+# silently overrides indentation.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,54 @@
+---
+interface Props {
+  title: string;
+  sub?: string;
+}
+const { title, sub } = Astro.props;
+---
+
+<h1><span class="tilde" aria-hidden="true">~/</span>{title}</h1>
+{sub && <p class="sub">{sub}</p>}
+
+<style>
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 40px;
+    margin: 0 0 12px;
+    color: var(--text-hi);
+    line-height: 1;
+  }
+
+  .tilde {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    color: var(--as-accent);
+    font-weight: 400;
+    vertical-align: 6px;
+  }
+
+  .sub {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin: 0 0 48px;
+    max-width: 38em;
+    text-wrap: pretty;
+  }
+
+  /* ---- mobile (7b–7e headers) ---- */
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 32px;
+    }
+    .tilde {
+      font-size: 18px;
+      vertical-align: 5px;
+    }
+    .sub {
+      font-size: 14.5px;
+      line-height: 1.65;
+      margin: 0 0 28px;
+    }
+  }
+</style>

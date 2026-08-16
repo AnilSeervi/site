@@ -1,0 +1,836 @@
+---
+import Base from '~/layouts/Base.astro';
+import Footer from '~/components/Footer.astro';
+import PageTitle from '~/components/PageTitle.astro';
+import Section from '~/components/Section.astro';
+import { site, facts, calendar } from '~/config/site';
+
+/** year → 1-indexed grid row; calendar.years is ordered newest-first */
+const yearRow = (y: number) => calendar.years.indexOf(y) + 1;
+const details = Object.entries(calendar.details);
+
+/* This page is prerendered, so frontmatter runs at build time and this is the
+   deploy time. Opting the page into SSR would silently turn it into request
+   time, i.e. always "today". */
+const deployedAt = new Date();
+const deployLabel = deployedAt
+  .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  .toLowerCase();
+---
+
+<Base
+  title="About — Anil Seervi"
+  description="Who I am, how I got here, and what this site runs on."
+  ogImage="/og/about.png"
+>
+  <PageTitle title="about" sub="Who I am, how I got here, and what this site runs on." />
+
+  <!-- portrait + facts -->
+  <div class="portrait-grid">
+    <div class="portrait">
+      <as-ascii-portrait
+        data-cells="60x75"
+        data-cells-mobile="52x65"
+        role="img"
+        aria-label="ASCII-art portrait of Anil Seervi"
+      >
+        <canvas
+          class="ascii-portrait"
+          width="480"
+          height="600"
+          aria-hidden="true"
+          style="width:240px;height:300px;background:var(--ascii-bg);border-radius:5px"></canvas>
+      </as-ascii-portrait>
+    </div>
+    <as-facts class="facts">
+      <div class="facts-hint">
+        <span class="desktop-only">click</span><span class="mobile-only">tap</span> a row — nothing here
+        is precious
+      </div>
+      {
+        facts.map((f) => (
+          <button class="fact" type="button" aria-pressed="false">
+            <span class="fact-key">{f.key}</span>
+            <span class="fact-value">{f.value}</span>
+          </button>
+        ))
+      }
+    </as-facts>
+  </div>
+
+  <!-- career calendar -->
+  <div class="cal-head">
+    <Section label="CAREER CALENDAR" meta="2020 → now" mb={24} />
+  </div>
+  <as-calendar>
+    <div class="cal-grid">
+      {
+        calendar.years.map((y, i) => (
+          /* explicit `first`/`last` classes: lane, cards and milestones render
+             after these, so :first-child/:last-child would match nothing. */
+          <span
+            class:list={['cal-year', { first: i === 0, last: i === calendar.years.length - 1 }]}
+            style={`grid-row:${i + 1}`}
+          >
+            {y}
+          </span>
+        ))
+      }
+      <button
+        class="cal-lane"
+        type="button"
+        data-cal="oss"
+        aria-expanded="false"
+        style={`grid-row:1/${calendar.years.length + 1}`}
+      >
+        <span class="cal-lane-label"
+          ><span class="desktop-only">side projects &amp; oss</span><span class="mobile-only"
+            >oss</span
+          ></span
+        >
+      </button>
+      {
+        calendar.cards.map((c) => {
+          /* rows are the card's subgrid tracks, local to its span */
+          const top = yearRow(c.fromYear);
+          const span = yearRow(c.toYear) + 1 - top;
+          return (
+            <button
+              class:list={['cal-card', { accent: c.accent }]}
+              type="button"
+              data-cal={c.key}
+              aria-expanded="false"
+              style={`grid-row:${top}/${top + span}`}
+            >
+              <span class="card-head">{c.head}</span>
+              {c.ticks.map((t) => (
+                <span class="card-tick" style={`grid-row:${yearRow(t.year) - top + 1}`}>
+                  <span class="tick-dot" aria-hidden="true" />
+                  {t.label}
+                </span>
+              ))}
+              <span class="card-foot" style={`grid-row:${span}`}>
+                <span class="card-kicker">{c.kicker}</span>
+                <span class="card-title">{c.title}</span>
+                <span class="card-dates">{c.dates}</span>
+              </span>
+            </button>
+          );
+        })
+      }
+      {
+        calendar.years.map((y, i) => {
+          const ms = calendar.milestones.filter((m) => m.year === y);
+          return ms.length > 0 ? (
+            <span class="cal-mgroup" style={`grid-row:${i + 1}`}>
+              {ms.map((m) => (
+                <span class="cal-milestone">
+                  <span class="dot" aria-hidden="true" />
+                  {m.label}
+                </span>
+              ))}
+            </span>
+          ) : null;
+        })
+      }
+    </div>
+    <div class="cal-hint">
+      — <span class="desktop-only">click</span><span class="mobile-only">tap</span> a card or the striped
+      lane; what shipped there slides up
+    </div>
+    <!-- detail sheet — markup contract in ~/islands/drawer.ts -->
+    <as-drawer class="cal-drawer" hidden>
+      <div class="dw-overlay" data-dw-overlay></div>
+      <div
+        class="dw-sheet"
+        data-dw-sheet
+        role="dialog"
+        aria-modal="true"
+        aria-label="career calendar detail"
+      >
+        <div class="dw-handle" aria-hidden="true"></div>
+        <div class="dw-body" data-dw-body>
+          {
+            details.map(([key, d]) => (
+              <div class="cal-detail" data-cal-detail={key} hidden>
+                <div class="detail-head">
+                  <span class="detail-title">{d.title}</span>
+                  <span class="detail-meta">{d.meta}</span>
+                </div>
+                <div class="detail-body">
+                  <span class="detail-label">STUFF THAT SHIPPED</span>
+                  {d.bullets.map((b) => (
+                    <div class="detail-bullet">
+                      <span class="bullet-dot" aria-hidden="true">
+                        ·
+                      </span>
+                      <span>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+        <div class="dw-foot">
+          <button class="dw-nav" type="button" data-cal-step="-1" aria-label="previous entry">
+            ‹
+          </button>
+          <button class="dw-close" type="button" data-dw-close>close</button>
+          <button class="dw-nav" type="button" data-cal-step="1" aria-label="next entry">›</button>
+        </div>
+      </div>
+    </as-drawer>
+  </as-calendar>
+
+  <!-- colophon -->
+  <Section label="COLOPHON" />
+  <div class="colophon">
+    Set in <em>Newsreader</em>, Schibsted Grotesk and <span class="mono">Spline Sans Mono</span> — each
+    name in its own face. Built with Astro — islands for the live feeds, view transitions between every
+    page. Deployed on Vercel ▲<span class="desktop-only"
+      >, <time data-deploy datetime={deployedAt.toISOString().slice(0, 10)}
+        >last deploy {deployLabel}</time
+      >. Live data from Spotify, GitHub, MyAnimeList, Garmin, Hardcover and Open-Meteo</span
+    >. Source at <a href={site.repo} target="_blank" rel="noopener noreferrer"
+      >github.com/AnilSeervi/site</a
+    >.
+  </div>
+
+  <Footer>
+    <a href={site.socials.github}>github</a>
+    <a href={site.socials.twitter}>twitter</a>
+    <a href={site.socials.linkedin}>linkedin</a>
+    <a href={site.socials.mail}>mail</a>
+  </Footer>
+</Base>
+
+<style>
+  /* ---- portrait + facts ---- */
+  .portrait-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 44px;
+    margin-bottom: 56px;
+    align-items: start;
+  }
+
+  .portrait {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  as-ascii-portrait {
+    display: block;
+  }
+  .ascii-portrait {
+    display: block;
+    border: 1px solid var(--hair-card);
+    cursor: crosshair;
+  }
+
+  as-facts {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .facts-hint {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    padding-bottom: 8px;
+  }
+
+  .fact {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 16px;
+    padding: 11px 0;
+    border: 0;
+    border-top: 1px solid var(--hair-row);
+    align-items: baseline;
+    cursor: pointer;
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    width: 100%;
+  }
+  .fact:last-of-type {
+    border-bottom: 1px solid var(--hair-row);
+  }
+
+  .fact-key {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--meta);
+  }
+
+  .fact-value {
+    font-size: 15.5px;
+    color: var(--text-hi);
+    filter: blur(7px);
+    transition: filter 0.4s ease;
+  }
+  .fact.revealed .fact-value {
+    filter: none;
+  }
+
+  /* ---- career calendar ---- */
+  .cal-head :global(.meta) {
+    color: var(--faint);
+  }
+
+  as-calendar {
+    display: block;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: 56px 40px 300px 1fr;
+    /* auto ceiling is load-bearing: a year with many milestones stretches its own band */
+    grid-auto-rows: minmax(92px, auto);
+    column-gap: 22px;
+  }
+
+  /* numeral and rule sit at the BOTTOM of the band: time runs upward (oldest
+     year at the foot), so the rule under a label is that year's January line. */
+  .cal-year {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: flex-end;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--faint);
+    border-bottom: 1px solid rgba(237, 230, 218, 0.05);
+    padding-bottom: 10px;
+    pointer-events: none;
+  }
+  .cal-year.first {
+    color: var(--meta);
+  }
+  .cal-year.last {
+    border-bottom-color: rgba(237, 230, 218, 0.09);
+  }
+
+  .cal-lane {
+    grid-column: 2;
+    margin: 10px 0 4px;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--live-green) 22%, transparent);
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--live-green) 16%, transparent) 0 3px,
+      transparent 3px 9px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 180ms ease;
+  }
+  .cal-lane:hover {
+    border-color: color-mix(in srgb, var(--live-green) 55%, transparent);
+  }
+
+  .cal-lane-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: color-mix(in srgb, var(--live-green) 70%, var(--meta));
+    background: var(--bg);
+    padding: 8px 1px;
+  }
+
+  .cal-card {
+    grid-column: 3;
+    border-radius: 8px;
+    /* subgrid: interior rows ARE the year bands. Keep horizontal padding on the
+       children — padding here insets the tracks out of alignment. */
+    display: grid;
+    grid-template-rows: subgrid;
+    padding: 0;
+    /* safe with subgrid: a margin insets only the first and last tracks, so the
+       interior lines the ticks hang off stay aligned with the parent bands */
+    margin: 5px 0;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease;
+  }
+  .cal-card.accent {
+    border: 1px solid color-mix(in srgb, var(--as-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--as-accent) 7%, transparent);
+  }
+
+  .card-head {
+    grid-row: 1;
+    align-self: start;
+    padding: 14px 18px 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--meta);
+  }
+  .cal-card.accent .card-head {
+    color: var(--as-accent);
+  }
+
+  /* lands on its year's line — bottom padding must match .cal-year's */
+  .card-tick {
+    align-self: end;
+    padding: 0 18px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-tick .tick-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+
+  .card-foot {
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 18px 16px;
+    min-width: 0;
+  }
+  .cal-card.accent:hover {
+    background: color-mix(in srgb, var(--as-accent) 13%, transparent);
+    border-color: color-mix(in srgb, var(--as-accent) 65%, transparent);
+  }
+  .cal-card:not(.accent) {
+    border: 1px solid rgba(237, 230, 218, 0.14);
+    background: rgba(237, 230, 218, 0.025);
+  }
+  .cal-card:not(.accent):hover {
+    background: rgba(237, 230, 218, 0.05);
+    border-color: rgba(237, 230, 218, 0.3);
+  }
+
+  .card-kicker {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--meta);
+  }
+  .cal-card.accent .card-kicker {
+    color: var(--as-accent);
+  }
+
+  .card-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .cal-card.accent .card-title {
+    color: var(--text-hi);
+  }
+
+  .card-dates {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--meta);
+  }
+
+  .cal-mgroup {
+    grid-column: 4;
+    align-self: end;
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+  .cal-milestone {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .cal-milestone .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--as-accent) 55%, transparent);
+    display: inline-block;
+    margin-top: 4px;
+    flex: none;
+  }
+
+  .cal-hint {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    padding-top: 16px;
+    margin-bottom: 44px;
+  }
+
+  /* ---- detail drawer (~/islands/drawer.ts) ---- */
+  .cal-drawer {
+    display: block;
+  }
+  .cal-drawer[hidden] {
+    display: none;
+  }
+  .dw-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    background: rgba(8, 7, 6, 0.78);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .cal-drawer[data-open] .dw-overlay {
+    opacity: 1;
+  }
+  .dw-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 121;
+    /* must start off-screen: the frame after [hidden] lifts would flash it in place */
+    transform: translateY(100%);
+    background: #12100e;
+    border-top: 1px solid rgba(237, 230, 218, 0.14);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.55);
+    will-change: transform;
+    outline: none;
+  }
+  .dw-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(237, 230, 218, 0.2);
+    margin: 10px auto 4px;
+  }
+  .dw-body {
+    /* 720, not 640: below this the head line wraps the title */
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 6px 28px calc(30px + env(safe-area-inset-bottom));
+    max-height: 74dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dw-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(237, 230, 218, 0.08);
+  }
+  .dw-nav,
+  .dw-close {
+    font-family: var(--font-mono);
+    background: none;
+    color: var(--meta);
+    border: 1px solid var(--hair-input);
+    border-radius: 99px;
+    cursor: pointer;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+  .dw-nav:hover,
+  .dw-close:hover {
+    color: var(--text-hi);
+    border-color: rgba(237, 230, 218, 0.4);
+  }
+  .dw-nav {
+    /* ≥44px touch target */
+    width: 44px;
+    height: 32px;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .dw-close {
+    height: 32px;
+    padding: 0 20px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .cal-detail {
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .cal-detail[hidden] {
+    display: none;
+  }
+
+  .detail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+  }
+
+  .detail-title {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    color: var(--text-hi);
+  }
+
+  .detail-meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--meta);
+    white-space: nowrap;
+  }
+
+  .detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    color: var(--faint);
+  }
+
+  .detail-bullet {
+    display: flex;
+    gap: 12px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  .detail-bullet .bullet-dot {
+    color: var(--as-accent);
+  }
+
+  /* ---- colophon ---- */
+  .colophon {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text-muted);
+  }
+  .colophon em {
+    font-family: var(--font-serif);
+    color: var(--text-hi);
+  }
+  .colophon .mono {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--text-hi);
+  }
+  .colophon a {
+    color: var(--text-soft);
+    text-decoration-line: underline;
+    text-underline-offset: 3px;
+  }
+  .colophon a:hover {
+    color: var(--text-hi);
+  }
+
+  /* overrides Footer's default 96px top margin */
+  .colophon + :global(footer) {
+    margin-top: 56px;
+  }
+
+  /* ================= mobile ================= */
+  @media (max-width: 768px) {
+    .portrait-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-bottom: 44px;
+    }
+    .portrait {
+      align-items: center;
+    }
+    .ascii-portrait {
+      max-width: 100%;
+    }
+    .fact {
+      grid-template-columns: 86px 1fr;
+      gap: 12px;
+    }
+    .fact-key {
+      font-size: 11px;
+    }
+    .fact-value {
+      font-size: 14px;
+    }
+    .facts-hint {
+      font-size: 10.5px;
+    }
+
+    /* 3 columns: oss lane · year gutter · cards; the milestone column is dropped */
+    .cal-grid {
+      grid-template-columns: 22px 30px 1fr;
+      /* 70px is a card foot's measured height; keep the auto ceiling — the foot
+         sits in the span's last row and a fixed height overflows it into the ticks */
+      grid-auto-rows: minmax(70px, auto);
+      column-gap: 12px;
+    }
+    .card-head,
+    .card-tick {
+      font-size: 10.5px;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+    .card-foot {
+      padding: 0 14px 12px;
+    }
+    .cal-mgroup {
+      display: none;
+    }
+    .cal-lane {
+      grid-column: 1;
+    }
+    .cal-lane-label {
+      font-size: 9.5px;
+    }
+    /* the numeral spans the full row: 34px padding = 22px lane + 12px gap */
+    .cal-year {
+      font-size: 10.5px;
+      padding-bottom: 8px;
+      padding-left: 34px;
+    }
+    .card-tick {
+      padding-bottom: 8px;
+    }
+    /* still no padding on .cal-card here — it insets the subgrid's first and
+       last tracks and doubles up with the children's own padding */
+    .card-title {
+      font-size: 16px;
+    }
+    .cal-hint {
+      margin-bottom: 36px;
+    }
+    .dw-body {
+      padding: 6px 22px calc(26px + env(safe-area-inset-bottom));
+    }
+    /* the nowrap meta starves the title at this width — stack them */
+    .detail-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    .detail-title {
+      font-size: 17px;
+    }
+    .colophon {
+      font-size: 13.5px;
+      line-height: 1.85;
+    }
+  }
+</style>
+
+<script>
+  import '~/islands/ascii-portrait';
+  import '~/islands/drawer';
+
+  if (!customElements.get('as-facts')) {
+    customElements.define(
+      'as-facts',
+      class extends HTMLElement {
+        #onClick = (e: Event) => {
+          const row = (e.target as HTMLElement).closest<HTMLElement>('.fact');
+          if (!row || !this.contains(row)) return;
+          const revealed = row.classList.toggle('revealed');
+          row.setAttribute('aria-pressed', String(revealed));
+        };
+        connectedCallback() {
+          this.addEventListener('click', this.#onClick);
+        }
+        disconnectedCallback() {
+          this.removeEventListener('click', this.#onClick);
+        }
+      }
+    );
+  }
+
+  if (!customElements.get('as-calendar')) {
+    customElements.define(
+      'as-calendar',
+      class extends HTMLElement {
+        /** detail keys in document order — ‹ › walk this, wrapping */
+        #keys: string[] = [];
+        #i = -1;
+
+        #show(key: string) {
+          const at = this.#keys.indexOf(key);
+          if (at < 0) return;
+          this.#i = at;
+          this.querySelectorAll<HTMLElement>('[data-cal-detail]').forEach((d) => {
+            d.hidden = d.dataset.calDetail !== key;
+          });
+          this.querySelectorAll<HTMLElement>('[data-cal]').forEach((t) => {
+            t.setAttribute('aria-expanded', String(t.dataset.cal === key));
+          });
+          const body = this.querySelector<HTMLElement>('[data-dw-body]');
+          if (body) body.scrollTop = 0;
+        }
+
+        // open-only: the drawer owns closing and reports it via as-drawer:close
+        #onClick = (e: Event) => {
+          const target = e.target as HTMLElement;
+
+          const step = target.closest<HTMLElement>('[data-cal-step]');
+          if (step && this.contains(step)) {
+            const d = Number(step.dataset.calStep);
+            if (this.#keys.length) {
+              this.#show(this.#keys[(this.#i + d + this.#keys.length) % this.#keys.length]!);
+            }
+            return;
+          }
+
+          const trigger = target.closest<HTMLElement>('[data-cal]');
+          if (!trigger || !this.contains(trigger)) return;
+          const key = trigger.dataset.cal;
+          if (!key) return;
+          this.#show(key);
+          this.querySelector<HTMLElement & { open(): void }>('as-drawer')?.open();
+        };
+        #onClose = () => {
+          this.querySelectorAll<HTMLElement>('[data-cal]').forEach((t) => {
+            t.setAttribute('aria-expanded', 'false');
+          });
+        };
+        connectedCallback() {
+          this.#keys = Array.from(this.querySelectorAll<HTMLElement>('[data-cal-detail]')).map(
+            (d) => d.dataset.calDetail ?? ''
+          );
+          this.addEventListener('click', this.#onClick);
+          this.addEventListener('as-drawer:close', this.#onClose);
+        }
+        disconnectedCallback() {
+          this.removeEventListener('click', this.#onClick);
+          this.removeEventListener('as-drawer:close', this.#onClose);
+        }
+      }
+    );
+  }
+</script>

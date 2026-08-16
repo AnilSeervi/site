@@ -1,0 +1,31 @@
+---
+// 280×280 globe; the <as-globe> island boots cobe lazily on intersect.
+---
+
+<as-globe>
+  <canvas width="560" height="560" style="width:280px;height:280px" aria-hidden="true"></canvas>
+</as-globe>
+
+<style>
+  as-globe {
+    display: block;
+    width: 280px;
+    height: 280px;
+  }
+  /* mobile: 220px — the island resizes the canvas backing store to match */
+  @media (max-width: 768px) {
+    as-globe {
+      width: 220px;
+      height: 220px;
+    }
+  }
+  /* cobe v2 re-parents the canvas into a runtime wrapper div at init, so the
+     descendant selector (not child) is load-bearing here */
+  as-globe canvas {
+    display: block;
+  }
+</style>
+
+<script>
+  import '~/islands/globe';
+</script>
