@@ -250,7 +250,10 @@ const homeProjects = projects.filter((p) => p.home);
      element, so the text is hidden for exactly that window. visibility, not
      display, so the line keeps its box and nothing shifts. The <noscript>
      below puts it back when the script will never arrive. */
-  as-typeon:not(:defined) [data-typeon] {
+  /* The whole element, not just [data-typeon]: hiding only the text still left
+     it occupying its full width, so the caret rendered after the invisible name
+     and then jumped back to the start once the island emptied the line. */
+  as-typeon:not(:defined) {
     visibility: hidden;
     /* Safety net for the one case <noscript> cannot catch: scripting enabled
        but the module never arrives (blocked, CSP, failed fetch). Without this

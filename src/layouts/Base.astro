@@ -87,7 +87,7 @@ const ogImageURL = new URL(ogImage, site.url);
            be scoped to this layout and never match the hero on the page, and
            might be hoisted out of the <noscript> entirely. -->
       <style is:inline>
-        as-typeon:not(:defined) [data-typeon] {
+        as-typeon:not(:defined) {
           visibility: visible !important;
         }
       </style>
