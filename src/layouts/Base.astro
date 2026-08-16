@@ -79,6 +79,19 @@ const ogImageURL = new URL(ogImage, site.url);
       });
     </script>
     <ClientRouter />
+    <noscript>
+      <!-- The hero hides its SSR name until <as-typeon> upgrades, so the island
+           can type it without the full name flashing first. With no script there
+           is no upgrade, and that hide would never lift. -->
+      <!-- is:inline so Astro leaves it here verbatim: a processed <style> would
+           be scoped to this layout and never match the hero on the page, and
+           might be hoisted out of the <noscript> entirely. -->
+      <style is:inline>
+        as-typeon:not(:defined) [data-typeon] {
+          visibility: visible !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     {!noDots && <div class="dot-grid" transition:persist="dot-grid" aria-hidden="true" />}

@@ -241,6 +241,28 @@ const homeProjects = projects.filter((p) => p.home);
   h1 em {
     font-weight: 400;
   }
+  /* The SSR markup carries the full name — that is what a crawler and a
+     no-JS visitor get. But the island's module script only runs after first
+     paint, and its first act is to blank the line and type it back, so the
+     name flashed in full and then restarted.
+
+     :not(:defined) matches only until customElements.define upgrades the
+     element, so the text is hidden for exactly that window. visibility, not
+     display, so the line keeps its box and nothing shifts. The <noscript>
+     below puts it back when the script will never arrive. */
+  as-typeon:not(:defined) [data-typeon] {
+    visibility: hidden;
+    /* Safety net for the one case <noscript> cannot catch: scripting enabled
+       but the module never arrives (blocked, CSP, failed fetch). Without this
+       the heading would stay invisible for good. Reveals after 3s; if the
+       element upgrades first the selector stops matching and this goes away. */
+    animation: typeon-fallback 0s linear 3s forwards;
+  }
+  @keyframes typeon-fallback {
+    to {
+      visibility: visible;
+    }
+  }
   .caret {
     display: inline-block;
     width: 5px;
