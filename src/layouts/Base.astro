@@ -21,6 +21,8 @@ interface Props {
   noDots?: boolean;
   /** site-relative path of the build-time OG card (see src/pages/og) */
   ogImage?: string;
+  /** skip the view counter — 404.astro renders for paths that are not pages */
+  noViews?: boolean;
 }
 
 const {
@@ -28,7 +30,8 @@ const {
   description = site.description,
   column = 768,
   noDots = false,
-  ogImage = '/og/site.png'
+  ogImage = '/og/site.png',
+  noViews = false
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, site.url);
@@ -76,6 +79,19 @@ const ogImageURL = new URL(ogImage, site.url);
       });
     </script>
     <ClientRouter />
+    <noscript>
+      <!-- The hero hides its SSR name until <as-typeon> upgrades, so the island
+           can type it without the full name flashing first. With no script there
+           is no upgrade, and that hide would never lift. -->
+      <!-- is:inline so Astro leaves it here verbatim: a processed <style> would
+           be scoped to this layout and never match the hero on the page, and
+           might be hoisted out of the <noscript> entirely. -->
+      <style is:inline>
+        as-typeon:not(:defined) {
+          visibility: visible !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     {!noDots && <div class="dot-grid" transition:persist="dot-grid" aria-hidden="true" />}
@@ -110,7 +126,7 @@ const ogImageURL = new URL(ogImage, site.url);
     >
       ❯
     </button>
-    <as-views data-slug={Astro.url.pathname} aria-hidden="true"></as-views>
+    {!noViews && <as-views data-slug={Astro.url.pathname} aria-hidden="true" />}
     <Analytics />
     <SpeedInsights />
   </body>
