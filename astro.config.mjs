@@ -100,6 +100,11 @@ export default defineConfig({
     // Old site structure → new structure (301s by default)
     '/blog': '/writing',
     '/blog/hof-in-js': '/writing/higher-order-functions-in-javascript',
+    // renamed post: the file is now error-boundary but still carries the title
+    // "How to Crash in Production: The Art of Unexpected Drama". Without this
+    // the /blog/[slug] catch-all sends the old URL to a /writing/ 404.
+    '/blog/how-to-crash-in-production-the-art-of-unexpected-drama':
+      '/writing/how-to-crash-in-production-error-boundary',
     '/blog/[slug]': '/writing/[slug]',
     '/snippets': '/writing',
     '/snippets/[slug]': '/writing/[slug]',
@@ -110,6 +115,9 @@ export default defineConfig({
     '/uses': '/about',
     '/projects': '/work',
     '/feed.xml': '/rss.xml',
+    // the old site published /sitemap.xml and search engines have it indexed;
+    // @astrojs/sitemap emits an index file under a different name
+    '/sitemap.xml': '/sitemap-index.xml',
     // External shortlinks carried over from the old site's vercel.json
     '/newsletter': 'https://anilseervi.substack.com/',
     '/linkedin': 'https://www.linkedin.com/in/anilseervi/',
