@@ -20,9 +20,12 @@ export const GET: APIRoute = async () => {
   try {
     // two upstream calls per hit (list + GPS track) — 900s cache window
     return json(await getGarminMoving(), 900);
-  } catch {
+  } catch (err) {
     // auth/upstream failure must not 5xx — an empty payload reads as "no data"
-    // and the island hides the section
+    // and the island hides the section. Log the reason: an empty payload is
+    // indistinguishable from "nothing recorded lately", which is how a dead
+    // token hid here for three days.
+    console.error('[moving] garmin failed, serving empty payload:', (err as Error)?.message);
     return json({ latest: null, latestAny: null, month: null, days: [] }, 60);
   }
 };
