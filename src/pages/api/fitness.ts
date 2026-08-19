@@ -58,8 +58,12 @@ export const GET: APIRoute = async () => {
         return json({ vo2max, restingHr, vo2maxRating, source: 'garmin' }, 86400);
       }
     }
-  } catch {
+  } catch (err) {
     // Any Garmin failure (MFA, token drift, upstream down) → file fallback.
+    // Logged, not swallowed: this fell back silently for three days after the
+    // cutover and the only way to find out why was to reproduce it by hand.
+    // The message carries a status and a stage, never a token.
+    console.error('[fitness] garmin failed, using file fallback:', (err as Error)?.message);
   }
 
   const file = await readFitnessFile();

@@ -8,7 +8,7 @@ import { db, isDbConfigured } from '~/lib/db';
 import { kv } from '~/lib/schema';
 import { eq } from 'drizzle-orm';
 import {
-  getAccessToken,
+  withFreshToken,
   getActivities,
   getActivityTrack,
   getDisplayName,
@@ -71,15 +71,19 @@ export async function getGarminFitness(): Promise<GarminFitness> {
   const creds: GarminCredentials | null =
     hasGarminCredentials && EMAIL && PASSWORD ? { email: EMAIL, password: PASSWORD } : null;
 
-  const accessToken = await getAccessToken(kvStore, creds);
-  const displayName = await getDisplayName(kvStore, accessToken);
   const today = calendarDate();
-
-  const [restingHr, vo2max, personal] = await Promise.all([
-    getRestingHeartRate(accessToken, displayName, today),
-    getVo2Max(accessToken, today),
-    getPersonalInfo(accessToken)
-  ]);
+  const [restingHr, vo2max, personal] = await withFreshToken(
+    kvStore,
+    creds,
+    async (accessToken) => {
+      const displayName = await getDisplayName(kvStore, accessToken);
+      return Promise.all([
+        getRestingHeartRate(accessToken, displayName, today),
+        getVo2Max(accessToken, today),
+        getPersonalInfo(accessToken)
+      ]);
+    }
+  );
 
   // maxmet returns the value but not the rating, so classify locally
   let vo2maxRating: Vo2Rating | null = null;
@@ -101,12 +105,11 @@ export async function getGarminMoving(): Promise<MovingPayload> {
   const creds: GarminCredentials | null =
     hasGarminCredentials && EMAIL && PASSWORD ? { email: EMAIL, password: PASSWORD } : null;
 
-  const accessToken = await getAccessToken(kvStore, creds);
-  // 80 covers a 90-day window even for a busy log
-  const acts = await getActivities(accessToken, 80);
-
-  const gps = acts.find((a) => a.hasPolyline && isRunOrRide(a.typeKey)) ?? null;
-  const track = gps ? await getActivityTrack(accessToken, gps.activityId) : [];
-
-  return buildMovingPayload(acts, gps, track);
+  return withFreshToken(kvStore, creds, async (accessToken) => {
+    // 80 covers a 90-day window even for a busy log
+    const acts = await getActivities(accessToken, 80);
+    const gps = acts.find((a) => a.hasPolyline && isRunOrRide(a.typeKey)) ?? null;
+    const track = gps ? await getActivityTrack(accessToken, gps.activityId) : [];
+    return buildMovingPayload(acts, gps, track);
+  });
 }

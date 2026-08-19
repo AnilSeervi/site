@@ -489,12 +489,56 @@ export async function getAccessToken(
 
 // Data fetchers (connectapi.garmin.com, Bearer auth)
 
+/** Carries the HTTP status so callers can tell "re-auth" from "upstream broke". */
+export class GarminHttpError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'GarminHttpError';
+    this.status = status;
+  }
+}
+
 async function apiGet(accessToken: string, path: string): Promise<unknown> {
   const res = await fetch(`${CONNECT_API}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': USER_AGENT_API }
   });
-  if (!res.ok) throw new Error(`Garmin API ${path.split('?')[0]} failed (${res.status})`);
+  if (!res.ok) {
+    throw new GarminHttpError(
+      `Garmin API ${path.split('?')[0]} failed (${res.status})`,
+      res.status
+    );
+  }
   return res.json();
+}
+
+/**
+ * Run `fn` with an access token, and on 401/403 mint a new one and run it once
+ * more.
+ *
+ * expires_at is not proof a token still works. Garmin invalidates the previous
+ * access token when oauth1 is exchanged again, so any second consumer of the
+ * same oauth1 — a dev machine alongside production, say — silently kills the
+ * other's token well before it expires. Without this the stored token is
+ * returned happily until expiry and every call 401s.
+ */
+export async function withFreshToken<T>(
+  store: TokenStore,
+  creds: GarminCredentials | null,
+  fn: (accessToken: string) => Promise<T>,
+  opts?: SsoLoginOptions
+): Promise<T> {
+  const token = await getAccessToken(store, creds, opts);
+  try {
+    return await fn(token);
+  } catch (err) {
+    const status = err instanceof GarminHttpError ? err.status : 0;
+    if (status !== 401 && status !== 403) throw err;
+    // drop the rejected token so getAccessToken cannot hand it back
+    await store.set(KV_KEYS.oauth2, JSON.stringify({ expires_at: 0 }));
+    const fresh = await getAccessToken(store, creds, opts);
+    return await fn(fresh);
+  }
 }
 
 /** displayName via userprofile-service/socialProfile, cached in kv. */
