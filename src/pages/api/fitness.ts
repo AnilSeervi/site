@@ -67,7 +67,10 @@ export const GET: APIRoute = async () => {
   }
 
   const file = await readFitnessFile();
-  if (file) return json({ ...file, vo2maxRating: null, source: 'file' }, 3600);
+  // 300, not 3600: with stale-while-revalidate at double the TTL, an hour-long
+  // cache meant one bad minute could keep serving nulls for three hours. A
+  // degraded answer should expire quickly; a good one can sit for a day.
+  if (file) return json({ ...file, vo2maxRating: null, source: 'file' }, 300);
 
   return json({ vo2max: null, restingHr: null, vo2maxRating: null, source: 'none' }, 60);
 };

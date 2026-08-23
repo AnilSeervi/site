@@ -9,6 +9,7 @@ import { kv } from '~/lib/schema';
 import { eq } from 'drizzle-orm';
 import {
   withFreshToken,
+  GarminHttpError,
   getActivities,
   getActivityTrack,
   getDisplayName,
@@ -72,18 +73,42 @@ export async function getGarminFitness(): Promise<GarminFitness> {
     hasGarminCredentials && EMAIL && PASSWORD ? { email: EMAIL, password: PASSWORD } : null;
 
   const today = calendarDate();
-  const [restingHr, vo2max, personal] = await withFreshToken(
-    kvStore,
-    creds,
-    async (accessToken) => {
-      const displayName = await getDisplayName(kvStore, accessToken);
-      return Promise.all([
-        getRestingHeartRate(accessToken, displayName, today),
-        getVo2Max(accessToken, today),
-        getPersonalInfo(accessToken)
-      ]);
+
+  /**
+   * allSettled, not all: three independent readings, and Promise.all threw the
+   * other two away whenever one hiccupped. The endpoint then served the file
+   * fallback — which holds nulls — so both vitals rows vanished from the page
+   * over a single transient failure. Observed in production: five consecutive
+   * probes returned live data while a page load moments earlier got nulls.
+   *
+   * Auth failures must still reach withFreshToken or a stale token would be
+   * swallowed here and never re-minted, so if every call failed on 401/403 the
+   * first is rethrown to trigger one re-auth and retry.
+   */
+  const settled = await withFreshToken(kvStore, creds, async (accessToken) => {
+    const displayName = await getDisplayName(kvStore, accessToken);
+    const results = await Promise.allSettled([
+      getRestingHeartRate(accessToken, displayName, today),
+      getVo2Max(accessToken, today),
+      getPersonalInfo(accessToken)
+    ]);
+
+    const authFailed = results.filter(
+      (r) =>
+        r.status === 'rejected' &&
+        r.reason instanceof GarminHttpError &&
+        (r.reason.status === 401 || r.reason.status === 403)
+    );
+    if (authFailed.length === results.length) {
+      throw (authFailed[0] as PromiseRejectedResult).reason;
     }
-  );
+    return results;
+  });
+
+  const restingHr = settled[0].status === 'fulfilled' ? settled[0].value : null;
+  const vo2max = settled[1].status === 'fulfilled' ? settled[1].value : null;
+  const personal =
+    settled[2].status === 'fulfilled' ? settled[2].value : { gender: null, birthDate: null };
 
   // maxmet returns the value but not the rating, so classify locally
   let vo2maxRating: Vo2Rating | null = null;
