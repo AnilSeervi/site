@@ -50,8 +50,31 @@ export const KV_KEYS = {
   oauth1: 'garmin:oauth1',
   oauth2: 'garmin:oauth2',
   consumer: 'garmin:consumer',
-  displayName: 'garmin:displayName'
+  displayName: 'garmin:displayName',
+  /** epoch ms before which no refresh may be attempted — see REFRESH_BACKOFF_MS */
+  backoff: 'garmin:refresh-backoff'
 } as const;
+
+/**
+ * How long to stop attempting a refresh after Garmin answers 429.
+ *
+ * The exchange endpoint is rate limited, and nothing here used to know that.
+ * Every request that found an expired token started its own exchange, across
+ * however many serverless instances were warm, so a site with traffic hammered
+ * a limited endpoint and stayed 429 indefinitely — the outage sustained itself
+ * and looked exactly like a hard block. One attempt per window instead.
+ */
+const REFRESH_BACKOFF_MS = 15 * 60_000;
+
+/**
+ * Refresh this long before the token actually expires.
+ *
+ * With a zero margin the first request after expiry pays for the refresh, and
+ * every concurrent request alongside it starts one too. A margin means the
+ * refresh happens while the current token still works, so a 429 costs nothing
+ * and can simply be retried later.
+ */
+const REFRESH_MARGIN_MS = 30 * 60_000;
 
 export const MFA_REQUIRED_MESSAGE = 'MFA required — run scripts/garmin-bootstrap.mjs';
 
@@ -413,7 +436,10 @@ export async function exchangeOAuth2(
     },
     body: new URLSearchParams(bodyParams).toString()
   });
-  if (!res.ok) throw new Error(`Garmin: OAuth2 exchange failed (${res.status})`);
+  if (!res.ok) {
+    // GarminHttpError, not Error: the caller has to see 429 to back off
+    throw new GarminHttpError(`Garmin: OAuth2 exchange failed (${res.status})`, res.status);
+  }
 
   const data = asRecord(await res.json());
   if (typeof data?.access_token !== 'string') {
@@ -460,12 +486,25 @@ export async function getAccessToken(
   let refreshFailure: string | null = null;
 
   const stored2 = safeParse(await store.get(KV_KEYS.oauth2));
-  if (
-    typeof stored2?.access_token === 'string' &&
-    typeof stored2.expires_at === 'number' &&
-    stored2.expires_at > Date.now() + 60_000
-  ) {
-    return stored2.access_token;
+  const storedToken =
+    typeof stored2?.access_token === 'string' && typeof stored2.expires_at === 'number'
+      ? { token: stored2.access_token, expiresAt: stored2.expires_at }
+      : null;
+
+  // Still comfortably valid — nothing to do.
+  if (storedToken && storedToken.expiresAt > Date.now() + REFRESH_MARGIN_MS) {
+    return storedToken.token;
+  }
+
+  // Inside the margin, or expired. A refresh is wanted, but the old token may
+  // still work, so a failed refresh below is not necessarily fatal.
+  const backoffUntil = Number(safeParse(await store.get(KV_KEYS.backoff))?.until ?? 0);
+  if (backoffUntil > Date.now()) {
+    if (storedToken && storedToken.expiresAt > Date.now()) return storedToken.token;
+    const mins = Math.ceil((backoffUntil - Date.now()) / 60_000);
+    throw new Error(
+      `Garmin: refresh rate limited, backing off for ${mins}m, and the stored token has expired`
+    );
   }
 
   const stored1 = safeParse(await store.get(KV_KEYS.oauth1));
@@ -492,8 +531,19 @@ export async function getAccessToken(
       return oauth2.access_token;
     } catch (err) {
       refreshFailure = `${stage} — ${(err as Error)?.message ?? String(err)}`;
+      // 429 means the exchange is rate limited. Stop every other instance from
+      // trying for a while, or they keep the limit tripped and nothing recovers.
+      if (err instanceof GarminHttpError && err.status === 429) {
+        await store
+          .set(KV_KEYS.backoff, JSON.stringify({ until: Date.now() + REFRESH_BACKOFF_MS }))
+          .catch(() => {});
+      }
     }
   }
+
+  // The refresh failed, but an unexpired token beats no data: this is the whole
+  // point of refreshing early rather than on the first request past expiry.
+  if (storedToken && storedToken.expiresAt > Date.now()) return storedToken.token;
 
   if (!creds) {
     throw new Error(
