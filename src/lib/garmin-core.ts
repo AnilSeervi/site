@@ -456,6 +456,9 @@ export async function getAccessToken(
   creds: GarminCredentials | null,
   opts?: SsoLoginOptions
 ): Promise<string> {
+  /** why the no-password refresh gave up, for the error thrown at the end */
+  let refreshFailure: string | null = null;
+
   const stored2 = safeParse(await store.get(KV_KEYS.oauth2));
   if (
     typeof stored2?.access_token === 'string' &&
@@ -472,17 +475,33 @@ export async function getAccessToken(
       oauth_token_secret: stored1.oauth_token_secret
     };
     if (typeof stored1.mfa_token === 'string') oauth1.mfa_token = stored1.mfa_token;
+    // Three unrelated things can fail in here: the consumer lookup (a kv read,
+    // or an S3 fetch when it is not cached), the exchange POST, and the kv
+    // write of the new token. They used to collapse into one bare catch whose
+    // comment asserted "OAuth1 invalid/expired" — a cause it never
+    // established — and the throw below then reported "no stored tokens" even
+    // though oauth1 was sitting right there. That cost days of looking in the
+    // wrong place. Record which step actually failed.
+    let stage = 'consumer';
     try {
       const consumer = await getOAuthConsumer(store);
+      stage = 'exchange';
       const oauth2 = await exchangeOAuth2(oauth1, consumer);
+      stage = 'kv write';
       await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
       return oauth2.access_token;
-    } catch {
-      // OAuth1 invalid/expired — fall through to password login.
+    } catch (err) {
+      refreshFailure = `${stage} — ${(err as Error)?.message ?? String(err)}`;
     }
   }
 
-  if (!creds) throw new Error('Garmin: no stored tokens and no credentials');
+  if (!creds) {
+    throw new Error(
+      refreshFailure
+        ? `Garmin: refresh failed at ${refreshFailure}, and no credentials to fall back on`
+        : 'Garmin: no stored tokens and no credentials'
+    );
+  }
   const { oauth2 } = await loginWithPassword(store, creds, opts);
   return oauth2.access_token;
 }
