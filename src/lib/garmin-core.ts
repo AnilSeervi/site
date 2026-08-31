@@ -603,6 +603,25 @@ export async function withFreshToken<T>(
   } catch (err) {
     const status = err instanceof GarminHttpError ? err.status : 0;
     if (status !== 401 && status !== 403) throw err;
+    // Another writer — the scheduled refresh job, or a parallel instance — may
+    // have exchanged since this token was read, which is exactly what kills a
+    // token mid-flight. The 401 then belongs to the OLD token, and blindly
+    // dropping kv here would destroy the fresh one and force an exchange from
+    // an IP that cannot make one. Re-read first and retry with what's stored.
+    const stored = safeParse(await store.get(KV_KEYS.oauth2));
+    if (
+      typeof stored?.access_token === 'string' &&
+      stored.access_token !== token &&
+      typeof stored.expires_at === 'number' &&
+      stored.expires_at > Date.now()
+    ) {
+      try {
+        return await fn(stored.access_token);
+      } catch (err2) {
+        const status2 = err2 instanceof GarminHttpError ? err2.status : 0;
+        if (status2 !== 401 && status2 !== 403) throw err2;
+      }
+    }
     // drop the rejected token so getAccessToken cannot hand it back
     await store.set(KV_KEYS.oauth2, JSON.stringify({ expires_at: 0 }));
     const fresh = await getAccessToken(store, creds, opts);
