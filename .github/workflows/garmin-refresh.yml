@@ -1,0 +1,69 @@
+# Keeps the Garmin OAuth2 token in the production kv store fresh.
+#
+# Garmin's OAuth2 exchange endpoint is rate limited per IP, and Vercel's shared
+# egress IPs have no quota left — every exchange attempted from production
+# answers 429. GitHub runners do have quota, so the exchange runs here instead:
+# this job re-exchanges the long-lived OAuth1 token (seeded once by
+# scripts/garmin-bootstrap.mjs) and writes the ~24h OAuth2 bearer to Turso.
+# Production only reads it. Nothing in the repo changes — no commits, no PRs.
+#
+# If a run fails while the stored token still has hours left, the script exits
+# 0 and the next run retries; the job only goes red when production is actually
+# at risk of running dry.
+name: refresh garmin token
+
+on:
+  schedule:
+    # every 6h, off the hour — tokens last ~24h and the script skips the
+    # exchange unless less than 12h remain, so this is ~2 exchanges a day
+    - cron: '43 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: exchange even if the stored token is still fresh
+        type: boolean
+        default: false
+
+# two overlapping runs would just burn exchange quota
+concurrency:
+  group: garmin-refresh
+  cancel-in-progress: false
+
+# writes go to Turso, not the repo
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: fail early if the kv secrets are missing
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          if [ -z "$TURSO_DATABASE_URL" ] || [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "::error::TURSO_DATABASE_URL / TURSO_AUTH_TOKEN not set. Add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # the script only needs @libsql/client (a prod dependency)
+      - run: pnpm install --frozen-lockfile --prod
+
+      - name: refresh the token
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          FORCE: ${{ inputs.force == true && '1' || '' }}
+        run: node scripts/garmin-refresh.mjs | tee -a "$GITHUB_STEP_SUMMARY"
