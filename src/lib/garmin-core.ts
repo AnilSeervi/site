@@ -50,31 +50,8 @@ export const KV_KEYS = {
   oauth1: 'garmin:oauth1',
   oauth2: 'garmin:oauth2',
   consumer: 'garmin:consumer',
-  displayName: 'garmin:displayName',
-  /** epoch ms before which no refresh may be attempted — see REFRESH_BACKOFF_MS */
-  backoff: 'garmin:refresh-backoff'
+  displayName: 'garmin:displayName'
 } as const;
-
-/**
- * How long to stop attempting a refresh after Garmin answers 429.
- *
- * The exchange endpoint is rate limited, and nothing here used to know that.
- * Every request that found an expired token started its own exchange, across
- * however many serverless instances were warm, so a site with traffic hammered
- * a limited endpoint and stayed 429 indefinitely — the outage sustained itself
- * and looked exactly like a hard block. One attempt per window instead.
- */
-const REFRESH_BACKOFF_MS = 15 * 60_000;
-
-/**
- * Refresh this long before the token actually expires.
- *
- * With a zero margin the first request after expiry pays for the refresh, and
- * every concurrent request alongside it starts one too. A margin means the
- * refresh happens while the current token still works, so a 429 costs nothing
- * and can simply be retried later.
- */
-const REFRESH_MARGIN_MS = 30 * 60_000;
 
 export const MFA_REQUIRED_MESSAGE = 'MFA required — run scripts/garmin-bootstrap.mjs';
 
@@ -437,7 +414,8 @@ export async function exchangeOAuth2(
     body: new URLSearchParams(bodyParams).toString()
   });
   if (!res.ok) {
-    // GarminHttpError, not Error: the caller has to see 429 to back off
+    // GarminHttpError, not Error: this endpoint is rate limited per IP and
+    // callers need to tell a 429 from an auth failure
     throw new GarminHttpError(`Garmin: OAuth2 exchange failed (${res.status})`, res.status);
   }
 
@@ -482,29 +460,13 @@ export async function getAccessToken(
   creds: GarminCredentials | null,
   opts?: SsoLoginOptions
 ): Promise<string> {
-  /** why the no-password refresh gave up, for the error thrown at the end */
-  let refreshFailure: string | null = null;
-
   const stored2 = safeParse(await store.get(KV_KEYS.oauth2));
-  const storedToken =
-    typeof stored2?.access_token === 'string' && typeof stored2.expires_at === 'number'
-      ? { token: stored2.access_token, expiresAt: stored2.expires_at }
-      : null;
-
-  // Still comfortably valid — nothing to do.
-  if (storedToken && storedToken.expiresAt > Date.now() + REFRESH_MARGIN_MS) {
-    return storedToken.token;
-  }
-
-  // Inside the margin, or expired. A refresh is wanted, but the old token may
-  // still work, so a failed refresh below is not necessarily fatal.
-  const backoffUntil = Number(safeParse(await store.get(KV_KEYS.backoff))?.until ?? 0);
-  if (backoffUntil > Date.now()) {
-    if (storedToken && storedToken.expiresAt > Date.now()) return storedToken.token;
-    const mins = Math.ceil((backoffUntil - Date.now()) / 60_000);
-    throw new Error(
-      `Garmin: refresh rate limited, backing off for ${mins}m, and the stored token has expired`
-    );
+  if (
+    typeof stored2?.access_token === 'string' &&
+    typeof stored2.expires_at === 'number' &&
+    stored2.expires_at > Date.now()
+  ) {
+    return stored2.access_token;
   }
 
   const stored1 = safeParse(await store.get(KV_KEYS.oauth1));
@@ -514,44 +476,21 @@ export async function getAccessToken(
       oauth_token_secret: stored1.oauth_token_secret
     };
     if (typeof stored1.mfa_token === 'string') oauth1.mfa_token = stored1.mfa_token;
-    // Three unrelated things can fail in here: the consumer lookup (a kv read,
-    // or an S3 fetch when it is not cached), the exchange POST, and the kv
-    // write of the new token. They used to collapse into one bare catch whose
-    // comment asserted "OAuth1 invalid/expired" — a cause it never
-    // established — and the throw below then reported "no stored tokens" even
-    // though oauth1 was sitting right there. That cost days of looking in the
-    // wrong place. Record which step actually failed.
-    let stage = 'consumer';
     try {
       const consumer = await getOAuthConsumer(store);
-      stage = 'exchange';
       const oauth2 = await exchangeOAuth2(oauth1, consumer);
-      stage = 'kv write';
       await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
       return oauth2.access_token;
     } catch (err) {
-      refreshFailure = `${stage} — ${(err as Error)?.message ?? String(err)}`;
-      // 429 means the exchange is rate limited. Stop every other instance from
-      // trying for a while, or they keep the limit tripped and nothing recovers.
-      if (err instanceof GarminHttpError && err.status === 429) {
-        await store
-          .set(KV_KEYS.backoff, JSON.stringify({ until: Date.now() + REFRESH_BACKOFF_MS }))
-          .catch(() => {});
+      // fall through to the password only if there is one; otherwise surface
+      // the real failure instead of a misleading "no stored tokens"
+      if (!creds) {
+        throw new Error(`Garmin: token refresh failed — ${(err as Error)?.message ?? String(err)}`);
       }
     }
   }
 
-  // The refresh failed, but an unexpired token beats no data: this is the whole
-  // point of refreshing early rather than on the first request past expiry.
-  if (storedToken && storedToken.expiresAt > Date.now()) return storedToken.token;
-
-  if (!creds) {
-    throw new Error(
-      refreshFailure
-        ? `Garmin: refresh failed at ${refreshFailure}, and no credentials to fall back on`
-        : 'Garmin: no stored tokens and no credentials'
-    );
-  }
+  if (!creds) throw new Error('Garmin: no stored tokens and no credentials');
   const { oauth2 } = await loginWithPassword(store, creds, opts);
   return oauth2.access_token;
 }
@@ -603,25 +542,6 @@ export async function withFreshToken<T>(
   } catch (err) {
     const status = err instanceof GarminHttpError ? err.status : 0;
     if (status !== 401 && status !== 403) throw err;
-    // Another writer — the scheduled refresh job, or a parallel instance — may
-    // have exchanged since this token was read, which is exactly what kills a
-    // token mid-flight. The 401 then belongs to the OLD token, and blindly
-    // dropping kv here would destroy the fresh one and force an exchange from
-    // an IP that cannot make one. Re-read first and retry with what's stored.
-    const stored = safeParse(await store.get(KV_KEYS.oauth2));
-    if (
-      typeof stored?.access_token === 'string' &&
-      stored.access_token !== token &&
-      typeof stored.expires_at === 'number' &&
-      stored.expires_at > Date.now()
-    ) {
-      try {
-        return await fn(stored.access_token);
-      } catch (err2) {
-        const status2 = err2 instanceof GarminHttpError ? err2.status : 0;
-        if (status2 !== 401 && status2 !== 403) throw err2;
-      }
-    }
     // drop the rejected token so getAccessToken cannot hand it back
     await store.set(KV_KEYS.oauth2, JSON.stringify({ expires_at: 0 }));
     const fresh = await getAccessToken(store, creds, opts);

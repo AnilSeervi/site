@@ -1,11 +1,10 @@
 /**
- * garmin-refresh.mjs — scheduled OAuth2 refresh, run from GitHub Actions.
+ * garmin-refresh.mjs — re-exchanges the stored OAuth1 token for a fresh ~24h
+ * OAuth2 bearer and writes it to the kv store.
  *
- * The exchange endpoint (oauth-service/oauth/exchange/user/2.0) is rate limited
- * per IP, and Vercel's shared egress IPs have no quota left — every exchange
- * from production 429s. GitHub runners (and this laptop) have quota. So the
- * exchange happens here on a schedule and production only ever READS the token
- * from kv; it never needs to mint one itself.
+ * Garmin rate limits the exchange endpoint per IP and shared serverless egress
+ * has no quota left, so run this from an IP that does (a laptop, a box of your
+ * own) whenever the token needs topping up. One attempt, no retries.
  *
  * Run:   node --env-file=.env.production.local scripts/garmin-refresh.mjs
  * Needs: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN (kv holds the OAuth1 token —
@@ -16,12 +15,8 @@
 import { createClient } from '@libsql/client';
 import { getOAuthConsumer, exchangeOAuth2, KV_KEYS } from '../src/lib/garmin-core.ts';
 
-// Refresh when less than this remains. Tokens last ~24h and the job runs every
-// 6h, so 12h means roughly two exchanges a day and a missed run costs nothing.
+// skip the exchange while this much validity remains, so cron can run often
 const MIN_REMAINING_MS = 12 * 60 * 60_000;
-// A failed exchange is not fatal while the stored token still has this long —
-// the next scheduled run retries well before production feels anything.
-const SOFT_FAIL_REMAINING_MS = 2 * 60 * 60_000;
 
 const dbUrl = process.env.TURSO_DATABASE_URL;
 const dbToken = process.env.TURSO_AUTH_TOKEN;
@@ -71,11 +66,6 @@ try {
     console.log(`token still fresh — ${hours(remaining)}h left, nothing to do (FORCE=1 overrides)`);
     process.exit(0);
   }
-  console.log(
-    remaining > 0
-      ? `token has ${hours(remaining)}h left — refreshing`
-      : 'token expired — refreshing'
-  );
 
   const stored1 = parseStored(await store.get(KV_KEYS.oauth1));
   if (typeof stored1?.oauth_token !== 'string' || typeof stored1?.oauth_token_secret !== 'string') {
@@ -83,25 +73,15 @@ try {
     process.exit(1);
   }
 
-  try {
-    const consumer = await getOAuthConsumer(store);
-    const oauth2 = await exchangeOAuth2(stored1, consumer);
-    await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
-    // a fresh token makes any standing 429 backoff stale — lift it
-    await store.set(KV_KEYS.backoff, JSON.stringify({ until: 0 }));
-    console.log(
-      `refreshed — access_token set (${oauth2.access_token.length} chars), expires ${new Date(oauth2.expires_at).toISOString()} (${hours(oauth2.expires_at - Date.now())}h)`
-    );
-  } catch (err) {
-    if (remaining > SOFT_FAIL_REMAINING_MS) {
-      console.log(
-        `exchange failed (${err.message}) but the stored token has ${hours(remaining)}h left — the next run retries`
-      );
-      process.exit(0);
-    }
-    console.error(`exchange failed with no usable stored token: ${err.message}`);
-    process.exit(1);
-  }
+  const consumer = await getOAuthConsumer(store);
+  const oauth2 = await exchangeOAuth2(stored1, consumer);
+  await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
+  console.log(
+    `refreshed — access_token set (${oauth2.access_token.length} chars), expires ${new Date(oauth2.expires_at).toISOString()} (${hours(oauth2.expires_at - Date.now())}h)`
+  );
+} catch (err) {
+  console.error(`refresh failed: ${err.message}`);
+  process.exitCode = 1;
 } finally {
   client.close();
 }
