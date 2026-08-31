@@ -167,6 +167,35 @@ async function editionImage(token, bookId) {
   }
 }
 
+/** Last resort: OpenLibrary by ISBN. Hardcover sometimes has only a 98px
+    thumbnail on every edition (Tell Tale), while OpenLibrary carries the real
+    jacket. `default=false` makes it 404 instead of serving a placeholder, and
+    the byte size is checked with sharp because the URL promises nothing. */
+async function openLibraryImage(token, bookId) {
+  const q = `{ books(where: {id: {_eq: ${bookId}}}) { editions { isbn_13 isbn_10 } } }`;
+  let editions = [];
+  try {
+    editions = (await graphqlRaw(token, q))?.books?.[0]?.editions ?? [];
+  } catch {
+    return null;
+  }
+  const isbns = editions.flatMap((e) => [e.isbn_13, e.isbn_10]).filter(Boolean);
+  for (const isbn of isbns) {
+    try {
+      const url = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) continue;
+      const meta = await sharp(Buffer.from(await res.arrayBuffer())).metadata();
+      if ((meta.width ?? 0) >= MIN_SOURCE_W) {
+        return { url, width: meta.width, height: meta.height };
+      }
+    } catch {
+      /* try the next isbn */
+    }
+  }
+  return null;
+}
+
 function shape(row) {
   const b = row.book ?? {};
   const read = row.user_book_reads?.[0] ?? {};
@@ -297,6 +326,7 @@ const all = rows.map((row) => ({
 
 for (const r of all) {
   if (!r.image && r.bookId) r.image = await editionImage(token, r.bookId);
+  if (!r.image && r.bookId) r.image = await openLibraryImage(token, r.bookId);
 }
 
 await mkdir(COVER_DIR, { recursive: true });
@@ -315,8 +345,24 @@ const pruned = await pruneCovers(
   new Set(all.filter((r) => r.book.cover).map((r) => `${r.book.slug}.jpg`))
 );
 
+// A timestamp that always changes made every run produce a commit, a PR, a
+// merge and a production deploy even when nothing on the shelf moved — the
+// workflow's "shelf unchanged" check could never fire. Reuse the previous
+// fetchedAt when the data is identical, so the file comes out byte-identical
+// and an unchanged shelf produces no diff at all.
+let fetchedAt = new Date().toISOString();
+try {
+  const prev = JSON.parse(await readFile(SNAPSHOT, 'utf8'));
+  const unchanged =
+    JSON.stringify({ reading, finished }) ===
+    JSON.stringify({ reading: prev.reading, finished: prev.finished });
+  if (unchanged && typeof prev.fetchedAt === 'string') fetchedAt = prev.fetchedAt;
+} catch {
+  /* no previous snapshot — first run keeps the fresh timestamp */
+}
+
 const snapshot = {
-  fetchedAt: new Date().toISOString(),
+  fetchedAt,
   // all status_id 2 books; site.ts (`reading.now`) picks which one is current
   reading,
   finished

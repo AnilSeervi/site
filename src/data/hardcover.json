@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-30T09:22:15.796Z",
+  "fetchedAt": "2026-08-31T05:40:54.630Z",
   "reading": [
     {
       "slug": "sapiens",
@@ -24,8 +24,8 @@
       "since": "august",
       "rating": null,
       "updatedAt": "2026-08-19T02:55:09.278896+00:00",
-      "cover": null,
-      "casing": null
+      "cover": "/covers/tell-tale-short-stories.jpg",
+      "casing": "#574730"
     }
   ],
   "finished": [
