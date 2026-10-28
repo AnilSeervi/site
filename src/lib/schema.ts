@@ -20,7 +20,7 @@ export const guestbook = sqliteTable('guestbook', {
   doodle: text('doodle')
 });
 
-/** generic key/value store (Garmin OAuth tokens etc.) */
+/** generic key/value store (the Garmin bearer token etc.) */
 export const kv = sqliteTable('kv', {
   k: text('k').primaryKey().notNull(),
   v: text('v').notNull(),

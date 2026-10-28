@@ -1,7 +1,7 @@
-/** GET /api/fitness. s-maxage: garmin 86400 · file 3600 · none 60. Degrades, never 5xx. */
+/** GET /api/fitness. s-maxage: garmin 86400 (300 if a reading failed) · file 300 · none 60. Degrades, never 5xx. */
 import type { APIRoute } from 'astro';
 import { readFile } from 'node:fs/promises';
-import { hasGarminCredentials, hasStoredGarminTokens, getGarminFitness } from '../../lib/garmin';
+import { hasGarminKey, getGarminFitness } from '../../lib/garmin';
 // Build-time snapshot — guarantees the fallback exists in the serverless bundle.
 import fitnessSnapshot from '../../../data/fitness.json';
 
@@ -52,14 +52,15 @@ async function readFitnessFile(): Promise<{
 
 export const GET: APIRoute = async () => {
   try {
-    if (hasGarminCredentials || (await hasStoredGarminTokens())) {
-      const { vo2max, restingHr, vo2maxRating } = await getGarminFitness();
+    if (hasGarminKey) {
+      const { vo2max, restingHr, vo2maxRating, degraded } = await getGarminFitness();
       if (vo2max !== null || restingHr !== null) {
-        return json({ vo2max, restingHr, vo2maxRating, source: 'garmin' }, 86400);
+        // a reading that failed gets the fallback's short TTL, not a day of nulls
+        return json({ vo2max, restingHr, vo2maxRating, source: 'garmin' }, degraded ? 300 : 86400);
       }
     }
   } catch (err) {
-    // Any Garmin failure (MFA, token drift, upstream down) → file fallback.
+    // Any Garmin failure (expired key, upstream down) → file fallback.
     // Logged, not swallowed: this fell back silently for three days after the
     // cutover and the only way to find out why was to reproduce it by hand.
     // The message carries a status and a stage, never a token.
