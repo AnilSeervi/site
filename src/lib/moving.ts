@@ -14,7 +14,7 @@ export interface MovingLatest {
   distanceKm: number;
   movingTime: string;
   paceMinKm: string | null;
-  /** encoded polyline (decode client-side with @mapbox/polyline) */
+  /** encoded polyline (decode client-side with @mapbox/polyline); '' when the route couldn't be read */
   polyline: string;
   /** UTC instant (ISO) — client converts to IST for weekday copy */
   startedAt: string;
@@ -171,16 +171,16 @@ export function buildMovingPayload(
   gps: GarminActivity | null,
   track: Array<[number, number]>
 ): MovingPayload {
-  // ---- latest run/ride with a route ----
+  // ---- latest run/ride — its numbers stand without the route ----
   let latest: MovingLatest | null = null;
-  if (gps && track.length >= 2) {
+  if (gps) {
     latest = {
       name: gps.activityName,
       sportType: gps.typeKey,
       distanceKm: km1(gps.distanceMeters),
       movingTime: fmtDuration(gps.durationSeconds),
       paceMinKm: fmtPace(gps.durationSeconds, gps.distanceMeters),
-      polyline: polyline.encode(track),
+      polyline: track.length >= 2 ? polyline.encode(track) : '',
       startedAt: gmtToIso(gps.startTimeGMT),
       isRun: RUN_TYPES.has(gps.typeKey)
     };

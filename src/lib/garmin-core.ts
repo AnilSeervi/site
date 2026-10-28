@@ -1,18 +1,16 @@
 /**
- * Garmin Connect client: SSO login → long-lived OAuth1 → ~1h OAuth2 bearer.
- * Refresh re-exchanges the stored OAuth1; the password is only needed when
- * OAuth1 is missing or invalid. MFA needs an interactive `promptMfaCode`.
+ * Garmin Connect Personal API client. A personal API key (Garmin Connect →
+ * Settings → Personal API Key, valid 30 days to a year) is exchanged for a 24h
+ * bearer token. There is no refresh token: a token near expiry is replaced by
+ * minting another, and minting does not revoke earlier tokens, so production
+ * and a dev machine can each hold their own.
  * Must stay environment-agnostic and erasable-TS-only (node type stripping
- * imports this file directly). Never log token or credential values.
+ * imports this file directly). Never log token or key values.
  */
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { parseFitActivity, unzipFit, type FitActivity } from './fit.ts';
 
 // Types
-
-export interface GarminCredentials {
-  email: string;
-  password: string;
-}
 
 /** Minimal async key/value store (backed by the Turso `kv` table). */
 export interface TokenStore {
@@ -20,155 +18,32 @@ export interface TokenStore {
   set(k: string, v: string): Promise<void>;
 }
 
-export interface OAuthConsumer {
-  consumer_key: string;
-  consumer_secret: string;
-}
-
-export interface OAuth1Token {
-  oauth_token: string;
-  oauth_token_secret: string;
-  /** Present when login went through an MFA challenge; re-sent on exchange. */
-  mfa_token?: string;
-}
-
-export interface OAuth2Token {
+export interface AccessToken {
   access_token: string;
-  refresh_token?: string;
-  token_type: string;
-  /** Absolute expiry, ms since epoch (computed from expires_in). */
+  /** Absolute expiry, ms since epoch (the JWT's exp claim). */
   expires_at: number;
-}
-
-export interface SsoLoginOptions {
-  /** Interactive MFA code prompt (bootstrap script only). */
-  promptMfaCode?: () => Promise<string>;
+  /** Fingerprint of the key that minted it, so a rotated key never reuses it. */
+  key_id: string;
 }
 
 /** kv-table keys used by the Garmin integration. */
 export const KV_KEYS = {
-  oauth1: 'garmin:oauth1',
-  oauth2: 'garmin:oauth2',
-  consumer: 'garmin:consumer',
-  displayName: 'garmin:displayName'
+  token: 'garmin:token'
 } as const;
 
-export const MFA_REQUIRED_MESSAGE = 'MFA required — run scripts/garmin-bootstrap.mjs';
+// Constants
 
-// Constants (mirroring garth)
+const API = 'https://personal.connectapi.garmin.com';
+const TOKEN_PATH = '/personalapitoken-service/personal-api/personal-api-key/token';
 
-const SSO = 'https://sso.garmin.com/sso';
-const SSO_EMBED = `${SSO}/embed`;
-const CONNECT_API = 'https://connectapi.garmin.com';
-const GARTH_CONSUMER_URL = 'https://thegarth.s3.amazonaws.com/oauth_consumer.json';
+/** Where a new key is made once the old one expires or is deleted. */
+export const KEY_SETTINGS_URL = 'https://connect.garmin.com/app/settings/personalApiToken';
 
-const USER_AGENT_SSO = 'com.garmin.android.apps.connectmobile';
-const USER_AGENT_API = 'GCM-iOS-5.7.2.1';
-
-const SSO_EMBED_PARAMS: Record<string, string> = {
-  id: 'gauth-widget',
-  embedWidget: 'true',
-  gauthHost: SSO
-};
-
-const SIGNIN_PARAMS: Record<string, string> = {
-  ...SSO_EMBED_PARAMS,
-  gauthHost: SSO_EMBED,
-  service: SSO_EMBED,
-  source: SSO_EMBED,
-  redirectAfterAccountLoginUrl: SSO_EMBED,
-  redirectAfterAccountCreationUrl: SSO_EMBED
-};
-
-// OAuth1 HMAC-SHA1 signing (RFC 5849)
-
-/** RFC 3986 percent-encoding (stricter than encodeURIComponent). */
-export function percentEncode(s: string): string {
-  return encodeURIComponent(s).replace(
-    /[!'()*]/g,
-    (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase()
-  );
-}
-
-/** Query-string pairs, decoded (`+` → space per x-www-form-urlencoded). */
-function queryPairs(search: string): Array<[string, string]> {
-  const pairs: Array<[string, string]> = [];
-  for (const [k, v] of new URLSearchParams(search)) pairs.push([k, v]);
-  return pairs;
-}
-
-export interface OAuth1SignInput {
-  method: string;
-  /** Full request URL, query string included. */
-  url: string;
-  consumerKey: string;
-  consumerSecret: string;
-  token?: string;
-  tokenSecret?: string;
-  /** Decoded x-www-form-urlencoded body params, if any. */
-  bodyParams?: Record<string, string>;
-  /** Overridable for deterministic tests. */
-  timestamp?: string;
-  nonce?: string;
-  /** Include oauth_version="1.0" (default true; RFC test vector omits it). */
-  includeVersion?: boolean;
-}
-
-export interface OAuth1SignResult {
-  /** `Authorization` header value. */
-  header: string;
-  /** RFC 5849 §3.4.1 base string; scripts/garmin-oauth-selftest.mjs asserts it. */
-  baseString: string;
-  /** Base64 HMAC-SHA1 signature. */
-  signature: string;
-}
-
-/** Sign a request per RFC 5849 with HMAC-SHA1; returns the auth header. */
-export function oauth1Sign(input: OAuth1SignInput): OAuth1SignResult {
-  const u = new URL(input.url);
-  const baseUrl = `${u.protocol}//${u.host}${u.pathname}`;
-
-  const oauthParams: Record<string, string> = {
-    oauth_consumer_key: input.consumerKey,
-    oauth_nonce: input.nonce ?? randomBytes(16).toString('hex'),
-    oauth_signature_method: 'HMAC-SHA1',
-    oauth_timestamp: input.timestamp ?? Math.floor(Date.now() / 1000).toString()
-  };
-  if (input.token) oauthParams.oauth_token = input.token;
-  if (input.includeVersion !== false) oauthParams.oauth_version = '1.0';
-
-  // Query + body + oauth_* params, percent-encoded then sorted by encoded name
-  // then encoded value — order is required by RFC 5849 §3.4.1.3.2.
-  const all: Array<[string, string]> = [
-    ...queryPairs(u.search),
-    ...Object.entries(input.bodyParams ?? {}),
-    ...Object.entries(oauthParams)
-  ].map(([k, v]) => [percentEncode(k), percentEncode(v)] as [string, string]);
-  all.sort(([ak, av], [bk, bv]) => (ak < bk ? -1 : ak > bk ? 1 : av < bv ? -1 : av > bv ? 1 : 0));
-  const paramString = all.map(([k, v]) => `${k}=${v}`).join('&');
-
-  const baseString = [
-    input.method.toUpperCase(),
-    percentEncode(baseUrl),
-    percentEncode(paramString)
-  ].join('&');
-
-  const signingKey = `${percentEncode(input.consumerSecret)}&${percentEncode(input.tokenSecret ?? '')}`;
-  const signature = createHmac('sha1', signingKey).update(baseString).digest('base64');
-
-  const headerParams: Record<string, string> = {
-    ...oauthParams,
-    oauth_signature: signature
-  };
-  const header =
-    'OAuth ' +
-    Object.keys(headerParams)
-      .sort()
-      .map((k) => `${percentEncode(k)}="${percentEncode(headerParams[k])}"`)
-      .join(', ');
-
-  return { header, baseString, signature };
-}
+/** mint a replacement this long before expiry, so no request holds a dying token */
+const EXPIRY_MARGIN_MS = 10 * 60_000;
+const TIMEOUT_MS = 15_000;
+/** route points kept for the etching — about one every 4 s on a half-hour run */
+const MAX_TRACK_POINTS = 500;
 
 // Small helpers
 
@@ -187,315 +62,24 @@ function safeParse(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-function qs(params: Record<string, string>): string {
-  return new URLSearchParams(params).toString();
-}
-
-/** Calendar date (YYYY-MM-DD) in the given IANA time zone (default IST). */
-export function calendarDate(timeZone: string = 'Asia/Kolkata'): string {
+/** Calendar date (YYYY-MM-DD) `daysAgo` days back in the given IANA time zone (default IST). */
+export function calendarDate(daysAgo = 0, timeZone: string = 'Asia/Kolkata'): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
-  }).format(new Date());
+  }).format(new Date(Date.now() - daysAgo * 86_400_000));
 }
 
-// Garth consumer key/secret — public constants, not secrets; cached in kv.
-
-let consumerMemo: OAuthConsumer | null = null;
-
-export async function getOAuthConsumer(store: TokenStore): Promise<OAuthConsumer> {
-  if (consumerMemo) return consumerMemo;
-
-  const cached = safeParse(await store.get(KV_KEYS.consumer));
-  if (typeof cached?.consumer_key === 'string' && typeof cached?.consumer_secret === 'string') {
-    consumerMemo = { consumer_key: cached.consumer_key, consumer_secret: cached.consumer_secret };
-    return consumerMemo;
-  }
-
-  const res = await fetch(GARTH_CONSUMER_URL);
-  if (!res.ok) throw new Error(`Garmin: consumer fetch failed (${res.status})`);
-  const data = asRecord(await res.json());
-  if (typeof data?.consumer_key !== 'string' || typeof data?.consumer_secret !== 'string') {
-    throw new Error('Garmin: consumer JSON missing keys');
-  }
-  consumerMemo = { consumer_key: data.consumer_key, consumer_secret: data.consumer_secret };
-  await store.set(KV_KEYS.consumer, JSON.stringify(consumerMemo));
-  return consumerMemo;
+/** At most `max` evenly spaced points, the first and last always among them. */
+function thin<T>(points: T[], max: number): T[] {
+  if (points.length <= max) return points;
+  const step = (points.length - 1) / (max - 1);
+  return Array.from({ length: max }, (_, i) => points[Math.round(i * step)]!);
 }
 
-// SSO login — manual cookie jar + redirects, since fetch has no cookie store.
-
-interface SsoResponse {
-  status: number;
-  text: string;
-  finalUrl: string;
-}
-
-function createSsoClient() {
-  const cookies = new Map<string, string>();
-
-  async function request(
-    url: string,
-    init?: { method?: string; headers?: Record<string, string>; body?: string }
-  ): Promise<SsoResponse> {
-    let current = url;
-    let method = init?.method ?? 'GET';
-    let body = init?.body;
-
-    for (let hop = 0; hop < 8; hop++) {
-      const headers: Record<string, string> = {
-        'User-Agent': USER_AGENT_SSO,
-        ...(hop === 0 ? (init?.headers ?? {}) : {})
-      };
-      if (cookies.size > 0) {
-        headers.Cookie = [...cookies].map(([k, v]) => `${k}=${v}`).join('; ');
-      }
-
-      const res = await fetch(current, { method, headers, body, redirect: 'manual' });
-      for (const sc of res.headers.getSetCookie()) {
-        const pair = sc.split(';')[0];
-        const i = pair.indexOf('=');
-        if (i > 0) cookies.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim());
-      }
-
-      if (res.status >= 300 && res.status < 400) {
-        const loc = res.headers.get('location');
-        if (!loc) throw new Error(`Garmin SSO: redirect without location (${res.status})`);
-        await res.arrayBuffer().catch(() => undefined); // drain
-        current = new URL(loc, current).toString();
-        if (res.status !== 307 && res.status !== 308) {
-          method = 'GET';
-          body = undefined;
-        }
-        continue;
-      }
-
-      return { status: res.status, text: await res.text(), finalUrl: current };
-    }
-    throw new Error('Garmin SSO: too many redirects');
-  }
-
-  return { request };
-}
-
-function extractCsrf(html: string): string {
-  const m = /name="_csrf"\s+value="(.+?)"/.exec(html);
-  if (!m) throw new Error('Garmin SSO: CSRF token not found');
-  return m[1];
-}
-
-function extractTitle(html: string): string {
-  return /<title>([\s\S]*?)<\/title>/.exec(html)?.[1]?.trim() ?? '';
-}
-
-function extractTicket(html: string): string {
-  const m = /embed\?ticket=([^"]+)"/.exec(html);
-  if (!m) throw new Error('Garmin SSO: service ticket not found in response');
-  return m[1];
-}
-
-/**
- * SSO login → one-time service ticket. Throws MFA_REQUIRED_MESSAGE when Garmin
- * asks for a code and no `promptMfaCode` handler was provided.
- */
-export async function ssoLogin(creds: GarminCredentials, opts?: SsoLoginOptions): Promise<string> {
-  const client = createSsoClient();
-
-  // Cookies must be seeded on the embed widget before the signin page loads.
-  await client.request(`${SSO_EMBED}?${qs(SSO_EMBED_PARAMS)}`);
-
-  const signinUrl = `${SSO}/signin?${qs(SIGNIN_PARAMS)}`;
-  const page = await client.request(signinUrl, { headers: { Referer: SSO_EMBED } });
-  if (page.status !== 200) throw new Error(`Garmin SSO: signin page ${page.status}`);
-  const csrf = extractCsrf(page.text);
-
-  const post = await client.request(signinUrl, {
-    method: 'POST',
-    headers: { Referer: signinUrl, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      username: creds.email,
-      password: creds.password,
-      embed: 'true',
-      _csrf: csrf
-    }).toString()
-  });
-  if (post.status === 429) throw new Error('Garmin SSO: rate limited (429) — try again later');
-  if (post.status >= 400) throw new Error(`Garmin SSO: signin POST ${post.status}`);
-
-  let html = post.text;
-  const title = extractTitle(html);
-
-  if (title.includes('MFA')) {
-    if (!opts?.promptMfaCode) throw new Error(MFA_REQUIRED_MESSAGE);
-    const code = (await opts.promptMfaCode()).trim();
-    const mfa = await client.request(`${SSO}/verifyMFA/loginEnterMfaCode?${qs(SIGNIN_PARAMS)}`, {
-      method: 'POST',
-      headers: { Referer: post.finalUrl, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        'mfa-code': code,
-        embed: 'true',
-        _csrf: extractCsrf(html),
-        fromPage: 'setupEnterMfaCode'
-      }).toString()
-    });
-    if (mfa.status >= 400) throw new Error(`Garmin SSO: MFA POST ${mfa.status}`);
-    html = mfa.text;
-  } else if (!title.includes('Success')) {
-    throw new Error(`Garmin SSO: login failed (page title: ${title || 'unknown'})`);
-  }
-
-  return extractTicket(html);
-}
-
-// OAuth token exchanges
-
-/** Service ticket → long-lived OAuth1 token. */
-export async function getOAuth1Token(
-  ticket: string,
-  consumer: OAuthConsumer
-): Promise<OAuth1Token> {
-  const u = new URL(`${CONNECT_API}/oauth-service/oauth/preauthorized`);
-  u.searchParams.set('ticket', ticket);
-  u.searchParams.set('login-url', SSO_EMBED);
-  u.searchParams.set('accepts-mfa-tokens', 'true');
-
-  const { header } = oauth1Sign({
-    method: 'GET',
-    url: u.toString(),
-    consumerKey: consumer.consumer_key,
-    consumerSecret: consumer.consumer_secret
-  });
-
-  const res = await fetch(u, {
-    headers: { Authorization: header, 'User-Agent': USER_AGENT_SSO }
-  });
-  if (!res.ok) throw new Error(`Garmin: OAuth1 preauthorized failed (${res.status})`);
-
-  const parsed = new URLSearchParams(await res.text());
-  const token = parsed.get('oauth_token');
-  const secret = parsed.get('oauth_token_secret');
-  if (!token || !secret) throw new Error('Garmin: OAuth1 response missing token fields');
-
-  const out: OAuth1Token = { oauth_token: token, oauth_token_secret: secret };
-  const mfaToken = parsed.get('mfa_token');
-  if (mfaToken) out.mfa_token = mfaToken;
-  return out;
-}
-
-/** OAuth1 → OAuth2 bearer (~1h); the OAuth1 token stays reusable for refresh. */
-export async function exchangeOAuth2(
-  oauth1: OAuth1Token,
-  consumer: OAuthConsumer
-): Promise<OAuth2Token> {
-  const url = `${CONNECT_API}/oauth-service/oauth/exchange/user/2.0`;
-  const bodyParams: Record<string, string> = oauth1.mfa_token
-    ? { mfa_token: oauth1.mfa_token }
-    : {};
-
-  const { header } = oauth1Sign({
-    method: 'POST',
-    url,
-    consumerKey: consumer.consumer_key,
-    consumerSecret: consumer.consumer_secret,
-    token: oauth1.oauth_token,
-    tokenSecret: oauth1.oauth_token_secret,
-    bodyParams
-  });
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: header,
-      'User-Agent': USER_AGENT_SSO,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: new URLSearchParams(bodyParams).toString()
-  });
-  if (!res.ok) {
-    // GarminHttpError, not Error: this endpoint is rate limited per IP and
-    // callers need to tell a 429 from an auth failure
-    throw new GarminHttpError(`Garmin: OAuth2 exchange failed (${res.status})`, res.status);
-  }
-
-  const data = asRecord(await res.json());
-  if (typeof data?.access_token !== 'string') {
-    throw new Error('Garmin: OAuth2 response missing access_token');
-  }
-  const expiresIn = typeof data.expires_in === 'number' ? data.expires_in : 3600;
-
-  const out: OAuth2Token = {
-    access_token: data.access_token,
-    token_type: typeof data.token_type === 'string' ? data.token_type : 'Bearer',
-    expires_at: Date.now() + expiresIn * 1000
-  };
-  if (typeof data.refresh_token === 'string') out.refresh_token = data.refresh_token;
-  return out;
-}
-
-// Orchestration
-
-/** Full password login chain; seeds kv with both tokens. */
-export async function loginWithPassword(
-  store: TokenStore,
-  creds: GarminCredentials,
-  opts?: SsoLoginOptions
-): Promise<{ oauth1: OAuth1Token; oauth2: OAuth2Token }> {
-  const consumer = await getOAuthConsumer(store);
-  const ticket = await ssoLogin(creds, opts);
-  const oauth1 = await getOAuth1Token(ticket, consumer);
-  await store.set(KV_KEYS.oauth1, JSON.stringify(oauth1));
-  const oauth2 = await exchangeOAuth2(oauth1, consumer);
-  await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
-  return { oauth1, oauth2 };
-}
-
-/**
- * Valid OAuth2 bearer: reuse a fresh stored one, else re-exchange the stored
- * OAuth1 without the password, else password login (may throw on MFA).
- */
-export async function getAccessToken(
-  store: TokenStore,
-  creds: GarminCredentials | null,
-  opts?: SsoLoginOptions
-): Promise<string> {
-  const stored2 = safeParse(await store.get(KV_KEYS.oauth2));
-  if (
-    typeof stored2?.access_token === 'string' &&
-    typeof stored2.expires_at === 'number' &&
-    stored2.expires_at > Date.now()
-  ) {
-    return stored2.access_token;
-  }
-
-  const stored1 = safeParse(await store.get(KV_KEYS.oauth1));
-  if (typeof stored1?.oauth_token === 'string' && typeof stored1.oauth_token_secret === 'string') {
-    const oauth1: OAuth1Token = {
-      oauth_token: stored1.oauth_token,
-      oauth_token_secret: stored1.oauth_token_secret
-    };
-    if (typeof stored1.mfa_token === 'string') oauth1.mfa_token = stored1.mfa_token;
-    try {
-      const consumer = await getOAuthConsumer(store);
-      const oauth2 = await exchangeOAuth2(oauth1, consumer);
-      await store.set(KV_KEYS.oauth2, JSON.stringify(oauth2));
-      return oauth2.access_token;
-    } catch (err) {
-      // fall through to the password only if there is one; otherwise surface
-      // the real failure instead of a misleading "no stored tokens"
-      if (!creds) {
-        throw new Error(`Garmin: token refresh failed — ${(err as Error)?.message ?? String(err)}`);
-      }
-    }
-  }
-
-  if (!creds) throw new Error('Garmin: no stored tokens and no credentials');
-  const { oauth2 } = await loginWithPassword(store, creds, opts);
-  return oauth2.access_token;
-}
-
-// Data fetchers (connectapi.garmin.com, Bearer auth)
+// Errors
 
 /** Carries the HTTP status so callers can tell "re-auth" from "upstream broke". */
 export class GarminHttpError extends Error {
@@ -507,99 +91,185 @@ export class GarminHttpError extends Error {
   }
 }
 
-async function apiGet(accessToken: string, path: string): Promise<unknown> {
-  const res = await fetch(`${CONNECT_API}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': USER_AGENT_API }
-  });
-  if (!res.ok) {
-    throw new GarminHttpError(
-      `Garmin API ${path.split('?')[0]} failed (${res.status})`,
-      res.status
-    );
-  }
-  return res.json();
+/**
+ * A 401 — the token (or the key behind it) is no longer accepted. Not 403:
+ * that means the key's scopes don't cover the endpoint, and a new token from
+ * the same key can't change that.
+ */
+export function isAuthFailure(err: unknown): boolean {
+  return err instanceof GarminHttpError && err.status === 401;
 }
 
 /**
- * Run `fn` with an access token, and on 401/403 mint a new one and run it once
- * more.
- *
- * expires_at is not proof a token still works. Garmin invalidates the previous
- * access token when oauth1 is exchanged again, so any second consumer of the
- * same oauth1 — a dev machine alongside production, say — silently kills the
- * other's token well before it expires. Without this the stored token is
- * returned happily until expiry and every call 401s.
+ * fetch with a timeout, network failures rethrown under a fixed message: the
+ * TypeError fetch throws for a malformed header quotes the header, key and all.
+ */
+async function send(url: string, init: RequestInit, what: string): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+  } catch (err) {
+    const timedOut = (err as Error)?.name === 'TimeoutError';
+    throw new Error(`${what} ${timedOut ? 'timed out' : 'could not be sent'}`);
+  }
+}
+
+// Tokens
+
+/** Short one-way fingerprint of an API key; safe to store beside the token. */
+function keyId(apiKey: string): string {
+  return createHash('sha256').update(apiKey).digest('hex').slice(0, 16);
+}
+
+/** exp claim of a JWT in ms — read, not verified; Garmin checks the signature. */
+function jwtExpiry(token: string): number | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const claims = asRecord(JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')));
+    return typeof claims?.exp === 'number' ? claims.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Exchange the API key for a new 24h bearer token. */
+export async function mintAccessToken(apiKey: string): Promise<AccessToken> {
+  // a key pasted across two lines can never work, and must not reach a header
+  if (!/^[\x21-\x7e]+$/.test(apiKey)) {
+    throw new Error('Garmin: GARMIN_API_KEY contains whitespace or control characters');
+  }
+  const res = await send(
+    `${API}${TOKEN_PATH}`,
+    { method: 'POST', headers: { Accept: '*/*', Authorization: `ApiKey ${apiKey}` } },
+    'Garmin: token request'
+  );
+  if (!res.ok) {
+    // 401 is all Garmin says about a key that expired, was deleted or is mistyped
+    const hint =
+      res.status === 401 || res.status === 403
+        ? ` — key rejected; make a new one at ${KEY_SETTINGS_URL}`
+        : '';
+    throw new GarminHttpError(`Garmin: token request failed (${res.status})${hint}`, res.status);
+  }
+
+  // the body is the bare JWT, not JSON; anything else is never cached, nor quoted
+  const access_token = (await res.text()).trim();
+  const expires_at = /^[\x21-\x7e]+$/.test(access_token) ? jwtExpiry(access_token) : null;
+  if (expires_at === null) throw new Error('Garmin: token response was not a JWT');
+  return { access_token, expires_at, key_id: keyId(apiKey) };
+}
+
+/*
+ * The kv row is only a cache: a failed read counts as a miss and a failed write
+ * is noted and shrugged off, since a token is in hand either way. The error
+ * itself is never logged — drizzle puts the query's params, token included, in
+ * its message.
+ */
+
+async function readToken(store: TokenStore, apiKey: string): Promise<string | null> {
+  let stored: Record<string, unknown> | null;
+  try {
+    stored = safeParse(await store.get(KV_KEYS.token));
+  } catch {
+    console.error('[garmin] token cache read failed');
+    return null;
+  }
+  return typeof stored?.access_token === 'string' &&
+    typeof stored.expires_at === 'number' &&
+    stored.expires_at - EXPIRY_MARGIN_MS > Date.now() &&
+    stored.key_id === keyId(apiKey)
+    ? stored.access_token
+    : null;
+}
+
+async function saveToken(store: TokenStore, token: AccessToken): Promise<void> {
+  try {
+    await store.set(KV_KEYS.token, JSON.stringify(token));
+  } catch {
+    console.error('[garmin] token cache write failed');
+  }
+}
+
+/** A usable bearer token: the stored one while it lasts, else a newly minted one. */
+export async function getAccessToken(store: TokenStore, apiKey: string): Promise<string> {
+  const stored = await readToken(store, apiKey);
+  if (stored) return stored;
+  const token = await mintAccessToken(apiKey);
+  await saveToken(store, token);
+  return token.access_token;
+}
+
+/**
+ * Run `fn` with a bearer token, and on a 401 mint a new one and run it once
+ * more. exp is not proof a token still works: deleting the key that minted it
+ * revokes it on the spot.
  */
 export async function withFreshToken<T>(
   store: TokenStore,
-  creds: GarminCredentials | null,
-  fn: (accessToken: string) => Promise<T>,
-  opts?: SsoLoginOptions
+  apiKey: string,
+  fn: (accessToken: string) => Promise<T>
 ): Promise<T> {
-  const token = await getAccessToken(store, creds, opts);
+  const token = await getAccessToken(store, apiKey);
   try {
     return await fn(token);
   } catch (err) {
-    const status = err instanceof GarminHttpError ? err.status : 0;
-    if (status !== 401 && status !== 403) throw err;
-    // drop the rejected token so getAccessToken cannot hand it back
-    await store.set(KV_KEYS.oauth2, JSON.stringify({ expires_at: 0 }));
-    const fresh = await getAccessToken(store, creds, opts);
-    return await fn(fresh);
+    if (!isAuthFailure(err)) throw err;
+    const fresh = await mintAccessToken(apiKey);
+    await saveToken(store, fresh);
+    return await fn(fresh.access_token);
   }
 }
 
-/** displayName via userprofile-service/socialProfile, cached in kv. */
-export async function getDisplayName(store: TokenStore, accessToken: string): Promise<string> {
-  const cached = await store.get(KV_KEYS.displayName);
-  if (cached) return cached;
+// Data fetchers (personal.connectapi.garmin.com, Bearer auth)
 
-  const profile = asRecord(await apiGet(accessToken, '/userprofile-service/socialProfile'));
-  const displayName = profile?.displayName;
-  if (typeof displayName !== 'string' || displayName.length === 0) {
-    throw new Error('Garmin: socialProfile missing displayName');
-  }
-  await store.set(KV_KEYS.displayName, displayName);
-  return displayName;
+async function apiFetch(accessToken: string, path: string, accept: string): Promise<Response> {
+  const name = `Garmin API ${path.split('?')[0]}`;
+  const res = await send(
+    `${API}${path}`,
+    { headers: { Authorization: `Bearer ${accessToken}`, Accept: accept } },
+    name
+  );
+  if (!res.ok) throw new GarminHttpError(`${name} failed (${res.status})`, res.status);
+  return res;
 }
 
-/** Resting heart rate (bpm) for the given calendar date, or null. */
+async function apiGet(accessToken: string, path: string): Promise<unknown> {
+  const res = await apiFetch(accessToken, path, 'application/json');
+  // a day with nothing recorded can come back as an empty 200
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Garmin API ${path.split('?')[0]} returned non-JSON`);
+  }
+}
+
+/**
+ * Resting heart rate (bpm) for the given calendar date, or null. Today's figure
+ * appears once the watch has synced the night; until then the 7-day average in
+ * the same summary stands in, rather than a day-long empty row.
+ */
 export async function getRestingHeartRate(
   accessToken: string,
-  displayName: string,
   date: string
 ): Promise<number | null> {
   const data = asRecord(
-    await apiGet(
-      accessToken,
-      `/usersummary-service/usersummary/daily/${encodeURIComponent(displayName)}?calendarDate=${date}`
-    )
+    await apiGet(accessToken, `/usersummary-service/usersummary/daily?calendarDate=${date}`)
   );
-  const rhr = data?.restingHeartRate;
-  return typeof rhr === 'number' && Number.isFinite(rhr) && rhr > 0 ? rhr : null;
+  for (const v of [data?.restingHeartRate, data?.lastSevenDaysAvgRestingHeartRate]) {
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) return v;
+  }
+  return null;
 }
 
-/** Latest VO2max (generic.vo2MaxValue) as of the given date, or null. */
-export async function getVo2Max(accessToken: string, date: string): Promise<number | null> {
-  const raw = await apiGet(accessToken, `/metrics-service/metrics/maxmet/latest/${date}`);
-  // Endpoint is documented to return an object, but can return an array.
+/** The account holder's age in whole years — Fitness Age reports it — or null. */
+export async function getAge(accessToken: string, date: string): Promise<number | null> {
+  const raw = await apiGet(accessToken, `/fitnessage-service/fitnessage/v2/${date}`);
+  // documented as an array, served as an object
   const entry = asRecord(Array.isArray(raw) ? raw[raw.length - 1] : raw);
-  const generic = asRecord(entry?.generic);
-  const vo2 = generic?.vo2MaxValue;
-  return typeof vo2 === 'number' && Number.isFinite(vo2) && vo2 > 0 ? vo2 : null;
-}
-
-/** gender + birthDate — maxmet returns a VO2max value but no age/sex rating. */
-export async function getPersonalInfo(
-  accessToken: string
-): Promise<{ gender: string | null; birthDate: string | null }> {
-  const data = asRecord(
-    await apiGet(accessToken, '/userprofile-service/userprofile/personal-information')
-  );
-  return {
-    gender: typeof data?.gender === 'string' ? data.gender : null,
-    birthDate: typeof data?.birthDate === 'string' ? data.birthDate : null
-  };
+  const age = entry?.chronologicalAge;
+  return typeof age === 'number' && Number.isInteger(age) && age > 0 && age < 130 ? age : null;
 }
 
 export type Vo2Rating = 'superior' | 'excellent' | 'good' | 'fair' | 'poor';
@@ -630,17 +300,6 @@ const VO2_NORMS: Record<
   ]
 };
 
-/** whole years between an ISO birthDate ("YYYY-MM-DD") and now, or null */
-export function ageFromBirthDate(birthDate: string): number | null {
-  const b = new Date(birthDate);
-  if (Number.isNaN(b.getTime())) return null;
-  const now = new Date();
-  let age = now.getUTCFullYear() - b.getUTCFullYear();
-  const m = now.getUTCMonth() - b.getUTCMonth();
-  if (m < 0 || (m === 0 && now.getUTCDate() < b.getUTCDate())) age--;
-  return age >= 0 && age < 130 ? age : null;
-}
-
 /** classify a VO2max on Garmin's scale (Cooper norms) → rating word, or null */
 export function vo2MaxRating(vo2: number, gender: string, age: number): Vo2Rating | null {
   if (!(vo2 > 0) || !(age > 0)) return null;
@@ -670,14 +329,28 @@ export interface GarminActivity {
   /** GMT "YYYY-MM-DD HH:MM:SS" (no zone suffix) */
   startTimeGMT: string;
   /** true when the activity carries a GPS track */
-  hasPolyline: boolean;
+  hasGps: boolean;
 }
 
-/** Recent activities, newest-first (activitylist-service search). */
-export async function getActivities(accessToken: string, limit = 60): Promise<GarminActivity[]> {
+export interface ActivitySearch {
+  limit: number;
+  /** YYYY-MM-DD, inclusive, by the activity's local start date */
+  startDate?: string;
+  /** parent type key; "running" also matches treadmill_running and the rest */
+  activityType?: string;
+}
+
+/** Activities, newest-first (activitylist-service search). */
+export async function getActivities(
+  accessToken: string,
+  search: ActivitySearch
+): Promise<GarminActivity[]> {
+  const params = new URLSearchParams({ start: '0', limit: String(search.limit) });
+  if (search.startDate) params.set('startDate', search.startDate);
+  if (search.activityType) params.set('activityType', search.activityType);
   const raw = await apiGet(
     accessToken,
-    `/activitylist-service/activities/search/activities?start=0&limit=${limit}`
+    `/activitylist-service/activities/search/activities?${params}`
   );
   if (!Array.isArray(raw)) return [];
   const out: GarminActivity[] = [];
@@ -694,32 +367,54 @@ export async function getActivities(accessToken: string, limit = 60): Promise<Ga
       durationSeconds: typeof r?.duration === 'number' ? r.duration : 0,
       startTimeLocal: typeof r?.startTimeLocal === 'string' ? r.startTimeLocal : '',
       startTimeGMT: typeof r?.startTimeGMT === 'string' ? r.startTimeGMT : '',
-      hasPolyline: r?.hasPolyline === true
+      // the Personal API leaves hasPolyline out of the list; a start fix means GPS
+      hasGps: r?.hasPolyline === true || typeof r?.startLatitude === 'number'
     });
   }
   return out;
 }
 
 /**
- * GPS track as [lat, lon] pairs, empty when none. maxChartSize=0 suppresses the
- * unused chart payload; only geoPolylineDTO is read.
+ * The activity's original file (a ZIP around the .fit), decoded: the GPS track
+ * thinned for drawing, the VO2max estimate, the profile's sex. The Personal API
+ * has no route endpoint, so the file is the only source of the track.
  */
-export async function getActivityTrack(
+export async function getActivityFile(
   accessToken: string,
   activityId: number
-): Promise<Array<[number, number]>> {
-  const data = asRecord(
-    await apiGet(
-      accessToken,
-      `/activity-service/activity/${activityId}/details?maxChartSize=0&maxPolylineSize=1000`
-    )
+): Promise<FitActivity> {
+  const res = await apiFetch(
+    accessToken,
+    `/download-service/files/activity/${activityId}`,
+    'application/zip, application/x-zip-compressed, application/octet-stream'
   );
-  const poly = asRecord(data?.geoPolylineDTO)?.polyline;
-  if (!Array.isArray(poly)) return [];
-  const pts: Array<[number, number]> = [];
-  for (const p of poly) {
-    const r = asRecord(p);
-    if (typeof r?.lat === 'number' && typeof r?.lon === 'number') pts.push([r.lat, r.lon]);
+  const fit = parseFitActivity(unzipFit(new Uint8Array(await res.arrayBuffer())));
+  return { ...fit, track: thin(fit.track, MAX_TRACK_POINTS) };
+}
+
+/**
+ * Latest VO2max, read from the newest run files — the Personal API has no
+ * VO2max endpoint. Rounded the way Garmin shows it. Treadmill runs get no
+ * estimate, so only outdoor ones are opened, up to three in case one lacks it.
+ */
+export async function getLatestVo2Max(
+  accessToken: string
+): Promise<{ vo2max: number | null; gender: 'male' | 'female' | null }> {
+  const recent = await getActivities(accessToken, { limit: 10, activityType: 'running' });
+  const runs = recent.filter((a) => a.hasGps).slice(0, 3);
+  let lastError: unknown = null;
+  let readAny = false;
+  for (const run of runs) {
+    try {
+      const file = await getActivityFile(accessToken, run.activityId);
+      readAny = true;
+      if (file.vo2max !== null) return { vo2max: Math.round(file.vo2max), gender: file.gender };
+    } catch (err) {
+      if (isAuthFailure(err)) throw err;
+      lastError = err;
+    }
   }
-  return pts;
+  // files without an estimate are a null; files that wouldn't read are an error worth seeing
+  if (!readAny && lastError) throw lastError;
+  return { vo2max: null, gender: null };
 }

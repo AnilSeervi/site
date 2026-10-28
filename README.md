@@ -60,13 +60,21 @@ for:
 - Spotify — `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REFRESH_TOKEN`
 - GitHub — `GITHUB_TOKEN`
 - MyAnimeList — `MAL_CLIENT_ID`, `MAL_CLIENT_SECRET`, `MAL_REFRESH_TOKEN`
-- Garmin — `GARMIN_EMAIL`, `GARMIN_PASSWORD`
+- Garmin — `GARMIN_API_KEY`, a Personal API key from
+  [Garmin Connect](https://connect.garmin.com/app/settings/personalApiToken). It
+  expires after the 30 days to a year chosen at creation, and Garmin emails a
+  week before. To rotate: make a new key, set it in Vercel and in `.env`,
+  redeploy (the build inlines it, so a changed env var alone does nothing), run
+  the check below, and only then delete the old key — deleting a key revokes
+  its tokens at once.
 - Hardcover — `HARDCOVER_TOKEN`
 - Guestbook — `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `OAUTH_CLIENT_KEY`,
   `OAUTH_CLIENT_SECRET`, `SESSION_SECRET`
 
-`scripts/garmin-bootstrap.mjs` and `scripts/spotify-token.mjs` exist to mint the
-refresh tokens those two need.
+`scripts/spotify-token.mjs` mints the refresh token Spotify needs.
+`node --env-file=.env scripts/garmin-check.mjs` reads every Garmin figure the
+site shows with the local key; it proves a key works, not that production has
+it.
 
 The reading shelf is the one feed that doesn't call out at request time: it
 renders from `src/data/hardcover.json` and the covers beside it, refreshed daily
@@ -86,6 +94,8 @@ node scripts/check-live.mjs https://anil.vercel.app
 
 They assert behaviour that types can't: that a canvas actually painted, that an
 interval doesn't leak across a view transition, that a loading state resolves.
+`node scripts/fit-selftest.mjs` is the exception — no browser, no server; it
+checks the Garmin activity-file decoder against hand-built files.
 
 How they take a base URL isn't consistent — most read the first argument and
 fall back to `localhost:4321`, one reads a `BASE` env var, and two hardcode

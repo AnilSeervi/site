@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getGarminMoving } from '~/lib/garmin';
-import { isDbConfigured } from '~/lib/db';
+import { getGarminMoving, hasGarminKey } from '~/lib/garmin';
 
 export const prerender = false;
 
@@ -14,8 +13,8 @@ function json(body: unknown, sMaxAge: number): Response {
 }
 
 export const GET: APIRoute = async () => {
-  // no db → no stored Garmin tokens to refresh from; the island hides the section
-  if (!isDbConfigured) return json({ disabled: true }, 60);
+  // no API key → nothing to fetch with; the island hides the section
+  if (!hasGarminKey) return json({ disabled: true }, 60);
 
   try {
     // two upstream calls per hit (list + GPS track) — 900s cache window
