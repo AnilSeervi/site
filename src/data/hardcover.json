@@ -1,16 +1,16 @@
 {
-  "fetchedAt": "2026-10-25T08:35:57.546Z",
+  "fetchedAt": "2026-11-04T11:19:13.678Z",
   "reading": [
     {
       "slug": "tell-tale-short-stories",
       "title": "Tell Tale: Short Stories",
       "author": "Jeffrey Archer",
       "pages": 288,
-      "page": 14,
-      "progress": 5,
+      "page": 29,
+      "progress": 10,
       "since": "august",
       "rating": null,
-      "updatedAt": "2026-10-25T07:52:04.271531+00:00",
+      "updatedAt": "2026-11-04T01:03:05.689455+00:00",
       "cover": "/covers/tell-tale-short-stories.jpg",
       "casing": "#574730"
     },
